@@ -47,6 +47,22 @@ def get_user(user_id: str, db: Session = Depends(get_db)):
     return user
 
 
+# Create user
+@router.post('/', response_model=UserDisplay)
+def create_user(request: UserBase, db: Session = Depends(get_db)):
+    """
+    Create a new user in the database.
+
+    Args:
+        request (UserBase): The user data.
+        db (Session): The database session.
+
+    Returns:
+        UserDisplay: The newly created user data.
+    """
+    return db_user.create_user(db, request)
+
+
 # Update user
 @router.put('/{user_id}', response_model=UserDisplay)
 def update_user(user_id: str, request: UserBase, db: Session = Depends(get_db)):
