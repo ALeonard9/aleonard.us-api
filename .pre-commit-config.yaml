@@ -2,9 +2,17 @@ repos:
 - repo: https://github.com/pre-commit/pre-commit-hooks
   rev: v4.5.0
   hooks:
+  - id: check-json
   - id: check-yaml
   - id: end-of-file-fixer
   - id: trailing-whitespace
+  - id: debug-statements
+  - id: check-added-large-files
+    args: [--maxkb=100]
+  - id: double-quote-string-fixer
+  - id: mixed-line-ending
+  - id: name-tests-test
+  - id: no-commit-to-branch
 - repo: https://github.com/hhatto/autopep8
   rev: v2.0.4
   hooks:
@@ -16,4 +24,4 @@ repos:
     entry: ./.venv/bin/pylint
     language: system
     types: [python]
-    args: [--ignore-patterns=.venv]
+    args: [--ignore-patterns=.venv, --disable=too-few-public-methods]

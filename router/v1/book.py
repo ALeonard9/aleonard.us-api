@@ -6,15 +6,15 @@ from fastapi import APIRouter
 
 
 router = APIRouter(
-    tags=["books"],
+    tags=['books'],
 )
 
 
 @router.get(
-    "/",
-    summary="Get all books",
-    description="Get all books from the database",
-    response_description="List of books",
+    '/',
+    summary='Get all books',
+    description='Get all books from the database',
+    response_description='List of books',
 )
 def get_all_books():
     """
@@ -23,4 +23,4 @@ def get_all_books():
     Returns:
         dict: A dictionary containing a list of all books.
     """
-    return {"data": "all books"}
+    return {'data': 'all books'}

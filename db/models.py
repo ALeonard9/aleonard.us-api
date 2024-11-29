@@ -1,0 +1,40 @@
+"""
+This module defines the database models.
+"""
+
+from datetime import datetime, timezone
+import uuid
+from sqlalchemy import Column, Integer, String, DateTime
+from db.database import Base
+
+
+class BaseModel(Base):
+    """
+    Base model that includes common fields for all tables.
+    """
+
+    __abstract__ = True  # This class won't be created as a table in the database
+    pk = Column(
+        Integer, primary_key=True, index=True, autoincrement=True
+    )  # Primary key never shared externally/ only used for relationships and indexing
+    id = Column(
+        String, default=lambda: str(uuid.uuid4()), index=True, unique=True
+    )  # Ok to include in API responses
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+
+class DbUser(BaseModel):
+    """
+    Database model for users.
+    """
+
+    __tablename__ = 'users'
+    email = Column(String, unique=True)
+    display_name = Column(String)
+    user_group = Column(String, default='user')
+    password = Column(String)
