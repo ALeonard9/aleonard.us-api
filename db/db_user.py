@@ -2,6 +2,7 @@
 This module contains database operations for user-related actions.
 """
 
+from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from schemas import UserBase
 from db.hash import Hash
@@ -55,7 +56,13 @@ def get_user(db: Session, user_id: str):
     Returns:
         DbUser: The user data.
     """
-    return db.query(DbUser).filter(DbUser.id == user_id).first()
+    user = db.query(DbUser).filter(DbUser.id == user_id).first()
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"User with id {user_id} not found",
+        )
+    return user
 
 
 def update_user(db: Session, user_id: str, request: UserBase):
@@ -71,6 +78,11 @@ def update_user(db: Session, user_id: str, request: UserBase):
         DbUser: The updated user data.
     """
     user = db.query(DbUser).filter(DbUser.id == user_id).first()
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"User with id {user_id} not found",
+        )
     user.display_name = request.display_name
     user.email = request.email
     user.password = Hash.bcrypt(request.password)
@@ -91,6 +103,11 @@ def delete_user(db: Session, user_id: str):
         DbUser: The deleted user data.
     """
     user = db.query(DbUser).filter(DbUser.id == user_id).first()
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"User with id {user_id} not found",
+        )
     db.delete(user)
     db.commit()
     return user

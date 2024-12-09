@@ -29,19 +29,19 @@ def get_all_users(db: Session = Depends(get_db)):
 
 
 # Read user
-@router.get('/{user_id}', response_model=UserDisplay)
-def get_user(user_id: str, db: Session = Depends(get_db)):
+@router.get('/{uuid}', response_model=UserDisplay)
+def get_user(uuid: str, db: Session = Depends(get_db)):
     """
     Retrieve a user by ID from the database.
 
     Args:
-        user_id (str): The ID of the user.
+        uuid (str): The ID of the user.
         db (Session): The database session.
 
     Returns:
         UserDisplay: The user data.
     """
-    user = db_user.get_user(db, user_id)
+    user = db_user.get_user(db, uuid)
     if not user:
         raise HTTPException(status_code=404, detail='User not found')
     return user
@@ -64,39 +64,39 @@ def create_user(request: UserBase, db: Session = Depends(get_db)):
 
 
 # Update user
-@router.put('/{user_id}', response_model=UserDisplay)
-def update_user(user_id: str, request: UserBase, db: Session = Depends(get_db)):
+@router.put('/{uuid}', response_model=UserDisplay)
+def update_user(uuid: str, request: UserBase, db: Session = Depends(get_db)):
     """
     Update a user's information in the database.
 
     Args:
-        user_id (str): The ID of the user.
+        uuid (str): The ID of the user.
         request (UserBase): The updated user data.
         db (Session): The database session.
 
     Returns:
         UserDisplay: The updated user data.
     """
-    user = db_user.update_user(db, user_id, request)
+    user = db_user.update_user(db, uuid, request)
     if not user:
         raise HTTPException(status_code=404, detail='User not found')
     return user
 
 
 # Delete user
-@router.delete('/{user_id}', response_model=UserDisplay)
-def delete_user(user_id: str, db: Session = Depends(get_db)):
+@router.delete('/{uuid}', response_model=UserDisplay)
+def delete_user(uuid: str, db: Session = Depends(get_db)):
     """
     Delete a user by ID from the database.
 
     Args:
-        user_id (str): The ID of the user.
+        uuid (str): The ID of the user.
         db (Session): The database session.
 
     Returns:
         UserDisplay: The deleted user data.
     """
-    user = db_user.delete_user(db, user_id)
+    user = db_user.delete_user(db, uuid)
     if not user:
         raise HTTPException(status_code=404, detail='User not found')
     return user
