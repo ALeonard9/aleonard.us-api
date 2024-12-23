@@ -2,6 +2,7 @@
 This module creates access tokens and verifys tokens.
 """
 
+import os
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 from fastapi import Depends, HTTPException, status
@@ -15,9 +16,8 @@ from db.database import get_db
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl='v1/auth/token')
 
-# TOdDO move to .env
 # openssl rand -hex 32
-SECRET_KEY = ''
+SECRET_KEY = os.getenv('JWT_SECRET_KEY')
 ALGORITHM = 'HS256'
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
