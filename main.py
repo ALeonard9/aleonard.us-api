@@ -27,7 +27,7 @@ def index():
     Returns:
         str: Welcome message.
     """
-    return "Welcome to Adam's API!"
+    return "Welcome to Adam's API folks!"
 
 
 # Create the database tables
