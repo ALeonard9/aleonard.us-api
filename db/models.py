@@ -14,12 +14,11 @@ class BaseModel(Base):
     """
 
     __abstract__ = True  # This class won't be created as a table in the database
-    pk = Column(
-        Integer, primary_key=True, index=True, autoincrement=True
-    )  # Primary key never shared externally/ only used for relationships and indexing
-    id = Column(
-        String, default=lambda: str(uuid.uuid4()), index=True, unique=True
-    )  # Ok to include in API responses
+    # Primary key never shared externally/ only used for relationships and indexing
+    pk = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    # Ok to include in API responses
+    id = Column(String, default=lambda: str(
+        uuid.uuid4()), index=True, unique=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(
         DateTime,
