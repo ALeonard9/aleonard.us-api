@@ -14,7 +14,7 @@ repos:
   - id: name-tests-test
   - id: no-commit-to-branch
 -   repo: https://github.com/psf/black
-    rev: stable
+    rev: 24.10.0
     hooks:
     - id: black
       language_version: python3.12
