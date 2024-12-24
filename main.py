@@ -13,10 +13,6 @@ from db import models
 from db.database import engine
 from router.v1 import book, user
 
-# Look for flag against main.py that indicate production
-# If the flag is not present, load the local environment variables
-
-
 # Load environment variables
 load_dotenv(dotenv_path='env/local.env')
 
@@ -42,12 +38,10 @@ def index():
     return "Welcome to Adam's API folks!"
 
 
-# Create the database tables
-models.Base.metadata.drop_all(bind=engine)
-models.Base.metadata.create_all(engine)
-
-# CORS
 if os.getenv('API_ENV') == 'local':
+    # Drop the database tables
+    models.Base.metadata.drop_all(bind=engine)
+    # CORS
     origins = ['http://localhost:3000']
 
     app.add_middleware(
@@ -57,6 +51,8 @@ if os.getenv('API_ENV') == 'local':
         allow_methods=['*'],
         allow_headers=['*'],
     )
+# Create or update tables
+models.Base.metadata.create_all(engine)
 
 
 if __name__ == '__main__':
