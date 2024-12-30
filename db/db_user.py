@@ -2,12 +2,16 @@
 This module contains database operations for user-related actions.
 """
 
+import os
+
 from fastapi import HTTPException, status
-from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-from schemas import UserBase
+from sqlalchemy.orm import Session
+
 from db.hash import Hash
 from db.models import DbUser
+from log.logging_config import logger
+from schemas import UserBase
 
 
 def create_user(db: Session, request: UserBase):
@@ -21,8 +25,7 @@ def create_user(db: Session, request: UserBase):
     Returns:
         DbUser: The newly created user.
     """
-    existing_user = db.query(DbUser).filter(
-        DbUser.email == request.email).first()
+    existing_user = db.query(DbUser).filter(DbUser.email == request.email).first()
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -38,6 +41,12 @@ def create_user(db: Session, request: UserBase):
         db.commit()
         # Refresh to obtain newly created ID
         db.refresh(new_user)
+        logger.info(
+            'User created: %s, display_name: %s, email: %s',
+            new_user.id,
+            new_user.display_name,
+            new_user.email,
+        )
     except IntegrityError as exc:
         db.rollback()
         raise HTTPException(
@@ -45,6 +54,40 @@ def create_user(db: Session, request: UserBase):
             detail='Error creating user',
         ) from exc
     return new_user
+
+
+def create_admin_user(db: Session):
+    """
+    Create an admin user in the database.
+
+    Args:
+        db (Session): The database session.
+
+    Returns:
+        DbUser: The newly created admin user.
+    """
+    admin_display_name = os.getenv('ADMIN_DISPLAY_NAME')
+    admin_email = os.getenv('ADMIN_EMAIL')
+    admin_password = os.getenv('ADMIN_PASSWORD')
+    new_admin = DbUser(
+        display_name=admin_display_name,
+        email=admin_email,
+        user_group='admin',
+        password=Hash.bcrypt(admin_password),
+    )
+    try:
+        db.add(new_admin)
+        db.commit()
+        # Refresh to obtain newly created ID
+        db.refresh(new_admin)
+        logger.info('Admin created: %s', new_admin.id)
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='Error creating user',
+        ) from exc
+    return new_admin
 
 
 def get_all_users(db: Session):
@@ -103,6 +146,12 @@ def update_user(db: Session, user_id: str, request: UserBase):
     user.password = Hash.bcrypt(request.password)
     db.commit()
     db.refresh(user)
+    logger.info(
+        'User updated: %s, display_name: %s, email: %s',
+        user.id,
+        user.display_name,
+        user.email,
+    )
     return user
 
 
@@ -123,6 +172,13 @@ def delete_user(db: Session, user_id: str):
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"User with id {user_id} not found",
         )
+
     db.delete(user)
     db.commit()
+    logger.info(
+        'User deleted: %s, display_name: %s, email: %s',
+        user.id,
+        user.display_name,
+        user.email,
+    )
     return user.__dict__

@@ -4,18 +4,17 @@ This module contains the main application setup and routing.
 
 import os
 
-from dotenv import load_dotenv
+import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from auth import authentication
-from db import models
-from db.database import engine
+from db import db_user, models
+from db.database import engine, get_db
+from log.logging_config import logger
 from router.v1 import book, user
 
-# Load environment variables
-load_dotenv(dotenv_path='env/local.env')
-
+# Create FastAPI app
 app = FastAPI(
     title='aleonard.us API',
     description='This is the API for aleonard.us',
@@ -39,8 +38,6 @@ def index():
 
 
 if os.getenv('API_ENV') == 'local':
-    # Drop the database tables
-    models.Base.metadata.drop_all(bind=engine)
     # CORS
     origins = ['http://localhost:3000']
 
@@ -51,11 +48,35 @@ if os.getenv('API_ENV') == 'local':
         allow_methods=['*'],
         allow_headers=['*'],
     )
-# Create or update tables
-models.Base.metadata.create_all(engine)
+
+
+def start_server():
+    """
+    Starts uvicorn server with the FastAPI app.
+    """
+    if os.getenv('API_ENV') == 'local':
+        # Drop the database tables
+        models.Base.metadata.drop_all(bind=engine)
+        logger.debug('Dropped all tables')
+
+    # Create or update tables
+    models.Base.metadata.create_all(engine)
+    logger.info('Created all tables')
+
+    # Create the admin user
+    db = next(get_db())
+    db_user.create_admin_user(db)
+
+    log_level_var = os.getenv('LOG_LEVEL').lower()
+
+    uvicorn.run(
+        'main:app',
+        host='0.0.0.0',
+        port=8000,
+        reload=True,
+        log_level=log_level_var,
+    )
 
 
 if __name__ == '__main__':
-    import uvicorn
-
-    uvicorn.run('main:app', host='0.0.0.0', port=8000, reload=True)
+    start_server()
