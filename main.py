@@ -2,6 +2,8 @@
 This module contains the main application setup and routing.
 """
 
+import asyncio
+import json
 import os
 
 import uvicorn
@@ -56,6 +58,19 @@ def index():
     return "Welcome to Adam's API folks!"
 
 
+async def generate_openapi_json():
+    """
+    Generate the OpenAPI schema and write it to a file upon startup.
+    """
+    openapi_schema = app.openapi()
+    with open('openapi.json', 'w', encoding='utf-8') as f:
+
+        json.dump(openapi_schema, f, indent=2)
+        # Add a newline to the end of the file
+        f.write('\n')
+    logger.info('OpenAPI schema generated and written to openapi.json')
+
+
 if os.getenv('API_ENV') == 'local':
     # CORS
     origins = ['http://localhost:3000']
@@ -87,6 +102,9 @@ def start_server():
     db_user.create_admin_user(db)
 
     log_level_var = os.getenv('LOG_LEVEL').lower()
+
+    # Generate OpenAPI schema
+    asyncio.run(generate_openapi_json())
 
     uvicorn.run(
         'main:app',
