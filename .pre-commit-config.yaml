@@ -27,3 +27,7 @@ repos:
     language: system
     types: [python]
     args: [--ignore-patterns=.venv, --disable=too-few-public-methods]
+- repo: https://github.com/python-openapi/openapi-spec-validator
+  rev: 0.5.5
+  hooks:
+  - id: openapi-spec-validator

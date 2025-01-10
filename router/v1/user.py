@@ -4,10 +4,11 @@ This module contains the API routes for user-related operations.
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from db.database import get_db
-from db import db_user
-from schemas import UserBase, UserDisplay
+
 from auth.oauth2 import get_current_user
+from db import db_user
+from db.database import get_db
+from schemas import UserBase, UserDisplay
 
 router = APIRouter(
     tags=['users'],
@@ -15,7 +16,7 @@ router = APIRouter(
 
 
 # Read all users
-@router.get('/', response_model=list[UserDisplay])
+@router.get('', response_model=list[UserDisplay])
 def get_all_users(
     db: Session = Depends(get_db), current_user: UserBase = Depends(get_current_user)
 ):
@@ -82,7 +83,7 @@ def get_user(
 
 
 # Create user
-@router.post('/', response_model=UserDisplay)
+@router.post('', response_model=UserDisplay)
 def create_user(request: UserBase, db: Session = Depends(get_db)):
     """
     Create a new user in the database.

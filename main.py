@@ -16,9 +16,28 @@ from router.v1 import book, user
 
 # Create FastAPI app
 app = FastAPI(
-    title='aleonard.us API',
+    title='aleonard.us API ' + os.getenv('API_ENV', 'local'),
     description='This is the API for aleonard.us',
     version='0.0.1',
+    contact={
+        'name': 'Adam',
+        'url': 'https://www.aleonard.us',
+        'email': 'aleonard9@hotmail.com',
+    },
+    openapi_tags=[
+        {'name': 'users', 'description': 'User operations'},
+        {'name': 'authentication', 'description': 'Auth operations'},
+        {'name': 'books', 'description': 'Book operations'},
+        {'name': 'intro', 'description': 'Welcome message'},
+    ],
+    openapi_url='/openapi.json',  # Customize OpenAPI path
+    servers=[
+        {'url': 'http://localhost:8000', 'description': 'Local server'},
+    ],
+    license_info={
+        'name': 'Apache 2.0',
+        'url': 'https://www.apache.org/licenses/LICENSE-2.0.html',
+    },
 )
 
 app.include_router(authentication.router, prefix='/v1/auth')
@@ -26,7 +45,7 @@ app.include_router(user.router, prefix='/v1/users')
 app.include_router(book.router, prefix='/v1/books')
 
 
-@app.get('/')
+@app.get('/', tags=['intro'])
 def index():
     """
     Index endpoint that returns a welcome message.

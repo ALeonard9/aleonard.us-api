@@ -7,6 +7,7 @@ import os
 from logging.handlers import RotatingFileHandler
 from typing import override
 
+import logging_loki
 from dotenv import load_dotenv
 
 
@@ -57,6 +58,14 @@ if not logger.hasHandlers():
     LOG_FILE = 'log/api.log'
     fh = logging.FileHandler(LOG_FILE, mode='a')
 
+    # Create a Loki handler
+    logging_loki.emitter.LokiEmitter.level_tag = 'level'
+
+    lh = logging_loki.LokiHandler(
+        url='http://localhost:3100/loki/api/v1/push',
+        version='1',
+    )
+
     logger.debug('API Env set to: %s', os.getenv('API_ENV'))
     load_dotenv(dotenv_path='env/local.env')
 
@@ -78,9 +87,10 @@ if not logger.hasHandlers():
     fh.setFormatter(file_log_formatter)
 
     # add a rotating handler
-    handler = RotatingFileHandler(LOG_FILE, maxBytes=10000, backupCount=10)
+    handler = RotatingFileHandler(LOG_FILE, maxBytes=10485760, backupCount=10)
     logger.addHandler(handler)
 
     # Add the handler to the logger
     logger.addHandler(fh)
     logger.addHandler(ch)
+    logger.addHandler(lh)
