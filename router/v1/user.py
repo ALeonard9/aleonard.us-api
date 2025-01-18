@@ -83,7 +83,7 @@ def get_user(
 
 
 # Create user
-@router.post('', response_model=UserDisplay)
+@router.post('', response_model=UserDisplay, status_code=201)
 def create_user(request: UserBase, db: Session = Depends(get_db)):
     """
     Create a new user in the database.
