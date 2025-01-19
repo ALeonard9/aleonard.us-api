@@ -4,6 +4,7 @@ This module contains database operations for user-related actions.
 
 import os
 
+from email_validator import EmailNotValidError, validate_email
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -25,6 +26,14 @@ def create_user(db: Session, request: UserBase):
     Returns:
         DbUser: The newly created user.
     """
+    try:
+        logger.info('Validating email address: %s', request.email)
+        validate_email(request.email)
+    except EmailNotValidError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='Invalid email address',
+        ) from exc
     existing_user = db.query(DbUser).filter(DbUser.email == request.email).first()
     if existing_user:
         raise HTTPException(
@@ -69,6 +78,20 @@ def create_admin_user(db: Session):
     admin_display_name = os.getenv('ADMIN_DISPLAY_NAME')
     admin_email = os.getenv('ADMIN_EMAIL')
     admin_password = os.getenv('ADMIN_PASSWORD')
+
+    if not all([admin_display_name, admin_email, admin_password]):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='Environment variables not set for admin creation',
+        )
+    try:
+        logger.info('Validating email address: %s', admin_email)
+        validate_email(admin_email)
+    except EmailNotValidError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='Invalid email address',
+        ) from exc
     new_admin = DbUser(
         display_name=admin_display_name,
         email=admin_email,
@@ -120,7 +143,7 @@ def get_user(db: Session, user_id: str):
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"User with id {user_id} not found",
         )
-    return user.__dict__
+    return user
 
 
 def update_user(db: Session, user_id: str, request: UserBase):
@@ -141,6 +164,21 @@ def update_user(db: Session, user_id: str, request: UserBase):
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"User with id {user_id} not found",
         )
+    if request.email != user.email:
+        existing_user = db.query(DbUser).filter(DbUser.email == request.email).first()
+        if existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail='Email already registered',
+            )
+    try:
+        logger.info('Validating email address: %s', request.email)
+        validate_email(request.email)
+    except EmailNotValidError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='Invalid email address',
+        ) from exc
     user.display_name = request.display_name
     user.email = request.email
     user.password = Hash.bcrypt(request.password)
@@ -181,4 +219,4 @@ def delete_user(db: Session, user_id: str):
         user.display_name,
         user.email,
     )
-    return user.__dict__
+    return user

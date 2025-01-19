@@ -3,7 +3,8 @@ This module defines the Pydantic models (schemas) for the API.
 """
 
 from datetime import datetime
-from pydantic import BaseModel
+
+from pydantic import BaseModel, ConfigDict, EmailStr
 
 
 # Data that comes from user
@@ -24,14 +25,12 @@ class UserDisplay(BaseModel):
 
     id: str
     display_name: str
-    email: str
+    email: EmailStr
     user_group: str
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        """
-        Configuration for the Pydantic model.
-        """
-
-        from_attributes = True
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        from_attributes=True,
+    )
