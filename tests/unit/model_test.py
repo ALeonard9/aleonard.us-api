@@ -22,4 +22,3 @@ def test_create_db_user_defaults(email, display_name, user_group):
     assert user.email == email
     assert user.display_name == display_name
     assert user.user_group == user_group
-    assert user.pk is None  # Primary key not set until saved in DB

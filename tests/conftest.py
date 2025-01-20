@@ -8,7 +8,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from db.database import Base
-from schemas import UserBase
+from schemas import InUserBase
 
 fake = Faker()
 
@@ -39,7 +39,7 @@ def fixture_test_user_data_generator():
         user_data = []
         for _ in range(num_users):
             user_data.append(
-                UserBase(
+                InUserBase(
                     display_name=fake.name(),
                     email=f'{fake.first_name()}@zoho.com',
                     password=fake.password(),

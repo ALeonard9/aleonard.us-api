@@ -2,13 +2,15 @@
 This module defines the database models.
 """
 
-from datetime import datetime, timezone
 import uuid
-from sqlalchemy import Column, Integer, String, DateTime
+from datetime import datetime, timezone
+
+from sqlalchemy import Column, DateTime, Integer, String
+
 from db.database import Base
 
 
-class BaseModel(Base):
+class DBBaseModel(Base):
     """
     Base model that includes common fields for all tables.
     """
@@ -17,8 +19,7 @@ class BaseModel(Base):
     # Primary key never shared externally/ only used for relationships and indexing
     pk = Column(Integer, primary_key=True, index=True, autoincrement=True)
     # Ok to include in API responses
-    id = Column(String, default=lambda: str(
-        uuid.uuid4()), index=True, unique=True)
+    id = Column(String, default=lambda: str(uuid.uuid4()), index=True, unique=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(
         DateTime,
@@ -27,13 +28,13 @@ class BaseModel(Base):
     )
 
 
-class DbUser(BaseModel):
+class DbUser(DBBaseModel):
     """
     Database model for users.
     """
 
     __tablename__ = 'users'
     email = Column(String, unique=True)
-    display_name = Column(String)
+    display_name = Column(String(length=16))
     user_group = Column(String, default='user')
     password = Column(String)

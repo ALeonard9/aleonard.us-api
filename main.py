@@ -15,6 +15,7 @@ from db import db_user, models
 from db.database import engine, get_db
 from log.logging_config import logger
 from router.v1 import book, user
+from schemas import OutResponseBaseModel
 
 # Create FastAPI app
 app = FastAPI(
@@ -47,7 +48,7 @@ app.include_router(user.router, prefix='/v1/users')
 app.include_router(book.router, prefix='/v1/books')
 
 
-@app.get('/', tags=['intro'])
+@app.get('/', tags=['intro'], response_model=OutResponseBaseModel)
 def index():
     """
     Index endpoint that returns a welcome message.
@@ -55,7 +56,7 @@ def index():
     Returns:
         str: Welcome message.
     """
-    return "Welcome to Adam's API folks!"
+    return OutResponseBaseModel(message="Welcome to Adam's API folks!")
 
 
 async def generate_openapi_json():

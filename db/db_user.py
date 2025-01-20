@@ -12,19 +12,19 @@ from sqlalchemy.orm import Session
 from db.hash import Hash
 from db.models import DbUser
 from log.logging_config import logger
-from schemas import UserBase
+from schemas import InUserBase
 
 
-def create_user(db: Session, request: UserBase):
+def create_user(db: Session, request: InUserBase):
     """
     Create a new user in the database.
 
     Args:
         db (Session): The database session.
-        request (UserBase): The user data.
+        request (InUserBase): The user data.
 
     Returns:
-        DbUser: The newly created user.
+        List[DbUser]: The newly created user.
     """
     try:
         logger.info('Validating email address: %s', request.email)
@@ -62,7 +62,9 @@ def create_user(db: Session, request: UserBase):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail='Error creating user',
         ) from exc
-    return new_user
+    response = []
+    response.append(new_user)
+    return response
 
 
 def create_admin_user(db: Session):
@@ -73,7 +75,7 @@ def create_admin_user(db: Session):
         db (Session): The database session.
 
     Returns:
-        DbUser: The newly created admin user.
+        List[DbUser]: The newly created admin user.
     """
     admin_display_name = os.getenv('ADMIN_DISPLAY_NAME')
     admin_email = os.getenv('ADMIN_EMAIL')
@@ -92,25 +94,27 @@ def create_admin_user(db: Session):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail='Invalid email address',
         ) from exc
-    new_admin = DbUser(
+    new_user = DbUser(
         display_name=admin_display_name,
         email=admin_email,
         user_group='admin',
         password=Hash.bcrypt(admin_password),
     )
     try:
-        db.add(new_admin)
+        db.add(new_user)
         db.commit()
         # Refresh to obtain newly created ID
-        db.refresh(new_admin)
-        logger.info('Admin created: %s', new_admin.id)
+        db.refresh(new_user)
+        logger.info('Admin created: %s', new_user.id)
     except IntegrityError as exc:
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail='Error creating user',
+            detail='Error creating admin',
         ) from exc
-    return new_admin
+    response = []
+    response.append(new_user)
+    return response
 
 
 def get_all_users(db: Session):
@@ -143,17 +147,19 @@ def get_user(db: Session, user_id: str):
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"User with id {user_id} not found",
         )
-    return user
+    response = []
+    response.append(user)
+    return response
 
 
-def update_user(db: Session, user_id: str, request: UserBase):
+def update_user(db: Session, user_id: str, request: InUserBase):
     """
     Update a user's information in the database.
 
     Args:
         db (Session): The database session.
         user_id (str): The ID of the user.
-        request (UserBase): The updated user data.
+        request (InUserBase): The updated user data.
 
     Returns:
         DbUser: The updated user data.
@@ -190,7 +196,9 @@ def update_user(db: Session, user_id: str, request: UserBase):
         user.display_name,
         user.email,
     )
-    return user
+    response = []
+    response.append(user)
+    return response
 
 
 def delete_user(db: Session, user_id: str):
@@ -219,4 +227,6 @@ def delete_user(db: Session, user_id: str):
         user.display_name,
         user.email,
     )
-    return user
+    response = []
+    response.append(user)
+    return response

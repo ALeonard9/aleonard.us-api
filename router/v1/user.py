@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from auth.oauth2 import get_current_user
 from db import db_user
 from db.database import get_db
-from schemas import UserBase, UserDisplay
+from schemas import InUserBase, OutResponseUserModel
 
 router = APIRouter(
     tags=['users'],
@@ -16,9 +16,9 @@ router = APIRouter(
 
 
 # Read all users
-@router.get('', response_model=list[UserDisplay])
+@router.get('', response_model=OutResponseUserModel)
 def get_all_users(
-    db: Session = Depends(get_db), current_user: UserBase = Depends(get_current_user)
+    db: Session = Depends(get_db), current_user: InUserBase = Depends(get_current_user)
 ):
     """
     Retrieve all users from the database. Must be an admin to view all users.
@@ -27,13 +27,13 @@ def get_all_users(
         db (Session): The database session.
 
     Returns:
-        list[UserDisplay]: A list of users.
+        List: OutUserDisplay: A list of users.
     """
-    if current_user['user_group'] == 'admin':
+    if current_user[0].user_group == 'admin':
         users = db_user.get_all_users(db)
         if not users:
             raise HTTPException(status_code=404, detail='Users not found')
-        return users
+        return OutResponseUserModel(data=users, message='Users found')
 
     raise HTTPException(
         status_code=403,
@@ -42,11 +42,11 @@ def get_all_users(
 
 
 # Read user
-@router.get('/{uuid}', response_model=UserDisplay)
+@router.get('/{uuid}', response_model=OutResponseUserModel)
 def get_user(
     uuid: str,
     db: Session = Depends(get_db),
-    current_user: UserBase = Depends(get_current_user),
+    current_user: InUserBase = Depends(get_current_user),
 ):
     """
     Retrieve a user by ID from the database.
@@ -57,20 +57,20 @@ def get_user(
         db (Session): The database session.
 
     Returns:
-        UserDisplay: The user data.
+        List: OutUserDisplay: The user data.
     """
-    if current_user['user_group'] == 'admin':
+    if current_user[0].user_group == 'admin':
         user = db_user.get_user(db, uuid)
         if not user:
             raise HTTPException(status_code=404, detail='User not found')
-        return user
+        return OutResponseUserModel(data=user, message='User found')
 
-    if current_user['user_group'] == 'user':
-        if current_user['id'] == uuid:
+    if current_user[0].user_group == 'user':
+        if current_user[0].id == uuid:
             user = db_user.get_user(db, uuid)
             if not user:
                 raise HTTPException(status_code=404, detail='User not found')
-            return user
+            return OutResponseUserModel(data=user, message='User found')
         raise HTTPException(
             status_code=403,
             detail='User can only view their own account.',
@@ -83,28 +83,30 @@ def get_user(
 
 
 # Create user
-@router.post('', response_model=UserDisplay, status_code=201)
-def create_user(request: UserBase, db: Session = Depends(get_db)):
+@router.post('', response_model=OutResponseUserModel, status_code=201)
+def create_user(request: InUserBase, db: Session = Depends(get_db)):
     """
     Create a new user in the database.
 
     Args:
-        request (UserBase): The user data.
+        request (InUserBase): Must include email,
+        display_name (max length 16 characters), and password.
         db (Session): The database session.
 
     Returns:
-        UserDisplay: The newly created user data.
+        List: OutUserDisplay: The newly created user data.
     """
-    return db_user.create_user(db, request)
+    user = db_user.create_user(db, request)
+    return OutResponseUserModel(data=user, message='User created')
 
 
 # Update user
-@router.put('/{uuid}', response_model=UserDisplay)
+@router.put('/{uuid}', response_model=OutResponseUserModel)
 def update_user(
     uuid: str,
-    request: UserBase,
+    request: InUserBase,
     db: Session = Depends(get_db),
-    current_user: UserBase = Depends(get_current_user),
+    current_user: InUserBase = Depends(get_current_user),
 ):
     """
     Update a user's information in the database.
@@ -112,24 +114,24 @@ def update_user(
 
     Args:
         uuid (str): The ID of the user.
-        request (UserBase): The updated user data.
+        request (InUserBase): The updated user data.
         db (Session): The database session.
 
     Returns:
-        UserDisplay: The updated user data.
+        List: OutUserDisplay: The updated user data.
     """
-    if current_user['user_group'] == 'admin':
+    if current_user[0].user_group == 'admin':
         user = db_user.update_user(db, uuid, request)
         if not user:
             raise HTTPException(status_code=404, detail='User not found')
-        return user
+        return OutResponseUserModel(data=user, message='User updated')
 
-    if current_user['user_group'] == 'user':
-        if current_user['id'] == uuid:
+    if current_user[0].user_group == 'user':
+        if current_user[0].id == uuid:
             user = db_user.update_user(db, uuid, request)
             if not user:
                 raise HTTPException(status_code=404, detail='User not found')
-            return user
+            return OutResponseUserModel(data=user, message='User updated')
         raise HTTPException(
             status_code=403,
             detail='User can only update their own account.',
@@ -142,7 +144,7 @@ def update_user(
 
 
 # Delete user
-@router.delete('/{uuid}', response_model=UserDisplay)
+@router.delete('/{uuid}', response_model=OutResponseUserModel)
 def delete_user(
     uuid: str,
     db: Session = Depends(get_db),
@@ -158,21 +160,21 @@ def delete_user(
         current_user (dict): The current authenticated user.
 
     Returns:
-        UserDisplay: The deleted user data.
+        List: OutUserDisplay: The deleted user data.
     """
     # Check if current user is admin
-    if current_user['user_group'] == 'admin':
+    if current_user[0].user_group == 'admin':
         user = db_user.delete_user(db, uuid)
         if not user:
             raise HTTPException(status_code=404, detail='User not found')
-        return user
+        return OutResponseUserModel(data=user, message='User deleted')
 
-    if current_user['user_group'] == 'user':
-        if current_user['id'] == uuid:
+    if current_user[0].user_group == 'user':
+        if current_user[0].id == uuid:
             user = db_user.delete_user(db, uuid)
             if not user:
                 raise HTTPException(status_code=404, detail='User not found')
-            return user
+            return OutResponseUserModel(data=user, message='User deleted')
         raise HTTPException(
             status_code=403,
             detail='User can only delete their own account.',

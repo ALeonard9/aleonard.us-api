@@ -96,7 +96,7 @@
           "users"
         ],
         "summary": "Create User",
-        "description": "Create a new user in the database.\n\nArgs:\n    request (UserBase): The user data.\n    db (Session): The database session.\n\nReturns:\n    UserDisplay: The newly created user data.",
+        "description": "Create a new user in the database.\n\nArgs:\n    request (UserBase): Must include email, display_name (max length 16 characters), and password.\n    db (Session): The database session.\n\nReturns:\n    UserDisplay: The newly created user data.",
         "operationId": "create_user_v1_users_post",
         "requestBody": {
           "content": {
@@ -315,7 +315,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/OutResponseModel"
+                }
               }
             }
           }
@@ -395,6 +397,42 @@
         "type": "object",
         "title": "HTTPValidationError"
       },
+      "OutResponseModel": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": true
+          },
+          "data": {
+            "anyOf": [
+              {
+                "items": {},
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data",
+            "default": []
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "title": "OutResponseModel",
+        "description": "All responses will have this format."
+      },
       "UserBase": {
         "properties": {
           "display_name": {
@@ -431,6 +469,7 @@
           },
           "email": {
             "type": "string",
+            "format": "email",
             "title": "Email"
           },
           "user_group": {
