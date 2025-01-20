@@ -1,5 +1,5 @@
 """
-Tests for the schemas module.
+This module contains unit tests for the OutResponseUserModel.
 """
 
 from datetime import datetime, timezone

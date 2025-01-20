@@ -8,7 +8,9 @@ import os
 
 import uvicorn
 from fastapi import FastAPI
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from auth import authentication
 from db import db_user, models
@@ -16,6 +18,7 @@ from db.database import engine, get_db
 from log.logging_config import logger
 from router.v1 import book, user
 from schemas import OutResponseBaseModel
+from utils.exceptions import generic_exception_handler, http_exception_handler
 
 # Create FastAPI app
 app = FastAPI(
@@ -46,6 +49,11 @@ app = FastAPI(
 app.include_router(authentication.router, prefix='/v1/auth')
 app.include_router(user.router, prefix='/v1/users')
 app.include_router(book.router, prefix='/v1/books')
+
+# Register custom exception handlers
+app.add_exception_handler(StarletteHTTPException, http_exception_handler)
+app.add_exception_handler(RequestValidationError, http_exception_handler)
+app.add_exception_handler(Exception, generic_exception_handler)
 
 
 @app.get('/', tags=['intro'], response_model=OutResponseBaseModel)
