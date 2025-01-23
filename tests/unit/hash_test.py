@@ -31,5 +31,5 @@ def test_verify():
         hashed_password, plain_password
     ), 'Verify should pass with the correct plain password'
     assert not Hash.verify(
-        hashed_password, 'wrongPassword'
+        hashed_password, hashed_password
     ), 'Verify should fail with an incorrect plain password'
