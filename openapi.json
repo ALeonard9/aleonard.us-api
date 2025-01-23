@@ -67,7 +67,7 @@
           "users"
         ],
         "summary": "Get All Users",
-        "description": "Retrieve all users from the database. Must be an admin to view all users.\n\nArgs:\n    db (Session): The database session.\n\nReturns:\n    list[UserDisplay]: A list of users.",
+        "description": "Retrieve all users from the database. Must be an admin to view all users.\n\nArgs:\n    db (Session): The database session.\n\nReturns:\n    List: OutUserDisplay: A list of users.",
         "operationId": "get_all_users_v1_users_get",
         "responses": {
           "200": {
@@ -75,11 +75,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/UserDisplay"
-                  },
-                  "type": "array",
-                  "title": "Response Get All Users V1 Users Get"
+                  "$ref": "#/components/schemas/OutResponseUserModel"
                 }
               }
             }
@@ -96,13 +92,13 @@
           "users"
         ],
         "summary": "Create User",
-        "description": "Create a new user in the database.\n\nArgs:\n    request (UserBase): Must include email, display_name (max length 16 characters), and password.\n    db (Session): The database session.\n\nReturns:\n    UserDisplay: The newly created user data.",
+        "description": "Create a new user in the database.\n\nArgs:\n    request (InUserBase): Must include email,\n    display_name (max length 16 characters), and password.\n    db (Session): The database session.\n\nReturns:\n    List: OutUserDisplay: The newly created user data.",
         "operationId": "create_user_v1_users_post",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UserBase"
+                "$ref": "#/components/schemas/InUserBase"
               }
             }
           },
@@ -114,7 +110,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UserDisplay"
+                  "$ref": "#/components/schemas/OutResponseUserModel"
                 }
               }
             }
@@ -138,7 +134,7 @@
           "users"
         ],
         "summary": "Get User",
-        "description": "Retrieve a user by ID from the database.\nAdmins can view all users, while users can only view their own account.\n\nArgs:\n    uuid (str): The ID of the user.\n    db (Session): The database session.\n\nReturns:\n    UserDisplay: The user data.",
+        "description": "Retrieve a user by ID from the database.\nAdmins can view all users, while users can only view their own account.\n\nArgs:\n    uuid (str): The ID of the user.\n    db (Session): The database session.\n\nReturns:\n    List: OutUserDisplay: The user data.",
         "operationId": "get_user_v1_users__uuid__get",
         "security": [
           {
@@ -162,7 +158,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UserDisplay"
+                  "$ref": "#/components/schemas/OutResponseUserModel"
                 }
               }
             }
@@ -184,7 +180,7 @@
           "users"
         ],
         "summary": "Update User",
-        "description": "Update a user's information in the database.\nAdmins can update any user, while users can only update their own account.\n\nArgs:\n    uuid (str): The ID of the user.\n    request (UserBase): The updated user data.\n    db (Session): The database session.\n\nReturns:\n    UserDisplay: The updated user data.",
+        "description": "Update a user's information in the database.\nAdmins can update any user, while users can only update their own account.\n\nArgs:\n    uuid (str): The ID of the user.\n    request (InUserBase): The updated user data.\n    db (Session): The database session.\n\nReturns:\n    List: OutUserDisplay: The updated user data.",
         "operationId": "update_user_v1_users__uuid__put",
         "security": [
           {
@@ -207,7 +203,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UserBase"
+                "$ref": "#/components/schemas/InUserBase"
               }
             }
           }
@@ -218,7 +214,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UserDisplay"
+                  "$ref": "#/components/schemas/OutResponseUserModel"
                 }
               }
             }
@@ -240,7 +236,7 @@
           "users"
         ],
         "summary": "Delete User",
-        "description": "Delete a user by ID from the database.\nAdmins can delete any user, while users can only delete their own account.\n\nArgs:\n    uuid (str): The ID of the user.\n    db (Session): The database session.\n    current_user (dict): The current authenticated user.\n\nReturns:\n    UserDisplay: The deleted user data.",
+        "description": "Delete a user by ID from the database.\nAdmins can delete any user, while users can only delete their own account.\n\nArgs:\n    uuid (str): The ID of the user.\n    db (Session): The database session.\n    current_user (dict): The current authenticated user.\n\nReturns:\n    List: OutUserDisplay: The deleted user data.",
         "operationId": "delete_user_v1_users__uuid__delete",
         "security": [
           {
@@ -264,7 +260,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UserDisplay"
+                  "$ref": "#/components/schemas/OutResponseUserModel"
                 }
               }
             }
@@ -316,7 +312,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/OutResponseModel"
+                  "$ref": "#/components/schemas/OutResponseBaseModel"
                 }
               }
             }
@@ -397,7 +393,31 @@
         "type": "object",
         "title": "HTTPValidationError"
       },
-      "OutResponseModel": {
+      "InUserBase": {
+        "properties": {
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "password": {
+            "type": "string",
+            "title": "Password"
+          }
+        },
+        "type": "object",
+        "required": [
+          "display_name",
+          "email",
+          "password"
+        ],
+        "title": "InUserBase",
+        "description": "Schema for user input data."
+      },
+      "OutResponseBaseModel": {
         "properties": {
           "success": {
             "type": "boolean",
@@ -426,38 +446,49 @@
                 "type": "null"
               }
             ],
-            "title": "Message"
+            "title": "Message",
+            "default": "None"
           }
         },
         "type": "object",
-        "title": "OutResponseModel",
+        "title": "OutResponseBaseModel",
         "description": "All responses will have this format."
       },
-      "UserBase": {
+      "OutResponseUserModel": {
         "properties": {
-          "display_name": {
-            "type": "string",
-            "title": "Display Name"
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": true
           },
-          "email": {
-            "type": "string",
-            "title": "Email"
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/OutUserDisplay"
+            },
+            "type": "array",
+            "title": "Data"
           },
-          "password": {
-            "type": "string",
-            "title": "Password"
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message",
+            "default": "None"
           }
         },
         "type": "object",
         "required": [
-          "display_name",
-          "email",
-          "password"
+          "data"
         ],
-        "title": "UserBase",
-        "description": "Schema for user input data."
+        "title": "OutResponseUserModel",
+        "description": "Response format for user data."
       },
-      "UserDisplay": {
+      "OutUserDisplay": {
         "properties": {
           "id": {
             "type": "string",
@@ -496,7 +527,7 @@
           "created_at",
           "updated_at"
         ],
-        "title": "UserDisplay",
+        "title": "OutUserDisplay",
         "description": "Schema for displaying user data."
       },
       "ValidationError": {

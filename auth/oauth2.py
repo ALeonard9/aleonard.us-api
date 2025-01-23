@@ -5,10 +5,10 @@ This module creates access tokens and verifys tokens.
 import os
 from datetime import datetime, timedelta, timezone
 from typing import Optional
+
+import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from jose import jwt
-from jose.exceptions import JWTError
 from sqlalchemy.orm import Session
 
 from db import db_user
@@ -52,7 +52,9 @@ def get_current_user(
         uuid: str = payload.get('sub')
         if uuid is None:
             raise credentials_exception
-    except JWTError as exc:
+    except jwt.ExpiredSignatureError as exc:
+        raise credentials_exception from exc
+    except jwt.InvalidTokenError as exc:
         raise credentials_exception from exc
     user = db_user.get_user(db, uuid)
     if user is None:

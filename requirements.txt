@@ -8,6 +8,7 @@ certifi==2024.12.14
 cfgv==3.4.0
 charset-normalizer==3.4.1
 click==8.1.7
+coverage==7.6.10
 dill==0.3.9
 distlib==0.3.9
 dnspython==2.7.0
@@ -23,10 +24,12 @@ identify==2.6.2
 idna==3.10
 iniconfig==2.0.0
 isort==5.13.2
+Jinja2==3.1.5
 jsonschema==4.23.0
 jsonschema-path==0.3.3
 jsonschema-specifications==2024.10.1
 lazy-object-proxy==1.10.0
+MarkupSafe==3.0.2
 mccabe==0.7.0
 nodeenv==1.9.1
 openapi-schema-validator==0.6.3
@@ -40,11 +43,14 @@ pre_commit==4.0.1
 pyasn1==0.6.1
 pydantic==2.10.1
 pydantic_core==2.27.1
+PyJWT==2.10.1
 pylint==3.3.1
 pytest==8.3.4
+pytest-cov==6.0.0
+pytest-html==4.1.1
+pytest-metadata==3.1.1
 python-dateutil==2.9.0.post0
 python-dotenv==1.0.1
-python-jose==3.3.0
 python-logging-loki==0.3.1
 python-multipart==0.0.19
 PyYAML==6.0.2
