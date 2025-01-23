@@ -30,7 +30,7 @@ jobs:
         python -m venv .venv
         source .venv/bin/activate
         pip install -r requirements.txt
-        pip install black pylint pytest openapi-spec-validator
+        pip install black pylint pytest pytest-cov openapi-spec-validator
 
     - name: Run Black
       run: |
@@ -45,7 +45,7 @@ jobs:
     - name: Run Pytest
       run: |
         source .venv/bin/activate
-        ./.venv/bin/pytest tests
+        ./.venv/bin/pytest --cov=./ --cov-report=xml --junitxml=reports/junit/test-results.xml
 
     - name: Validate OpenAPI Spec
       run: |
