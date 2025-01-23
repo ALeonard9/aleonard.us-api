@@ -51,3 +51,15 @@ jobs:
       run: |
         source .venv/bin/activate
         openapi-spec-validator openapi.json
+
+    - name: Upload Test Results
+      uses: actions/upload-artifact@v3
+      with:
+        name: test-results
+        path: reports/junit/test-results.xml
+
+    - name: Upload Coverage Report
+      uses: actions/upload-artifact@v3
+      with:
+        name: coverage-report
+        path: coverage.xml
