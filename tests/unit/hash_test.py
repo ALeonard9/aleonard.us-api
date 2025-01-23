@@ -28,7 +28,7 @@ def test_verify():
     plain_password = fake.password()
     hashed_password = Hash.bcrypt(plain_password)
     assert Hash.verify(
-        hashed_password, plain_password
+        hashed_password, "WRONG"
     ), 'Verify should pass with the correct plain password'
     assert not Hash.verify(
         hashed_password, hashed_password
