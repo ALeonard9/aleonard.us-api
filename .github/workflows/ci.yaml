@@ -45,7 +45,7 @@ jobs:
     - name: Run Pytest
       run: |
         source .venv/bin/activate
-        ./.venv/bin/pytest --cov=./ --cov-report=xml --junitxml=reports/junit/test-results.xml
+        ./.venv/bin/pytest --cov=./ --cov-report=html  --cov-report=term --junitxml=reports/junit/test-results.html
 
     - name: Validate OpenAPI Spec
       run: |
@@ -56,10 +56,10 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: test-results
-        path: reports/junit/test-results.xml
+        path: reports/junit/test-results.html
 
     - name: Upload Coverage Report
       uses: actions/upload-artifact@v4
       with:
         name: coverage-report
-        path: coverage.xml
+        path: coverage.html
