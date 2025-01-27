@@ -35,7 +35,7 @@ jobs:
     - name: Run Pytest
       run: |
         source .venv/bin/activate
-        ./.venv/bin/pytest --cov=./ --cov-report=html:.reports/coverage --cov-report=term --html=.reports/junit/test-results.html
+        ./.venv/bin/pytest --cov=./ --cov-report=html:.reports/coverage --cov-report=term --cov-exclude=tests/* --html=.reports/junit/test-results.html
 
     - name: Upload Test Results
       uses: actions/upload-artifact@v4
