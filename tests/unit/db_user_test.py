@@ -39,10 +39,7 @@ def assert_user_fields(
         assert user.email == expected_data[i].email, 'email should match submission'
         assert isinstance(user.pk, int), 'pk should be an integer'
         assert user.id is not None, 'id should not be None'
-        try:
-            uuid.UUID(user.id)
-        except ValueError:
-            pytest.fail(f'{user.id} is not a valid UUID')
+        assert uuid.UUID(user.id), f'{user.id} is not a valid UUID'
         assert Hash.verify(user.password, expected_data[i].password)
         assert user.user_group == (
             'admin' if admin else 'user'
@@ -134,6 +131,56 @@ def test_create_admin_user_no_env_vars(test_db_session):
         create_admin_user(test_db_session)
     assert exc_info.value.status_code == status.HTTP_400_BAD_REQUEST
     assert exc_info.value.detail == 'Environment variables not set for admin creation'
+
+
+def test_create_admin_existing_email(test_db_session, test_user_data_generator):
+    '''
+    Test creating a user with an existing email raises an HTTPException.
+    '''
+    user_data_list = test_user_data_generator(num_users=1)
+    test_user_data = user_data_list[0]
+    with patch.dict(
+        os.environ,
+        {
+            'ADMIN_DISPLAY_NAME': test_user_data.display_name,
+            'ADMIN_EMAIL': test_user_data.email,
+            'ADMIN_PASSWORD': test_user_data.password,
+        },
+    ):
+        create_admin_user(test_db_session)
+    with pytest.raises(HTTPException) as exc_info:
+        with patch.dict(
+            os.environ,
+            {
+                'ADMIN_DISPLAY_NAME': test_user_data.display_name,
+                'ADMIN_EMAIL': test_user_data.email,
+                'ADMIN_PASSWORD': test_user_data.password,
+            },
+        ):
+            create_admin_user(test_db_session)
+    assert exc_info.value.status_code == status.HTTP_400_BAD_REQUEST
+    assert exc_info.value.detail == 'Email already registered'
+
+
+def test_create_admin_invalid_email(test_db_session, test_user_data_generator):
+    '''
+    Test creating a user with an invalid email raises an HTTPException.
+    '''
+    user_data_list = test_user_data_generator(num_users=1)
+    test_user_data = user_data_list[0]
+    test_user_data.email = 'invalidemail'
+    with pytest.raises(HTTPException) as exc_info:
+        with patch.dict(
+            os.environ,
+            {
+                'ADMIN_DISPLAY_NAME': test_user_data.display_name,
+                'ADMIN_EMAIL': test_user_data.email,
+                'ADMIN_PASSWORD': test_user_data.password,
+            },
+        ):
+            create_admin_user(test_db_session)
+    assert exc_info.value.status_code == status.HTTP_400_BAD_REQUEST
+    assert exc_info.value.detail == 'Invalid email address'
 
 
 def test_get_all_users(test_db_session, test_user_data_generator):
@@ -268,7 +315,7 @@ def test_delete_user_not_found(test_db_session):
     fake_uuid = fake.uuid4()
     with pytest.raises(HTTPException) as exc_info:
         db_user = get_user(test_db_session, fake_uuid)
-        test_db_session.delete(db_user)
-        test_db_session.commit()
+        test_db_session.delete(db_user)  # pragma: no cover
+        test_db_session.commit()  # pragma: no cover
     assert exc_info.value.status_code == status.HTTP_404_NOT_FOUND
     assert exc_info.value.detail == f'User with id {fake_uuid} not found'

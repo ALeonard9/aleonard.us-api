@@ -56,7 +56,7 @@ def create_user(db: Session, request: InUserBase):
             new_user.display_name,
             new_user.email,
         )
-    except IntegrityError as exc:
+    except IntegrityError as exc:  # pragma: no cover
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -94,6 +94,12 @@ def create_admin_user(db: Session):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail='Invalid email address',
         ) from exc
+    existing_user = db.query(DbUser).filter(DbUser.email == admin_email).first()
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='Email already registered',
+        )
     new_user = DbUser(
         display_name=admin_display_name,
         email=admin_email,
@@ -106,7 +112,7 @@ def create_admin_user(db: Session):
         # Refresh to obtain newly created ID
         db.refresh(new_user)
         logger.info('Admin created: %s', new_user.id)
-    except IntegrityError as exc:
+    except IntegrityError as exc:  # pragma: no cover
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

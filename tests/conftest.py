@@ -4,7 +4,7 @@ Creates a fixture to provide a database session for testing.
 
 import pytest
 from faker import Faker
-from sqlalchemy import create_engine
+from sqlalchemy import StaticPool, create_engine
 from sqlalchemy.orm import sessionmaker
 
 from db.database import Base
@@ -19,13 +19,20 @@ def fixture_test_db_session():
     Fixture to provide a database session for testing.
     '''
 
-    engine = create_engine('sqlite:///:memory:')
+    engine = create_engine(
+        'sqlite:///:memory:',
+        connect_args={
+            'check_same_thread': False,
+        },
+        poolclass=StaticPool,
+    )
     Base.metadata.create_all(bind=engine)
     session_local = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     session = session_local()
     try:
         yield session
     finally:
+        Base.metadata.drop_all(bind=engine)
         session.close()
 
 

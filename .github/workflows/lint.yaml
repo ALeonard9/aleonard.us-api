@@ -40,7 +40,7 @@ jobs:
     - name: Run Pylint
       run: |
         source .venv/bin/activate
-        ./.venv/bin/pylint --ignore-patterns=.venv --disable=too-few-public-methods .
+        ./.venv/bin/pylint .
 
     - name: Validate OpenAPI Spec
       run: |

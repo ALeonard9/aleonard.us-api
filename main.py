@@ -10,6 +10,7 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.exc import SQLAlchemyError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from auth import authentication
@@ -107,8 +108,11 @@ def start_server():
     logger.info('Created all tables')
 
     # Create the admin user
-    db = next(get_db())
-    db_user.create_admin_user(db)
+    try:
+        db = next(get_db())
+        db_user.create_admin_user(db)
+    except SQLAlchemyError as e:
+        logger.error('Unexpected error: %s', e)
 
     log_level_var = os.getenv('LOG_LEVEL').lower()
 
