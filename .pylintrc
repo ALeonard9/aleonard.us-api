@@ -1,2 +1,6 @@
 [MASTER]
 ignore=.venv
+
+[MESSAGES CONTROL]
+disable=too-few-public-methods
+ ; Reason: This rule is too restrictive for our use case
