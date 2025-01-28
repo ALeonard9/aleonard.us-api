@@ -44,7 +44,7 @@ jobs:
       - name: Snyk SAST Scan
         run: |
           source .venv/bin/activate
-          snyk code test --exclude=tests --sarif > snyk-sast.sarif
+          snyk code test  --all-projects --exclude=tests --sarif > snyk-sast.sarif
 
       - name: Snyk Open Source monitor
         run: |
