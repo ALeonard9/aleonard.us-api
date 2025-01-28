@@ -39,7 +39,7 @@ jobs:
       - name: Snyk SCA Scan
         run: |
           source .venv/bin/activate
-          snyk test --all-projects --exclude=tests --severity-threshold=critical --sarif > snyk-sca.sarif
+          snyk test --all-projects --exclude=tests --fail-on=patchable --sarif > snyk-sca.sarif
 
       - name: Snyk SAST Scan
         run: |
