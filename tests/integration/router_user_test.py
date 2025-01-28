@@ -45,14 +45,16 @@ def override_get_db(test_db_session):
 
 
 @pytest.mark.usefixtures('override_get_db')
-def test_api_create_user():
+def test_api_create_user(test_user_data_generator):
     """
     Test creating a new user.
     """
+    user_data_list = test_user_data_generator(num_users=1)
+    test_user_data = user_data_list[0]
     user_data = {
-        'display_name': 'John Doe',
-        'email': 'john.doe@zoho.com',
-        'password': 'securepassword',
+        'display_name': test_user_data.display_name,
+        'email': test_user_data.email,
+        'password': test_user_data.password,
     }
     response = client.post('/v1/users/', json=user_data)
 
@@ -61,8 +63,8 @@ def test_api_create_user():
     response_data = response.json()
     assert response_data['success'] is True
     assert response_data['message'] == 'User created'
-    assert response_data['data'][0]['email'] == 'john.doe@zoho.com'
-    assert response_data['data'][0]['display_name'] == 'John Doe'
+    assert response_data['data'][0]['email'] == test_user_data.email
+    assert response_data['data'][0]['display_name'] == test_user_data.display_name
 
 
 # @pytest.mark.usefixtures("override_get_db")
