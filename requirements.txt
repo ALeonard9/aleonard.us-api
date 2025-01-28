@@ -68,5 +68,5 @@ tomlkit==0.13.2
 typing_extensions==4.12.2
 urllib3==2.3.0
 uvicorn==0.32.1
-virtualenv==20.27.1
+virtualenv==20.29.1
 zipp>=3.19.1 # not directly required, pinned by Snyk to avoid a vulnerability
