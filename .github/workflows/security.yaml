@@ -32,7 +32,7 @@ jobs:
         pip install -r requirements.txt
 
     - name: Run Snyk to check for vulnerabilities
-      uses: snyk/actions/setup@v1
+      uses: snyk/actions/setup@v2
       with:
         command: monitor
         args: --severity-threshold=high --fail-on=upgradable
@@ -40,7 +40,7 @@ jobs:
         SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
     - name: Run Snyk to check for secrets
-      uses: snyk/actions/setup@v1
+      uses: snyk/actions/setup@v2
       with:
         command: test
         args: --severity-threshold=high --fail-on=upgradable
