@@ -11,44 +11,17 @@ on:
 jobs:
   snyk:
     runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        python-version: [3.12]
-
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
-
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ matrix.python-version }}
-
-    - name: Install dependencies
-      run: |
-        python -m venv .venv
-        source .venv/bin/activate
-        pip install -r requirements.txt
-
-    - name: Run Snyk to check for vulnerabilities
-      uses: snyk/actions/setup@v2
-      with:
-        command: monitor
-        args: --severity-threshold=high --fail-on=upgradable
-      env:
-        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-
-    - name: Run Snyk to check for secrets
-      uses: snyk/actions/setup@v2
-      with:
-        command: test
-        args: --severity-threshold=high --fail-on=upgradable
-      env:
-        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-
-    - name: Upload Snyk report
-      uses: actions/upload-artifact@v3
-      with:
-        name: snyk-report
-        path: snyk-report.json
+      - uses: actions/checkout@master
+      - name: Run Snyk to check for vulnerabilities
+        uses: snyk/actions/python@master
+        continue-on-error: true # To make sure that SARIF upload gets called
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --sarif-file-output=snyk.sarif
+      - name: Upload result to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: snyk.sarif
+        
