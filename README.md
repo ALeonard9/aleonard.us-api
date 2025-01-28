@@ -36,7 +36,7 @@ Welcome to the **aleonard.us-api** repository! This project provides a robust an
 1. **Clone the Repository**
 
    ```bash
-   git clone https://github.com/yourusername/aleonard.us-api.git
+   git clone https://github.com/ALeonard9/aleonard.us-api.git
    cd aleonard.us-api
 
 2. **Create Virtual Environment**
