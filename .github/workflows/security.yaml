@@ -39,12 +39,12 @@ jobs:
       - name: Snyk SCA Scan
         run: |
           source .venv/bin/activate
-          snyk test --all-projects --exclude=tests --severity-threshold=high --sarif > snyk-sca.sarif
+          snyk test --all-projects --exclude=tests --fail-on=patchable --sarif > snyk-sca.sarif
 
       - name: Snyk SAST Scan
         run: |
           source .venv/bin/activate
-          snyk code test --exclude=tests --sarif > snyk-sast.sarif
+          snyk code test  --all-projects --exclude=tests --sarif > snyk-sast.sarif
 
       - name: Snyk Open Source monitor
         run: |
