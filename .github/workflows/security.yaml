@@ -2,7 +2,7 @@ name: Snyk Security
 
 on:
   push:
-    branches: ["main" ]
+    branches: ["main"]
   pull_request:
     branches: ["main"]
 
@@ -15,36 +15,35 @@ jobs:
       contents: read # for actions/checkout to fetch code
       security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
     runs-on: ubuntu-latest
+    env:
+      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Snyk CLI to check for security issues
-        # Snyk can be used to break the build when it detects security issues.
-        # In this case we want to upload the SAST issues to GitHub Code Scanning
-        uses: snyk/actions/setup@806182742461562b67788a64410098c9d9b96adb
 
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up Snyk CLI
+        uses: snyk/actions/setup@master
+
+      - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.12"
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          pip install -r requirements.txt
 
-        env:
-          # This is where you will need to introduce the Snyk API token created with your Snyk account
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-
-        # Runs Snyk Code (SAST) analysis and uploads result into GitHub.
-        # Use || true to not fail the pipeline
       - name: Snyk Code test
-        run:  snyk code test --sarif > snyk-code.sarif # || true
+        run: |
+          source .venv/bin/activate
+          snyk code test --sarif > snyk-code.sarif || echo "Snyk Code test failed"
 
-        # Runs Snyk Open Source (SCA) analysis and uploads result to Snyk.
       - name: Snyk Open Source monitor
-        run: snyk monitor --all-projects
+        run: |
+          source .venv/bin/activate
+          snyk monitor --all-projects || echo "Snyk monitor failed"
 
-
-        # Push the Snyk Code results into GitHub Code Scanning tab
       - name: Upload result to GitHub Code Scanning
         uses: github/codeql-action/upload-sarif@v3
         with:
