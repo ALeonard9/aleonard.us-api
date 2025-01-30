@@ -123,10 +123,13 @@ def test_create_admin_user(test_db_session, test_user_data_generator):
     assert_user_fields(admin_user, user_data_list, admin=True)
 
 
-def test_create_admin_user_no_env_vars(test_db_session):
+def test_create_admin_user_no_env_vars(test_db_session, monkeypatch):
     '''
     Test creating an admin user with missing environment variables raises an HTTPException.
     '''
+    monkeypatch.delenv('ADMIN_DISPLAY_NAME', raising=False)
+    monkeypatch.delenv('ADMIN_EMAIL', raising=False)
+    monkeypatch.delenv('ADMIN_PASSWORD', raising=False)
     with pytest.raises(HTTPException) as exc_info:
         create_admin_user(test_db_session)
     assert exc_info.value.status_code == status.HTTP_400_BAD_REQUEST
