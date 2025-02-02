@@ -31,8 +31,6 @@ def get_all_users(
     """
     if current_user[0].user_group == 'admin':
         users = db_user.get_all_users(db)
-        if not users:
-            raise HTTPException(status_code=404, detail='Users not found')
         return OutResponseUserModel(data=users, message='Users found')
 
     raise HTTPException(
@@ -61,24 +59,14 @@ def get_user(
     """
     if current_user[0].user_group == 'admin':
         user = db_user.get_user(db, uuid)
-        if not user:
-            raise HTTPException(status_code=404, detail='User not found')
         return OutResponseUserModel(data=user, message='User found')
 
-    if current_user[0].user_group == 'user':
-        if current_user[0].id == uuid:
-            user = db_user.get_user(db, uuid)
-            if not user:
-                raise HTTPException(status_code=404, detail='User not found')
-            return OutResponseUserModel(data=user, message='User found')
-        raise HTTPException(
-            status_code=403,
-            detail='User can only view their own account.',
-        )
-
+    if current_user[0].id == uuid:
+        user = db_user.get_user(db, uuid)
+        return OutResponseUserModel(data=user, message='User found')
     raise HTTPException(
         status_code=403,
-        detail='User does not have permission to view users.',
+        detail='User can only view their own account.',
     )
 
 
@@ -122,24 +110,14 @@ def update_user(
     """
     if current_user[0].user_group == 'admin':
         user = db_user.update_user(db, uuid, request)
-        if not user:
-            raise HTTPException(status_code=404, detail='User not found')
         return OutResponseUserModel(data=user, message='User updated')
 
-    if current_user[0].user_group == 'user':
-        if current_user[0].id == uuid:
-            user = db_user.update_user(db, uuid, request)
-            if not user:
-                raise HTTPException(status_code=404, detail='User not found')
-            return OutResponseUserModel(data=user, message='User updated')
-        raise HTTPException(
-            status_code=403,
-            detail='User can only update their own account.',
-        )
-
+    if current_user[0].id == uuid:
+        user = db_user.update_user(db, uuid, request)
+        return OutResponseUserModel(data=user, message='User updated')
     raise HTTPException(
         status_code=403,
-        detail='User does not have permission to update users.',
+        detail='User can only update their own account.',
     )
 
 
@@ -165,22 +143,12 @@ def delete_user(
     # Check if current user is admin
     if current_user[0].user_group == 'admin':
         user = db_user.delete_user(db, uuid)
-        if not user:
-            raise HTTPException(status_code=404, detail='User not found')
         return OutResponseUserModel(data=user, message='User deleted')
 
-    if current_user[0].user_group == 'user':
-        if current_user[0].id == uuid:
-            user = db_user.delete_user(db, uuid)
-            if not user:
-                raise HTTPException(status_code=404, detail='User not found')
-            return OutResponseUserModel(data=user, message='User deleted')
-        raise HTTPException(
-            status_code=403,
-            detail='User can only delete their own account.',
-        )
-
+    if current_user[0].id == uuid:
+        user = db_user.delete_user(db, uuid)
+        return OutResponseUserModel(data=user, message='User deleted')
     raise HTTPException(
         status_code=403,
-        detail='User does not have permission to delete users.',
+        detail='User can only delete their own account.',
     )

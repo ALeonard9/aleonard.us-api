@@ -70,8 +70,7 @@ if not logger.hasHandlers():
     load_dotenv(dotenv_path='env/local.env')
 
     # Set the level for the logger
-    log_level_var = os.getenv('LOG_LEVEL').upper()
-    print('Log level:', log_level_var)
+    log_level_var = os.getenv('LOG_LEVEL', 'INFO').upper()
     logger.setLevel(log_level_var)
 
     # Create a formatter and set it for the handler
@@ -91,6 +90,7 @@ if not logger.hasHandlers():
     logger.addHandler(handler)
 
     # Add the handler to the logger
-    logger.addHandler(fh)
     logger.addHandler(ch)
-    logger.addHandler(lh)
+    if os.getenv('API_ENV') != 'github':
+        logger.addHandler(fh)
+        logger.addHandler(lh)

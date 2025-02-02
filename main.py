@@ -19,7 +19,11 @@ from db.database import engine, get_db
 from log.logging_config import logger
 from router.v1 import book, user
 from schemas import OutResponseBaseModel
-from utils.exceptions import generic_exception_handler, http_exception_handler
+from utils.exceptions import (
+    generic_exception_handler,
+    http_exception_handler,
+    validation_exception_handler,
+)
 
 # Create FastAPI app
 app = FastAPI(
@@ -53,7 +57,7 @@ app.include_router(book.router, prefix='/v1/books')
 
 # Register custom exception handlers
 app.add_exception_handler(StarletteHTTPException, http_exception_handler)
-app.add_exception_handler(RequestValidationError, http_exception_handler)
+app.add_exception_handler(RequestValidationError, validation_exception_handler)
 app.add_exception_handler(Exception, generic_exception_handler)
 
 
@@ -94,7 +98,7 @@ if os.getenv('API_ENV') == 'local':
     )
 
 
-def start_server():
+async def start_server():
     """
     Starts uvicorn server with the FastAPI app.
     """
@@ -114,7 +118,7 @@ def start_server():
     except SQLAlchemyError as e:
         logger.error('Unexpected error: %s', e)
 
-    log_level_var = os.getenv('LOG_LEVEL').lower()
+    log_level_var = os.getenv('LOG_LEVEL', 'INFO').lower()
 
     # Generate OpenAPI schema
     asyncio.run(generate_openapi_json())
