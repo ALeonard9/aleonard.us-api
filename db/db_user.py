@@ -15,7 +15,7 @@ from log.logging_config import logger
 from schemas import InUserBase
 
 
-def create_user(db: Session, request: InUserBase):
+def create_user(db: Session, request: InUserBase) -> list[DbUser]:
     """
     Create a new user in the database.
 
@@ -67,7 +67,7 @@ def create_user(db: Session, request: InUserBase):
     return response
 
 
-def create_admin_user(db: Session):
+def create_admin_user(db: Session) -> list[DbUser]:
     """
     Create an admin user in the database.
 
@@ -123,7 +123,7 @@ def create_admin_user(db: Session):
     return response
 
 
-def get_all_users(db: Session):
+def get_all_users(db: Session) -> list[DbUser]:
     """
     Retrieve all users from the database.
 
@@ -158,7 +158,7 @@ def get_user(db: Session, user_id: str):
     return response
 
 
-def update_user(db: Session, user_id: str, request: InUserBase):
+def update_user(db: Session, user_id: str, request: InUserBase) -> list[DbUser]:
     """
     Update a user's information in the database.
 
@@ -207,7 +207,7 @@ def update_user(db: Session, user_id: str, request: InUserBase):
     return response
 
 
-def delete_user(db: Session, user_id: str):
+def delete_user(db: Session, user_id: str) -> list[DbUser]:
     """
     Delete a user by ID from the database.
 
