@@ -90,6 +90,7 @@ if not logger.hasHandlers():
     logger.addHandler(handler)
 
     # Add the handler to the logger
-    logger.addHandler(fh)
     logger.addHandler(ch)
-    logger.addHandler(lh)
+    if os.getenv('API_ENV') != 'github':
+        logger.addHandler(fh)
+        logger.addHandler(lh)
