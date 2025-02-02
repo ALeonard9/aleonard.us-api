@@ -98,7 +98,7 @@ if os.getenv('API_ENV') == 'local':
     )
 
 
-def start_server():
+async def start_server():
     """
     Starts uvicorn server with the FastAPI app.
     """
@@ -118,7 +118,7 @@ def start_server():
     except SQLAlchemyError as e:
         logger.error('Unexpected error: %s', e)
 
-    log_level_var = os.getenv('LOG_LEVEL').lower()
+    log_level_var = os.getenv('LOG_LEVEL', 'INFO').lower()
 
     # Generate OpenAPI schema
     asyncio.run(generate_openapi_json())

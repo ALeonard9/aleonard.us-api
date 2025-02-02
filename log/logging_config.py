@@ -70,7 +70,7 @@ if not logger.hasHandlers():
     load_dotenv(dotenv_path='env/local.env')
 
     # Set the level for the logger
-    log_level_var = os.getenv('LOG_LEVEL').upper()
+    log_level_var = os.getenv('LOG_LEVEL', 'INFO').upper()
     logger.setLevel(log_level_var)
 
     # Create a formatter and set it for the handler
