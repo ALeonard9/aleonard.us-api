@@ -134,8 +134,6 @@ def fixture_test_authenticate_user():
     '''
 
     def _authenticate_user(local_client, email, password):
-        print('email:', email)
-        print('password:', password)
         response = local_client.post(
             '/v1/auth/token',
             files={
@@ -185,8 +183,6 @@ def fixture_test_create_admin_user(test_user_data_generator):
         users = []
         user_data_list = test_user_data_generator()
         admin_data = user_data_list[0]
-        print('pre_admin_data email:', admin_data.email)
-        print('pre_admin_data pw:', admin_data.password)
         with patch.dict(
             os.environ,
             {
