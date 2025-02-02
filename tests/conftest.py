@@ -3,9 +3,11 @@ Creates a fixture to provide a database session for testing.
 """
 
 import os
+from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
 
 import pytest
+from dateutil.parser import parse
 from faker import Faker
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -72,17 +74,32 @@ def fixture_test_client(test_db_session: Session, test_load_database):
 
 
 @pytest.fixture(name='test_load_database')
-def fixture_test_load_database(test_create_admin_user, test_authenticate_user):
+def fixture_test_load_database(
+    test_create_admin_user, test_create_user, test_authenticate_user
+):
     '''
     Fixture to load the database with test data.
     '''
 
     def _load_database(local_client):
         admin_user = test_create_admin_user(local_client)
+        local_client.admin_user = admin_user[0]
         admin_token = test_authenticate_user(
             local_client, admin_user[0].email, admin_user[0].plain_password
         )
-        local_client.admin_token = admin_token
+        local_client.admin_user.token = admin_token
+        first_user = test_create_user(local_client, user_count=1)
+        local_client.first_user = first_user[0]
+        first_user_token = test_authenticate_user(
+            local_client, first_user[0].email, first_user[0].plain_password
+        )
+        local_client.first_user.token = first_user_token
+        second_user = test_create_user(local_client, user_count=1)
+        local_client.second_user = second_user[0]
+        second_user_token = test_authenticate_user(
+            local_client, second_user[0].email, second_user[0].plain_password
+        )
+        local_client.second_user.token = second_user_token
 
         return local_client
 
@@ -101,7 +118,7 @@ def fixture_test_user_data_generator():
             user_data.append(
                 InUserBase(
                     display_name=fake.name(),
-                    email=f'{fake.first_name()}@zoho.com',
+                    email=f'{fake.first_name()}.{fake.last_name_nonbinary()}@zoho.com',
                     password=fake.password(),
                 )
             )
@@ -185,3 +202,20 @@ def fixture_test_create_admin_user(test_user_data_generator):
         return users
 
     return _create_admin_user
+
+
+@pytest.fixture(name='test_assert_timestamps')
+def fixture_test_assert_timestamps():
+    '''
+    Fixture for user authentication.
+    '''
+
+    def _assert_timestamps(item, within=timedelta(minutes=5)):
+        now = datetime.now(timezone.utc)
+        created_at = parse(item['created_at']).replace(tzinfo=timezone.utc)
+        updated_at = parse(item['updated_at']).replace(tzinfo=timezone.utc)
+        assert now - created_at < within, 'created_at is not recent'
+        assert now - updated_at < within, 'updated_at is not recent'
+        assert created_at <= updated_at, 'created_at is not before updated_at'
+
+    return _assert_timestamps
