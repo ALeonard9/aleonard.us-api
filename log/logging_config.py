@@ -71,7 +71,6 @@ if not logger.hasHandlers():
 
     # Set the level for the logger
     log_level_var = os.getenv('LOG_LEVEL').upper()
-    print('Log level:', log_level_var)
     logger.setLevel(log_level_var)
 
     # Create a formatter and set it for the handler

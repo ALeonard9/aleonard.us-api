@@ -25,10 +25,8 @@ def test_api_create_user(
         'email': test_user_data.email,
         'password': test_user_data.password,
     }
-    print('user_data:', user_data)
     response = test_client.post('/v1/users/', json=user_data)
 
-    print(response.json())
     assert response.status_code == 201
     response_data = response.json()
     assert response_data['success'] is True
