@@ -23,7 +23,7 @@ httpx==0.28.1
 identify==2.6.2
 idna==3.10
 iniconfig==2.0.0
-isort==5.13.2
+isort==6.0.0
 Jinja2==3.1.5
 jsonschema==4.23.0
 jsonschema-path==0.3.4
