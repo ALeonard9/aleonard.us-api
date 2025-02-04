@@ -44,7 +44,7 @@ pluggy==1.5.0
 pre_commit==4.1.0
 pyasn1==0.6.1
 pydantic==2.10.6
-pydantic_core==2.27.2
+pydantic_core==2.28.0
 PyJWT==2.10.1
 pylint==3.3.4
 pytest==8.3.4
