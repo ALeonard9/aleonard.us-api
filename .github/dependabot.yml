@@ -9,3 +9,7 @@ updates:
     directory: "/" # Location of package manifests
     schedule:
       interval: "weekly"
+    groups: # Rather than get 5 PRs for each new version, do 1 PR
+      all-dependencies:
+        patterns:
+          - "*"
