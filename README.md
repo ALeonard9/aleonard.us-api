@@ -47,8 +47,17 @@ Welcome to the **aleonard.us-api** repository! This project provides a robust an
 
 3. **Install Dependencies**
 
-   ```bash
-    pip install -r requirements.txt
+### Production Dependencies
+```bash
+pip install -r requirements/base.txt
+
+### Development Dependencies
+```bash
+pip install -r requirements/dev.txt
+
+### Testing Dependencies
+```bash
+pip install -r requirements/test.txt
 
 4. **Set Environment Variables**
 

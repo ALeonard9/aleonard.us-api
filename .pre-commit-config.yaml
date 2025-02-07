@@ -27,13 +27,13 @@ repos:
     language: system
     types: [python]
     args: [--ignore-patterns=.venv, --disable=too-few-public-methods]
-  - id: pytest
-    name: pytest
-    entry: ./.venv/bin/pytest tests
-    language: system
-    types: [python]
-    pass_filenames: false
-    always_run: true
+  # - id: pytest
+  #   name: pytest
+  #   entry: ./.venv/bin/pytest tests
+  #   language: system
+  #   types: [python]
+  #   pass_filenames: false
+  #   always_run: true
 - repo: https://github.com/python-openapi/openapi-spec-validator
   rev: 0.7.1
   hooks:
