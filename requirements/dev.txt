@@ -1,0 +1,5 @@
+-r base.txt
+black==24.1.1
+pylint==3.3.4
+pre-commit==4.1.0
+openapi-spec-validator==0.7.1
