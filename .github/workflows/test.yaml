@@ -26,24 +26,19 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: "3.12.1"
-
-    - name: Install Poetry
-      run: |
-        pip install --upgrade pip
-        pip install poetry
+        python-version: "3.12"
 
     - name: Install dependencies
       run: |
-        poetry install --no-root --with test
+          python -m venv .venv
+          source .venv/bin/activate
+          pip install -r requirements/test.txt
 
     - name: Run Pytest
       run: |
-          poetry run pytest \
-            --cov=./ \
-            --cov-report=html:.reports/coverage \
-            --cov-report=term \
-            --html=.reports/junit/test-results.html
+          source .venv/bin/activate
+          ./.venv/bin/pytest --cov=./ --cov-report=html:.reports/coverage --cov-report=term --html=.reports/junit/test-results.html
+
 
     - name: Upload Test Results
       uses: actions/upload-artifact@v4
