@@ -15,36 +15,33 @@ jobs:
   lint:
     runs-on: ubuntu-latest
 
-    strategy:
-      matrix:
-        python-version: [3.12]
-
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
+    - name: Set up Python
+      uses: actions/setup-python@v5
       with:
-        python-version: ${{ matrix.python-version }}
+        python-version: "3.12.1"
+        cache: 'poetry'
+
+    - name: Install Poetry
+      run: |
+        pip install --upgrade pip
+        pip install poetry
 
     - name: Install dependencies
       run: |
-        python -m venv .venv
-        source .venv/bin/activate
-        pip install -r requirements/dev.txt
+        poetry install --with dev --no-root
 
     - name: Run Black
       run: |
-        source .venv/bin/activate
-        black --skip-string-normalization .
+        poetry run black --skip-string-normalization .
 
     - name: Run Pylint
       run: |
-        source .venv/bin/activate
-        ./.venv/bin/pylint .
+        poetry run pylint .
 
     - name: Validate OpenAPI Spec
       run: |
-        source .venv/bin/activate
-        openapi-spec-validator openapi.json
+        poetry run openapi-spec-validator openapi.json
