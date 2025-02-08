@@ -38,7 +38,7 @@ jobs:
       - name: Snyk SCA Scan
         run: |
             source .venv/bin/activate
-            snyk test --all-projects --exclude=tests --fail-on=patchable
+            snyk test --file=requirements/base.txt --package-manager=pip --fail-on=patchable
 
       - name: Snyk SAST Scan
         run: |
