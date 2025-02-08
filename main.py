@@ -121,7 +121,7 @@ async def start_server():
     log_level_var = os.getenv('LOG_LEVEL', 'INFO').lower()
 
     # Generate OpenAPI schema
-    asyncio.run(generate_openapi_json())
+    await generate_openapi_json()
 
     uvicorn.run(
         'main:app',
@@ -133,4 +133,4 @@ async def start_server():
 
 
 if __name__ == '__main__':
-    start_server()
+    asyncio.run(start_server())
