@@ -22,25 +22,25 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: "3.12.1"
-
-    - name: Install Poetry
-      run: |
-        pip install --upgrade pip
-        pip install poetry
+        python-version: "3.12"
 
     - name: Install dependencies
       run: |
-        poetry install --with dev --no-root
+          python -m venv .venv
+          source .venv/bin/activate
+          pip install -r requirements/dev.txt
 
     - name: Run Black
       run: |
-        poetry run black --skip-string-normalization .
+          source .venv/bin/activate
+          black --skip-string-normalization .
 
     - name: Run Pylint
       run: |
-        poetry run pylint .
+          source .venv/bin/activate
+          ./.venv/bin/pylint .
 
     - name: Validate OpenAPI Spec
       run: |
-        poetry run openapi-spec-validator openapi.json
+          source .venv/bin/activate
+          openapi-spec-validator openapi.json

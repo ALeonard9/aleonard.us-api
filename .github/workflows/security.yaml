@@ -10,6 +10,7 @@ permissions:
 
 jobs:
   snyk:
+    # Only run if the label 'scan' is added to the PR
     if: ${{ github.event.label.name == 'scan' }}
     permissions:
       contents: read # for actions/checkout to fetch code
@@ -26,22 +27,20 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12.1"
-
-      - name: Install Poetry
-        run: |
-          pip install --upgrade pip
-          pip install poetry
+          python-version: "3.12"
 
       - name: Install dependencies
         run: |
-          poetry install --no-root
+            python -m venv .venv
+            source .venv/bin/activate
+            pip install -r requirements/base.txt
 
       - name: Snyk SCA Scan
         run: |
-          source .venv/bin/activate
-          snyk test --fail-on=patchable --file=requirements/base.txt --package-manager=pip
+            source .venv/bin/activate
+            snyk test --all-projects --exclude=tests --fail-on=patchable
 
       - name: Snyk SAST Scan
         run: |
-          poetry run snyk code test --all-projects --exclude=tests
+            source .venv/bin/activate
+            snyk code test --all-projects --exclude=tests
