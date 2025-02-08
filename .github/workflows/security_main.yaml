@@ -22,20 +22,23 @@ jobs:
         uses: snyk/actions/setup@806182742461562b67788a64410098c9d9b96adb
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.12.1"
+
+      - name: Install Poetry
+        run: |
+          pip install --upgrade pip
+          pip install poetry
+
 
       - name: Install dependencies
         run: |
-          python -m venv .venv
-          source .venv/bin/activate
-          pip install -r requirements/base.txt
+          poetry install --no-root
 
       - name: Snyk SCA Scan
         run: |
-          source .venv/bin/activate
-          snyk test --all-projects --exclude=tests --fail-on=patchable --sarif > snyk-sca.sarif
+          poetry run snyk test --all-projects --exclude=tests --fail-on=patchable --sarif > snyk-sca.sarif
 
       - name: Snyk SAST Scan
         run: |
