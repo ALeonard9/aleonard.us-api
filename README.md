@@ -1,3 +1,6 @@
+[![Build Status](https://github.com/ALeonard9/aleonard.us-api/actions/workflows/test.yaml/badge.svg)](https://github.com/ALeonard9/aleonard.us-api/actions/workflows/test.yaml)
+
+
 # aleonard.us-api
 
 Source code for aleonard.us API
@@ -27,7 +30,7 @@ Welcome to the **aleonard.us-api** repository! This project provides a robust an
 
 ### Prerequisites
 
-- **Python**: 3.9 or higher
+- **Python**: 3.12 or higher
 - **pip**: Package installer for Python
 - **virtualenv**: (optional but recommended)
 
@@ -42,8 +45,8 @@ Welcome to the **aleonard.us-api** repository! This project provides a robust an
 2. **Create Virtual Environment**
 
    ```bash
-   python -m venv venv
-   source venv/bin/activate
+   python -m venv .venv
+   source .venv/bin/activate
 
 3. **Install Dependencies**
 
@@ -99,6 +102,23 @@ Run the following command to execute the test suite:
 ```bash
 pytest
 ```
+
+## Pre-commit Hooks
+
+This repository uses pre-commit hooks to automatically enforce code quality:
+
+- **Linting and Styling**: Tools like `pylint` and `black` ensure consistent styling.
+- **Consistency Checks**: Configuration checks help maintain best practices.
+
+## Continuous Integration and Security
+Our CI pipeline leverages GitHub Actions to ensure code quality and security:
+
+- **Testing**: Automated tests are run on every push and pull request.
+- **Security Scans**:
+    - Snyk SCA Scan: Scans for vulnerabilities in dependencies.
+    - Snyk SAST Scan: Scans for vulnerabilities in the codebase.
+    - CodeQL: Provides secret scanning and vulnerability detection.
+
 ## Contributing
 Contributions are welcome. Please fork the repository and submit a pull request.
 
