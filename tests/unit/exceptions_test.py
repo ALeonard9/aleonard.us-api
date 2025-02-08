@@ -13,8 +13,8 @@ from starlette.status import (
     HTTP_500_INTERNAL_SERVER_ERROR,
 )
 
-from main import app
-from utils.exceptions import (
+from app.run import app
+from app.utils.exceptions import (
     generic_exception_handler,
     http_exception_handler,
     validation_exception_handler,

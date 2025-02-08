@@ -8,7 +8,8 @@ from logging.handlers import RotatingFileHandler
 from typing import override
 
 import logging_loki
-from dotenv import load_dotenv
+
+# from dotenv import load_dotenv
 
 
 class CustomFormatter(logging.Formatter):
@@ -48,26 +49,34 @@ class CustomFormatter(logging.Formatter):
 # Create or retrieve a logger
 logger = logging.getLogger('aleonard_api')
 
-# Check if the logger already has handlers to avoid adding them multiple times
-if not logger.hasHandlers():
+
+def configure_logger():
+    """
+    Configure logger handlers. This function must be called after the .env file is loaded.
+    """
+    # Avoid adding handlers multiple times
+    if logger.hasHandlers():
+        return
     # Create a console handler and set the level
     ch = logging.StreamHandler()
 
     # Create a file handler and set the level
     # Mode 'w' will overwrite the log file each time the API is started, 'a' will append
-    LOG_FILE = 'log/api.log'
-    fh = logging.FileHandler(LOG_FILE, mode='a')
+    log_file = 'app/log/api.log'
+    fh = logging.FileHandler(log_file, mode='a')
 
     # Create a Loki handler
     logging_loki.emitter.LokiEmitter.level_tag = 'level'
+    loki_url = f'{os.getenv('LOKI_URL')}/loki/api/v1/push'
+    print('Loki URL:', loki_url)
 
     lh = logging_loki.LokiHandler(
-        url='http://localhost:3100/loki/api/v1/push',
+        url=loki_url,
         version='1',
     )
 
     logger.debug('API Env set to: %s', os.getenv('API_ENV'))
-    load_dotenv(dotenv_path='env/local.env')
+    # load_dotenv(dotenv_path='env/dev.env')
 
     # Set the level for the logger
     log_level_var = os.getenv('LOG_LEVEL', 'INFO').upper()
@@ -86,7 +95,7 @@ if not logger.hasHandlers():
     fh.setFormatter(file_log_formatter)
 
     # add a rotating handler
-    handler = RotatingFileHandler(LOG_FILE, maxBytes=10485760, backupCount=10)
+    handler = RotatingFileHandler(log_file, maxBytes=10485760, backupCount=10)
     logger.addHandler(handler)
 
     # Add the handler to the logger

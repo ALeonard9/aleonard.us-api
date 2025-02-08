@@ -14,10 +14,11 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from db.database import Base, get_db
-from db.db_user import create_admin_user, create_user
-from main import app
-from schemas import InUserBase
+# Now we can safely import app modules
+from app.db.database import Base, get_db
+from app.db.db_user import create_admin_user, create_user
+from app.run import app
+from app.schemas.model_schemas import InUserBase
 
 fake = Faker()
 

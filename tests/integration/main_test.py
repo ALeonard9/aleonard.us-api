@@ -8,7 +8,7 @@ from unittest.mock import mock_open, patch
 import pytest
 from fastapi.testclient import TestClient
 
-from main import app, generate_openapi_json
+from app.run import app, generate_openapi_json
 
 client = TestClient(app)
 
@@ -39,7 +39,7 @@ async def test_generate_openapi_json():
     expected_output = json.dumps(openapi_schema, indent=2) + '\n'
 
     m = mock_open()
-    with patch('main.app.openapi', return_value=openapi_schema):
+    with patch('app.run.app.openapi', return_value=openapi_schema):
         with patch('builtins.open', m):
             await generate_openapi_json()
             m.assert_called_once_with('openapi.json', 'w', encoding='utf-8')

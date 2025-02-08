@@ -10,7 +10,7 @@ from starlette.status import (
     HTTP_500_INTERNAL_SERVER_ERROR,
 )
 
-from schemas import OutResponseBaseModel
+from app.schemas.model_schemas import OutResponseBaseModel
 
 
 async def http_exception_handler(_: Request, exc: HTTPException):

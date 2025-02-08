@@ -9,10 +9,10 @@ from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from db.hash import Hash
-from db.models import DbUser
-from log.logging_config import logger
-from schemas import InUserBase
+from app.db.hash import Hash
+from app.db.models import DbUser
+from app.log.logging_config import logger
+from app.schemas.model_schemas import InUserBase
 
 
 def create_user(db: Session, request: InUserBase) -> list[DbUser]:
