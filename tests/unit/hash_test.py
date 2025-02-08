@@ -4,7 +4,7 @@ This file contains unit tests for the Hash class in db/hash.py.
 
 from faker import Faker
 
-from db.hash import Hash
+from app.db.hash import Hash
 
 fake = Faker()
 

@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 
 from sqlalchemy import Column, DateTime, Integer, String
 
-from db.database import Base
+from app.db.database import Base
 
 
 class DBBaseModel(Base):
@@ -35,6 +35,6 @@ class DbUser(DBBaseModel):
 
     __tablename__ = 'users'
     email = Column(String, unique=True)
-    display_name = Column(String(length=16))
+    display_name = Column(String(length=30))
     user_group = Column(String, default='user')
     password = Column(String)

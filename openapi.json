@@ -1,7 +1,7 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "aleonard.us API local",
+    "title": "aleonard.us API dev",
     "description": "This is the API for aleonard.us",
     "contact": {
       "name": "Adam",
@@ -304,7 +304,7 @@
           "intro"
         ],
         "summary": "Index",
-        "description": "Index endpoint that returns a welcome message.\n\nReturns:\n    str: Welcome message.",
+        "description": "Index endpoint that returns a welcome message.",
         "operationId": "index__get",
         "responses": {
           "200": {

@@ -11,13 +11,17 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
-from db import db_user
-from db.database import get_db
+from app.db import db_user
+from app.db.database import get_db
+from app.log.logging_config import logger
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl='v1/auth/token')
 
-# openssl rand -hex 32
-SECRET_KEY = os.getenv('JWT_SECRET_KEY')
+# openssl rand -hex 32 to generate new secret key
+# Get secret key from environment with a default for tests
+SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'test_secret_key')
+if SECRET_KEY == 'test_secret_key':
+    logger.warning('Using default test secret key for JWT.')
 ALGORITHM = 'HS256'
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 

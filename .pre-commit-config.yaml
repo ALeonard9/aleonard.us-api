@@ -15,6 +15,11 @@ repos:
   - id: mixed-line-ending
   - id: name-tests-test
   - id: no-commit-to-branch
+- repo: https://github.com/python-openapi/openapi-spec-validator
+  rev: 0.7.1
+  hooks:
+  - id: openapi-spec-validator
+    files: "openapi\\.json"
 -   repo: https://github.com/psf/black
     rev: 24.10.0
     hooks:
@@ -36,8 +41,3 @@ repos:
   #   types: [python]
   #   pass_filenames: false
   #   always_run: true
-- repo: https://github.com/python-openapi/openapi-spec-validator
-  rev: 0.7.1
-  hooks:
-  - id: openapi-spec-validator
-    files: "openapi\\.json"

@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 
 from faker import Faker
 
-from schemas import OutResponseUserModel, OutUserDisplay
+from app.schemas.model_schemas import OutResponseUserModel, OutUserDisplay
 
 fake = Faker()
 

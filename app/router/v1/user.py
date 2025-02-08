@@ -5,10 +5,10 @@ This module contains the API routes for user-related operations.
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from auth.oauth2 import get_current_user
-from db import db_user
-from db.database import get_db
-from schemas import InUserBase, OutResponseUserModel
+from app.auth.oauth2 import get_current_user
+from app.db import db_user
+from app.db.database import get_db
+from app.schemas.model_schemas import InUserBase, OutResponseUserModel
 
 router = APIRouter(
     tags=['users'],

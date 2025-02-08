@@ -4,7 +4,7 @@ This module contains unit tests for the DbUser model.
 
 import pytest
 
-from db.models import DbUser
+from app.db.models import DbUser
 
 
 @pytest.mark.parametrize(

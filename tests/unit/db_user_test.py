@@ -12,16 +12,16 @@ import pytest
 from faker import Faker
 from fastapi import HTTPException, status
 
-from db.db_user import (
+from app.db.db_user import (
     create_admin_user,
     create_user,
     get_all_users,
     get_user,
     update_user,
 )
-from db.hash import Hash
-from db.models import DbUser
-from schemas import InUserBase
+from app.db.hash import Hash
+from app.db.models import DbUser
+from app.schemas.model_schemas import InUserBase
 
 fake = Faker()
 
