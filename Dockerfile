@@ -1,5 +1,5 @@
 # Use an official Python runtime as a parent image
-FROM python:3.14.0a2-alpine3.19
+FROM python:3.12-alpine3.19
 
 # Set the working directory in the container
 WORKDIR /app
@@ -7,8 +7,9 @@ WORKDIR /app
 # Copy requirements first to leverage Docker cache
 COPY requirements/base.txt requirements/base.txt
 
-# Install Python packages
-RUN pip install --no-cache-dir --upgrade pip && \
+# Install any needed packages specified in requirements.txt
+RUN apk update && apk add --no-cache postgresql-dev gcc python3-dev musl-dev rust cargo && \
+    pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements/base.txt
 
 # Copy the rest of the application
