@@ -9,7 +9,7 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 
 from app.log.logging_config import logger
 
-ENV = os.getenv('API_ENV', 'local')
+ENV = os.getenv('ENV', 'local')
 if ENV == 'local':
     SQLALCHEMY_DATABASE_URL = os.getenv(
         'DATABASE_URL', 'sqlite:///./aleonard-api-local.db'
@@ -22,7 +22,7 @@ else:
     DB_USER = os.getenv('POSTGRES_USER')
     DB_PASSWORD = os.getenv('POSTGRES_PASSWORD')
     DB_HOST = os.getenv('POSTGRES_HOST')
-    DB_PORT = os.getenv('POSTGRES_EXPOSED_PORT', '5432')
+    DB_PORT = os.getenv('POSTGRES_CONNECTION_PORT', '5432')
     DB_NAME = os.getenv('POSTGRES_DB', 'phoenix')
     SQLALCHEMY_DATABASE_URL = os.getenv(
         'DATABASE_URL',

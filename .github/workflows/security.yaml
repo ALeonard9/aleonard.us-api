@@ -1,4 +1,4 @@
-name: Snyk Security
+name: Snyk Security Quick Scan
 
 on:
   pull_request:

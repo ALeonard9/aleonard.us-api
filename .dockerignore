@@ -1,0 +1,79 @@
+###################
+# Python Specific #
+###################
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+.pytest_cache/
+*.swp
+*.swo
+*.swn
+
+###################
+# General Ignore  #
+###################
+# Env files
+.env
+.env.*
+*.env
+*.env.*
+
+# Log files
+*.log
+
+.reports/
+
+.venv/
+
+database/
+
+tests/
+
+# DB files
+*.db
+*.sqlite3
+
+# Docs
+*.pot
+*.mo
+
+.coverage*
+
+.pre-commit-config.yaml
+
+LICENSE
+README.md
+# VS Code
+.vscode/
+.github/
+
+# Git
+.git
+
+# Docker
+docker-compose*.yml
+
+# Node Modules
+node_modules/
+
+# Temp files
+tmp/
+temp/
+tmp.*
+temp.*
+
+# OS junk files
+._*
+.DS_Store
+
+# Pylint cache
+.pylintrc
+
+# DC Cache
+.dccache
+
+openapi.json
+Dockerfile
+pytest.ini
+dc-dev.yml

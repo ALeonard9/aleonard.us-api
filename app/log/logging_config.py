@@ -75,7 +75,7 @@ def configure_logger():
         version='1',
     )
 
-    logger.debug('API Env set to: %s', os.getenv('API_ENV'))
+    logger.debug('API Env set to: %s', os.getenv('ENV'))
     # load_dotenv(dotenv_path='env/dev.env')
 
     # Set the level for the logger
@@ -100,6 +100,6 @@ def configure_logger():
 
     # Add the handler to the logger
     logger.addHandler(ch)
-    if os.getenv('API_ENV') != 'github':
+    if os.getenv('ENV') != 'github':
         logger.addHandler(fh)
         logger.addHandler(lh)

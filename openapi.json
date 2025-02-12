@@ -1,7 +1,7 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "aleonard.us API dev",
+    "title": "aleonard.us API local",
     "description": "This is the API for aleonard.us",
     "contact": {
       "name": "Adam",

@@ -13,18 +13,18 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.exc import SQLAlchemyError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.auth import authentication
-from app.db import db_user, models
-from app.db.database import engine, get_db
-from app.log.logging_config import logger
-from app.router.v1 import book, user
-from app.schemas.model_schemas import OutResponseBaseModel
-from app.utils.exceptions import (
+from .auth import authentication
+from .db import db_user, models
+from .db.database import engine, get_db
+from .log.logging_config import logger
+from .router.v1 import book, user
+from .schemas.model_schemas import OutResponseBaseModel
+from .utils.exceptions import (
     generic_exception_handler,
     http_exception_handler,
     validation_exception_handler,
 )
-from app.utils.patch_bcrypt import patch_bcrypt
+from .utils.patch_bcrypt import patch_bcrypt
 
 # Suppresses warning about bcrypt version
 patch_bcrypt()
@@ -32,7 +32,7 @@ patch_bcrypt()
 
 # Create FastAPI app
 app = FastAPI(
-    title='aleonard.us API ' + os.getenv('API_ENV', 'local'),
+    title='aleonard.us API ' + os.getenv('ENV', 'local'),
     description='This is the API for aleonard.us',
     version='0.0.1',
     contact={
@@ -85,7 +85,7 @@ async def generate_openapi_json():
     logger.info('OpenAPI schema generated and written to openapi.json')
 
 
-if os.getenv('API_ENV') == 'local':
+if os.getenv('ENV') == 'local':
     origins = ['http://localhost:3000']
     app.add_middleware(
         CORSMiddleware,
@@ -100,7 +100,7 @@ async def start_server():
     """
     Starts uvicorn server with the FastAPI app.
     """
-    if os.getenv('API_ENV') in ['local', 'dev']:
+    if os.getenv('ENV') in ['local', 'dev']:
         models.Base.metadata.drop_all(bind=engine)
         logger.debug('Dropped all tables')
 
@@ -113,7 +113,8 @@ async def start_server():
     except SQLAlchemyError as e:
         logger.error('Unexpected error: %s', e)
 
-    await generate_openapi_json()
+    if os.getenv('ENV') == 'local':
+        await generate_openapi_json()
 
     uvicorn.run(
         'app.run:app',
