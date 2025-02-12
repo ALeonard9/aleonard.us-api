@@ -15,6 +15,9 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+    strategy:
+      matrix:
+        scan_type: [sast, sca, container]
     steps:
       - uses: actions/checkout@v4
 
@@ -33,26 +36,32 @@ jobs:
             pip install -r requirements/base.txt
 
       - name: Snyk SCA Scan
+        if: matrix.scan_type == 'sca'
         run: |
             source .venv/bin/activate
             snyk test --file=requirements/base.txt --package-manager=pip --fail-on=patchable --sarif > snyk-sca.sarif
 
       - name: Snyk SAST Scan
+        if: matrix.scan_type == 'sast'
         run: |
             source .venv/bin/activate
             snyk code test --all-projects --exclude=tests --sarif > snyk-sast.sarif
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Snyk Container Scan
+        if: matrix.scan_type == 'container'
+        run: |
+            docker build -t aleonard.us-api .
+            snyk container test aleonard.us-api --sarif > snyk-container.sarif
 
       - name: Snyk Open Source monitor
         run: |
             source .venv/bin/activate
             snyk monitor --file=requirements/base.txt --package-manager=pip
 
-      - name: Upload SAST result to GitHub Code Scanning
+      - name: Upload scan results to GitHub Code Scanning
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: snyk-sast.sarif
-
-      - name: Upload SCA result to GitHub Code Scanning
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: snyk-sca.sarif
+          sarif_file: snyk-${{ matrix.scan_type }}.sarif
