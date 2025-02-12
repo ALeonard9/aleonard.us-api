@@ -57,27 +57,44 @@ Welcome to the **aleonard.us-api** repository! This project provides a robust an
 
 ### Production Dependencies
 
-````bash
+```bash
 pip install -r requirements/base.txt
+```
 
 ### Development Dependencies
+
 ```bash
 pip install -r requirements/dev.txt
+```
 
 ### Testing Dependencies
+
 ```bash
 pip install -r requirements/test.txt
+```
 
 4. **Set Environment Variables**
 
    Create a `.env` file in the root directory and add the following:
 
    ```plaintext
-   DATABASE_URL=postgresql://user:password@localhost:5432/yourdb
-    SECRET_KEY=your_secret_key
-    ALGORITHM=HS256
-    ACCESS_TOKEN_EXPIRE_MINUTES=30
-````
+    LZ=<your landing zone>
+    ENV=dev
+    LOG_LEVEL=INFO
+    JWT_SECRET_KEY=<your secret key>
+    ADMIN_DISPLAY_NAME=<your display name>
+    ADMIN_PASSWORD=<your api password>
+    ADMIN_EMAIL=<your email>
+    COMPOSE_PROJECT_NAME=phoenix_dev
+    POSTGRES_USER=functional_data_api_dev
+    POSTGRES_PASSWORD=<your database password>
+    POSTGRES_HOST=m3_phoenix_db_dev
+    POSTGRES_DB=phoenix
+    POSTGRES_EXPOSED_PORT=5430
+    POSTGRES_PORT=5432
+    POSTGRES_CONNECTION_PORT=5432
+    LOKI_URL=http://loki:3100
+   ```
 
 5. **Run Migrations**
 
@@ -85,7 +102,6 @@ pip install -r requirements/test.txt
 
    ```bash
    alembic upgrade head
-
    ```
 
 6. **Run the Application**
@@ -136,3 +152,7 @@ Contributions are welcome. Please fork the repository and submit a pull request.
 ## License
 
 This project is open source and available under the GNU General Public License v3.0. See the [LICENSE](LICENSE) file for more information.
+
+```
+
+```
