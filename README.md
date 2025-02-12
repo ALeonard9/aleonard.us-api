@@ -1,5 +1,6 @@
-[![Build Status](https://github.com/ALeonard9/aleonard.us-api/actions/workflows/test.yaml/badge.svg)](https://github.com/ALeonard9/aleonard.us-api/actions/workflows/test.yaml)
-
+[![Pylint](https://github.com/ALeonard9/aleonard.us-api/actions/workflows/lint.yaml/badge.svg?branch=main)](https://github.com/ALeonard9/aleonard.us-api/actions/workflows/lint.yaml)
+[![Pytest](https://github.com/ALeonard9/aleonard.us-api/actions/workflows/test.yaml/badge.svg?branch=main)](https://github.com/ALeonard9/aleonard.us-api/actions/workflows/test.yaml)
+[![Snyk SCA & SAST](https://github.com/ALeonard9/aleonard.us-api/actions/workflows/security.yaml/badge.svg?branch=main)](https://github.com/ALeonard9/aleonard.us-api/actions/workflows/security.yaml)
 
 # aleonard.us-api
 
@@ -42,16 +43,21 @@ Welcome to the **aleonard.us-api** repository! This project provides a robust an
    git clone https://github.com/ALeonard9/aleonard.us-api.git
    cd aleonard.us-api
 
+   ```
+
 2. **Create Virtual Environment**
 
    ```bash
    python -m venv .venv
    source .venv/bin/activate
 
+   ```
+
 3. **Install Dependencies**
 
 ### Production Dependencies
-```bash
+
+````bash
 pip install -r requirements/base.txt
 
 ### Development Dependencies
@@ -71,30 +77,33 @@ pip install -r requirements/test.txt
     SECRET_KEY=your_secret_key
     ALGORITHM=HS256
     ACCESS_TOKEN_EXPIRE_MINUTES=30
-   ```
+````
 
 5. **Run Migrations**
 
-    Apply database migrations using Alembic to set up the database schema:
+   Apply database migrations using Alembic to set up the database schema:
 
-    ```bash
-    alembic upgrade head
+   ```bash
+   alembic upgrade head
+
+   ```
 
 6. **Run the Application**
 
-    Start the FastAPI application:
+   Start the FastAPI application:
 
-    ```bash
-    uvicorn app.main:app --reload
-    ```
-    The API will be available at `http://localhost:8000`.
+   ```bash
+   uvicorn app.main:app --reload
+   ```
 
+   The API will be available at `http://localhost:8000`.
 
 7. **Access the API Documnentation**
 
-    Open your browser and go to `http://localhost:8000/docs` to view the Swagger UI documentation.
+   Open your browser and go to `http://localhost:8000/docs` to view the Swagger UI documentation.
 
 ## Testing
+
 Ensure that you have a test database set up in your `.env` file. The test database should have the same schema as the development database.
 
 Run the following command to execute the test suite:
@@ -111,16 +120,19 @@ This repository uses pre-commit hooks to automatically enforce code quality:
 - **Consistency Checks**: Configuration checks help maintain best practices.
 
 ## Continuous Integration and Security
+
 Our CI pipeline leverages GitHub Actions to ensure code quality and security:
 
 - **Testing**: Automated tests are run on every push and pull request.
 - **Security Scans**:
-    - Snyk SCA Scan: Scans for vulnerabilities in dependencies.
-    - Snyk SAST Scan: Scans for vulnerabilities in the codebase.
-    - CodeQL: Provides secret scanning and vulnerability detection.
+  - Snyk SCA Scan: Scans for vulnerabilities in dependencies.
+  - Snyk SAST Scan: Scans for vulnerabilities in the codebase.
+  - CodeQL: Provides secret scanning and vulnerability detection.
 
 ## Contributing
+
 Contributions are welcome. Please fork the repository and submit a pull request.
 
 ## License
+
 This project is open source and available under the GNU General Public License v3.0. See the [LICENSE](LICENSE) file for more information.
