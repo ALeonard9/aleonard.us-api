@@ -56,20 +56,15 @@ jobs:
         run: |
             # Convert repository name to lowercase
             REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
-            
+
             # Build the image with lowercase name
             docker build -t ghcr.io/${REPO_LOWER}:test .
-            
+
             # Run Snyk container test with severity threshold
             snyk container test ghcr.io/${REPO_LOWER}:test \
               --file=Dockerfile \
               --severity-threshold=high \
               --sarif > snyk-container.sarif || true
-      
-      - name: Snyk Open Source monitor
-        run: |
-            source .venv/bin/activate
-            snyk monitor --file=requirements/base.txt --package-manager=pip
 
       - name: Upload scan results to GitHub Code Scanning
         uses: github/codeql-action/upload-sarif@v3
