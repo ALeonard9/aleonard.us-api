@@ -14,33 +14,55 @@ jobs:
     if: ${{ github.event.label.name == 'scan' }}
     permissions:
       contents: read # for actions/checkout to fetch code
-      security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
     runs-on: ubuntu-latest
     env:
       SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+    strategy:
+      matrix:
+          scan_type: [sast, sca, container]
     steps:
-      - uses: actions/checkout@v4
+        - uses: actions/checkout@v4
 
-      - name: Set up Snyk CLI
-        uses: snyk/actions/setup@806182742461562b67788a64410098c9d9b96adb
+        - name: Set up Snyk CLI
+          uses: snyk/actions/setup@806182742461562b67788a64410098c9d9b96adb
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
+        - name: Set up Python
+          uses: actions/setup-python@v5
+          with:
+            python-version: "3.12"
 
-      - name: Install dependencies
-        run: |
-            python -m venv .venv
-            source .venv/bin/activate
-            pip install -r requirements/base.txt
+        - name: Install dependencies
+          run: |
+              python -m venv .venv
+              source .venv/bin/activate
+              pip install -r requirements/base.txt
 
-      - name: Snyk SCA Scan
-        run: |
-            source .venv/bin/activate
-            snyk test --file=requirements/base.txt --package-manager=pip --fail-on=patchable
+        - name: Snyk SCA Scan
+          if: matrix.scan_type == 'sca'
+          run: |
+              source .venv/bin/activate
+              snyk test --file=requirements/base.txt --package-manager=pip --fail-on=patchable
 
-      - name: Snyk SAST Scan
-        run: |
-            source .venv/bin/activate
-            snyk code test --all-projects --exclude=tests
+        - name: Snyk SAST Scan
+          if: matrix.scan_type == 'sast'
+          run: |
+              source .venv/bin/activate
+              snyk code test --all-projects --exclude=tests
+
+        - name: Set up Docker Buildx
+          if: matrix.scan_type == 'container'
+          uses: docker/setup-buildx-action@f7ce87c1d6bead3e36075b2ce75da1f6cc28aaca
+
+        - name: Snyk Container Scan
+          if: matrix.scan_type == 'container'
+          run: |
+              # Convert repository name to lowercase
+              REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+
+              # Build the image with lowercase name
+              docker build -t ghcr.io/${REPO_LOWER}:test .
+
+              # Run Snyk container test with severity threshold
+              snyk container test ghcr.io/${REPO_LOWER}:test \
+                --file=Dockerfile \
+                --severity-threshold=high
