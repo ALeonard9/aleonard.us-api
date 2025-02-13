@@ -7,6 +7,9 @@ WORKDIR /app
 # Create a non-root user
 RUN addgroup -S adam && adduser -S adam -G adam
 
+# Set up PATH for pip installations
+ENV PATH="/home/adam/.local/bin:$PATH"
+
 # Copy requirements first to leverage Docker cache
 COPY --chown=adam:adam requirements/base.txt requirements/base.txt
 
