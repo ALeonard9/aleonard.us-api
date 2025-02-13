@@ -54,11 +54,14 @@ jobs:
       - name: Snyk Container Scan
         if: matrix.scan_type == 'container'
         run: |
-            # Build the image
-            docker build -t ghcr.io/${{ github.repository }}:test .
+            # Convert repository name to lowercase
+            REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+            
+            # Build the image with lowercase name
+            docker build -t ghcr.io/${REPO_LOWER}:test .
             
             # Run Snyk container test with severity threshold
-            snyk container test ghcr.io/${{ github.repository }}:test \
+            snyk container test ghcr.io/${REPO_LOWER}:test \
               --file=Dockerfile \
               --severity-threshold=high \
               --sarif > snyk-container.sarif || true
