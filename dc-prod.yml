@@ -1,0 +1,30 @@
+services:
+  postgres-prod:
+    container_name: ${LZ}_phoenix_db_${ENV}
+    image: postgres:latest
+    restart: unless-stopped
+    env_file:
+      - env/${ENV}.env
+    volumes:
+      - ./database/data/${ENV}:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_EXPOSED_PORT}:${POSTGRES_PORT}"
+    networks:
+      - local_network
+  api-prod:
+    container_name: ${LZ}_phoenix_api_${ENV}
+    image: ghcr.io/aleonard9/aleonard.us-api:latest
+    restart: unless-stopped
+    env_file:
+      - env/${ENV}.env
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres-prod
+    networks:
+      - local_network
+
+networks:
+  local_network:
+    name: "${LZ}_network_${ENV}"
+    external: true
