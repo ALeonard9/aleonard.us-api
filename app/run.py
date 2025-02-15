@@ -10,6 +10,8 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy.exc import SQLAlchemyError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
@@ -60,6 +62,9 @@ app.include_router(authentication.router, prefix='/v1/auth')
 app.include_router(user.router, prefix='/v1/users')
 app.include_router(book.router, prefix='/v1/books')
 
+# Serve static files
+app.mount('/static', StaticFiles(directory='app/static'), name='static')
+
 # Register custom exception handlers
 app.add_exception_handler(StarletteHTTPException, http_exception_handler)
 app.add_exception_handler(RequestValidationError, validation_exception_handler)
@@ -72,6 +77,14 @@ def index():
     Index endpoint that returns a welcome message.
     """
     return OutResponseBaseModel(message="Welcome to Adam's API folks!")
+
+
+@app.get('/favicon.ico', include_in_schema=False)
+def favicon():
+    """
+    Endpoint to serve favicon.
+    """
+    return FileResponse('app/static/favicon.ico')
 
 
 async def generate_openapi_json():
