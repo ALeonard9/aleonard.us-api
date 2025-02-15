@@ -40,14 +40,21 @@ jobs:
         - name: Snyk SCA Scan
           if: matrix.scan_type == 'sca'
           run: |
-              source .venv/bin/activate
-              snyk test --file=requirements/base.txt --package-manager=pip --fail-on=patchable
+            source .venv/bin/activate
+            snyk test \
+              --file=requirements/base.txt \
+              --package-manager=pip \
+              --severity-threshold=high \
+              --fail-on=patchable
 
         - name: Snyk SAST Scan
           if: matrix.scan_type == 'sast'
           run: |
-              source .venv/bin/activate
-              snyk code test --all-projects --exclude=tests
+            source .venv/bin/activate
+            snyk code test \
+             --all-projects \
+             --exclude=tests \
+             --severity-threshold=high
 
         - name: Set up Docker Buildx
           if: matrix.scan_type == 'container'

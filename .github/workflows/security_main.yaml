@@ -4,9 +4,6 @@ on:
   push:
     branches: ["main"]
 
-permissions:
-  contents: read
-
 jobs:
   snyk:
     permissions:
@@ -39,7 +36,7 @@ jobs:
         if: matrix.scan_type == 'sca'
         run: |
             source .venv/bin/activate
-            snyk test --file=requirements/base.txt --package-manager=pip --fail-on=patchable --sarif > snyk-sca.sarif
+            snyk test --file=requirements/base.txt --package-manager=pip --sarif > snyk-sca.sarif
 
       - name: Snyk SAST Scan
         if: matrix.scan_type == 'sast'
@@ -63,8 +60,7 @@ jobs:
             # Run Snyk container test with severity threshold
             snyk container test ghcr.io/${REPO_LOWER}:test \
               --file=Dockerfile \
-              --severity-threshold=high \
-              --sarif > snyk-container.sarif || true
+              --sarif > snyk-container.sarif
 
       - name: Upload scan results to GitHub Code Scanning
         uses: github/codeql-action/upload-sarif@v3
