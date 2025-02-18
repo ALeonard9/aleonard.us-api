@@ -75,7 +75,7 @@ def create_admin_user(db: Session) -> list[DbUser]:
         db (Session): The database session.
 
     Returns:
-        List[DbUser]: The newly created admin user.
+        List[DbUser]: The newly created admin user or existing admin user.
     """
     admin_display_name = os.getenv('ADMIN_DISPLAY_NAME')
     admin_email = os.getenv('ADMIN_EMAIL')
@@ -94,12 +94,14 @@ def create_admin_user(db: Session) -> list[DbUser]:
             status_code=status.HTTP_400_BAD_REQUEST,
             detail='Invalid email address',
         ) from exc
+
     existing_user = db.query(DbUser).filter(DbUser.email == admin_email).first()
     if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail='Email already registered',
-        )
+        logger.info('Admin user already exists with email: %s', admin_email)
+        response = []
+        response.append(existing_user)
+        return response
+
     new_user = DbUser(
         display_name=admin_display_name,
         email=admin_email,
