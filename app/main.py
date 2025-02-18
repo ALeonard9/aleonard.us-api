@@ -16,11 +16,14 @@ def load_env():
     """
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument(
-        '--env', type=str, default='local', help='Environment (e.g., dev, local, prod)'
+        '--env', type=str, default='none', help='Environment (e.g., dev, local, prod)'
     )
     args, _ = parser.parse_known_args()
     dotenv_path = os.path.join('env', f'{args.env}.env')
-    if os.path.exists(dotenv_path):
+    if args.env == 'none':
+        print('No environment specified. Using system environment variables.')
+        print('The current environment is:', os.getenv('ENV', 'not specified'))
+    elif os.path.exists(dotenv_path):
         load_dotenv(dotenv_path=dotenv_path)
         print(f"Loaded dotenv file: {dotenv_path}")
     else:

@@ -138,7 +138,7 @@ def test_create_admin_user_no_env_vars(test_db_session, monkeypatch):
 
 def test_create_admin_existing_email(test_db_session, test_user_data_generator):
     '''
-    Test creating a user with an existing email raises an HTTPException.
+    Test creating an admin user with an existing email returns the existing user.
     '''
     user_data_list = test_user_data_generator(num_users=1)
     test_user_data = user_data_list[0]
@@ -150,19 +150,15 @@ def test_create_admin_existing_email(test_db_session, test_user_data_generator):
             'ADMIN_PASSWORD': test_user_data.password,
         },
     ):
-        create_admin_user(test_db_session)
-    with pytest.raises(HTTPException) as exc_info:
-        with patch.dict(
-            os.environ,
-            {
-                'ADMIN_DISPLAY_NAME': test_user_data.display_name,
-                'ADMIN_EMAIL': test_user_data.email,
-                'ADMIN_PASSWORD': test_user_data.password,
-            },
-        ):
-            create_admin_user(test_db_session)
-    assert exc_info.value.status_code == status.HTTP_400_BAD_REQUEST
-    assert exc_info.value.detail == 'Email already registered'
+        # Create first admin user
+        first_admin = create_admin_user(test_db_session)
+        # Try to create second admin a second time
+        second_attempt = create_admin_user(test_db_session)
+
+        # Verify both calls return the same user
+        assert first_admin[0].id == second_attempt[0].id
+        assert first_admin[0].email == second_attempt[0].email
+        assert_user_fields(second_attempt, user_data_list, admin=True)
 
 
 def test_create_admin_invalid_email(test_db_session, test_user_data_generator):

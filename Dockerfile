@@ -37,4 +37,4 @@ COPY --chown=adam:adam . .
 EXPOSE 8000
 
 # Run app.py when the container launches
-CMD ["python", "-m", "app.main", "--env", "dev"]
+CMD ["sh", "-c", "python -m app.main"]
