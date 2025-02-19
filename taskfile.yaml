@@ -1,0 +1,80 @@
+version: '3'
+
+tasks:
+  pb:
+    desc: "Build Phoenix Docker environment"
+    vars:
+      ENV: '{{default "dev" .CLI_ARGS}}'
+    cmds:
+      - docker compose -f dc-{{.ENV}}.yml --env-file env/{{.ENV}}.env build --no-cache
+  pu:
+    desc: "Manage Phoenix Docker environment (default: dev)"
+    vars:
+      ENV: '{{default "dev" .CLI_ARGS}}'
+    cmds:
+      - docker compose -f dc-{{.ENV}}.yml --env-file env/{{.ENV}}.env up -d --build
+
+  pd:
+    desc: "Stop Phoenix Docker environment"
+    vars:
+      ENV: '{{default "dev" .CLI_ARGS}}'
+    cmds:
+      - docker compose -f dc-{{.ENV}}.yml --env-file env/{{.ENV}}.env down
+
+  pr:
+    desc: "Rebuild Phoenix Docker environment"
+    vars:
+      ENV: '{{default "dev" .CLI_ARGS}}'
+    deps: [pd]
+    cmds:
+      - task: pb
+        vars: { ENV: '{{.ENV}}' }
+      - task: pu
+        vars: { ENV: '{{.ENV}}' }
+
+  gh:
+    desc: "Open project repository in GitHub"
+    cmds:
+      - open https://github.com/aleonard9/aleonard.us-api
+    silent: true
+
+  test:
+    desc: "Run pytest"
+    cmds:
+      - pytest --cov=./ --cov-report=html:.reports/coverage --cov-report=term --html=.reports/junit/test-results.html
+
+  sca:
+    desc: "Run security checks on dependencies"
+    cmds:
+      - >
+          snyk test
+          --file=requirements/base.txt
+          --package-manager=pip
+          --severity-threshold=high
+          --fail-on=patchable
+
+  sast:
+    desc: "Run static analysis on code"
+    cmds:
+      - >
+          snyk code test
+          --all-projects
+          --exclude=tests
+          --severity-threshold=high
+
+  container:
+    desc: "Run container security checks"
+    cmds:
+      - |
+        if [ "$(uname)" = "Darwin" ]; then
+          EXTRA_ARG="--platform=linux/amd64"
+        else
+          EXTRA_ARG=""
+        fi
+        # Build the image with the appropriate platform argument
+        docker build $EXTRA_ARG -t ghcr.io/aleonard9/aleonard.us-api:test .
+        # Run Snyk container test (no need to pass EXTRA_ARG here)
+        snyk container test ghcr.io/aleonard9/aleonard.us-api:test \
+          --file=Dockerfile \
+          --severity-threshold=high
+        docker rmi ghcr.io/aleonard9/aleonard.us-api:test
