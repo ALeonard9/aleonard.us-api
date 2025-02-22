@@ -67,12 +67,17 @@ def configure_logger():
 
     # Create a Loki handler
     logging_loki.emitter.LokiEmitter.level_tag = 'level'
-    loki_url = f'{os.getenv('LOKI_URL')}/loki/api/v1/push'
+    loki_url = f'{os.getenv("LOKI_URL")}/loki/api/v1/push'
     print('Loki URL:', loki_url)
 
     lh = logging_loki.LokiHandler(
         url=loki_url,
         version='1',
+        tags={
+            'service': 'aleonard-us-api',
+            'environment': os.getenv('ENV'),
+            'landing_zone': os.getenv('LZ'),
+        },
     )
 
     logger.debug('API Env set to: %s', os.getenv('ENV'))
