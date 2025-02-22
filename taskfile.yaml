@@ -1,35 +1,39 @@
 version: '3'
 
 tasks:
-  pb:
+  default:
+    desc: "List all available tasks"
+    cmds:
+      - task -l
+  db:
     desc: "Build Phoenix Docker environment"
     vars:
       ENV: '{{default "dev" .CLI_ARGS}}'
     cmds:
       - docker compose -f dc-{{.ENV}}.yml --env-file env/{{.ENV}}.env build --no-cache
-  pu:
-    desc: "Manage Phoenix Docker environment (default: dev)"
+  du:
+    desc: "Launch Phoenix Docker environment (default: dev)"
     vars:
       ENV: '{{default "dev" .CLI_ARGS}}'
     cmds:
-      - docker compose -f dc-{{.ENV}}.yml --env-file env/{{.ENV}}.env up -d --build
+      - docker compose -f dc-{{.ENV}}.yml --env-file env/{{.ENV}}.env up -d
 
-  pd:
+  dd:
     desc: "Stop Phoenix Docker environment"
     vars:
       ENV: '{{default "dev" .CLI_ARGS}}'
     cmds:
       - docker compose -f dc-{{.ENV}}.yml --env-file env/{{.ENV}}.env down
 
-  pr:
+  dr:
     desc: "Rebuild Phoenix Docker environment"
     vars:
       ENV: '{{default "dev" .CLI_ARGS}}'
-    deps: [pd]
+    deps: [dd]
     cmds:
-      - task: pb
+      - task: db
         vars: { ENV: '{{.ENV}}' }
-      - task: pu
+      - task: du
         vars: { ENV: '{{.ENV}}' }
 
   gh:
@@ -78,3 +82,11 @@ tasks:
           --file=Dockerfile \
           --severity-threshold=high
         docker rmi ghcr.io/aleonard9/aleonard.us-api:test
+  lz:
+    desc: "Echos current landing zone"
+    platforms: [darwin]
+    cmds:
+      - cmd: echo 'Current landing zone m3'
+        platforms: ['darwin']
+      - cmd: echo 'Current landing zone gs'
+        platforms: ['linux']
