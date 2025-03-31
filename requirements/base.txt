@@ -1,12 +1,12 @@
-fastapi==0.115.11
+fastapi==0.115.12
 uvicorn==0.34.0
-SQLAlchemy==2.0.38
-pydantic==2.10.6
+SQLAlchemy==2.0.40
+pydantic==2.11.1
 passlib[bcrypt]==1.7.4
 python-multipart==0.0.20
 email-validator==2.2.0
 psycopg2-binary==2.9.10
-python-dotenv==1.0.1
+python-dotenv==1.1.0
 python-logging-loki==0.3.1
 PyJWT==2.10.1
 requests>=2.32.2 # not directly required, pinned by Snyk to avoid a vulnerability
