@@ -1,6 +1,6 @@
 -r base.txt
 -r test.txt
 black==25.1.0
-pylint==3.3.6
+pylint==3.3.7
 pre-commit==4.2.0
 openapi-spec-validator==0.7.1
