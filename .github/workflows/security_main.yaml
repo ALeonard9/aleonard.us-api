@@ -25,7 +25,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.13"
 
       - name: Install dependencies
         run: |
@@ -62,8 +62,8 @@ jobs:
             snyk container test ghcr.io/${REPO_LOWER}:test \
               --file=Dockerfile \
               --sarif > snyk-container.sarif || true
-      
-      - name: Replace security-severity undefined for license-related findings 
+
+      - name: Replace security-severity undefined for license-related findings
         run: |
           # https://github.com/github/codeql-action/issues/2187#issuecomment-2043220400
           sed -i 's/"security-severity": "undefined"/"security-severity": "0"/g' snyk-${{ matrix.scan_type }}.sarif

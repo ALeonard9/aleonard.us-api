@@ -31,7 +31,7 @@ Welcome to the **aleonard.us-api** repository! This project provides a robust an
 
 ### Prerequisites
 
-- **Python**: 3.12 or higher
+- **Python**: 3.13 or higher
 - **pip**: Package installer for Python
 - **virtualenv**: (optional but recommended)
 
