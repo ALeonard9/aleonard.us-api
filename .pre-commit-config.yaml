@@ -25,7 +25,7 @@ repos:
     hooks:
     - id: black
       args: [--skip-string-normalization]
-      language_version: python3.12
+      language_version: python3.13
 - repo: local
   hooks:
   - id: pylint
@@ -34,10 +34,10 @@ repos:
     language: system
     types: [python]
     args: [--ignore-patterns=.venv, --disable=too-few-public-methods]
-  # - id: pytest
-  #   name: pytest
-  #   entry: ./.venv/bin/pytest tests --cov=./ --cov-report=html:.reports/coverage --cov-report=term --html=.reports/junit/test-results.html
-  #   language: system
-  #   types: [python]
-  #   pass_filenames: false
-  #   always_run: true
+  - id: pytest
+    name: pytest
+    entry: ./.venv/bin/pytest tests --cov=./ --cov-report=html:.reports/coverage --cov-report=term --html=.reports/junit/test-results.html
+    language: system
+    types: [python]
+    pass_filenames: false
+    always_run: true

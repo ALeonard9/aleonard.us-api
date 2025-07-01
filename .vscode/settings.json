@@ -6,6 +6,5 @@
   "workbench.colorCustomizations": {
     "titleBar.activeBackground": "#8033e4"
   },
-  "black-formatter.args": ["--skip-string-normalization"],
-  "snyk.advanced.additionalParameters": "--exclude=tests"
+  "black-formatter.args": ["--skip-string-normalization"]
 }
