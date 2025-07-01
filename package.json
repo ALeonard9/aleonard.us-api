@@ -1,0 +1,16 @@
+{
+  "name": "aleonard-us-api",
+  "version": "0.0.1",
+  "description": "Node.js dependencies for aleonard.us API",
+  "main": "index.js",
+  "scripts": {
+    "test": "node test/octokit-test.js"
+  },
+  "dependencies": {
+    "@octokit/request": "^9.2.1"
+  },
+  "devDependencies": {},
+  "keywords": ["api", "github", "octokit"],
+  "author": "Adam Leonard",
+  "license": "GPL-3.0"
+}

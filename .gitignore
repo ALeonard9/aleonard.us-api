@@ -172,3 +172,11 @@ cython_debug/
 cron/log/*
 database/backup/log/*
 database/data/*
+
+# Node.js dependencies
+node_modules/
+
+# Node.js logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
