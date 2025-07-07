@@ -6,5 +6,5 @@ pytest-html==4.1.1
 pytest-metadata==3.1.1
 Faker==37.4.0
 httpx==0.28.1
-coverage==7.9.1
+coverage==7.9.2
 python-dateutil==2.9.0.post0
