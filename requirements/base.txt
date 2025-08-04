@@ -1,7 +1,7 @@
 fastapi==0.116.1
 uvicorn==0.35.0
 h11>=0.16.0 # Pinned to fix HTTP Request Smuggling vulnerability
-SQLAlchemy==2.0.41
+SQLAlchemy==2.0.42
 pydantic==2.11.7
 passlib[bcrypt]==1.7.4
 python-multipart==0.0.20
