@@ -9,7 +9,7 @@ from fastapi import HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.testclient import TestClient
 from starlette.status import (
-    HTTP_422_UNPROCESSABLE_ENTITY,
+    HTTP_422_UNPROCESSABLE_CONTENT,
     HTTP_500_INTERNAL_SERVER_ERROR,
 )
 
@@ -70,7 +70,7 @@ async def test_validation_exception_handler():
     )
     response = await validation_exception_handler(request, exc)
     response_body = json.loads(response.body.decode('utf-8'))
-    assert response.status_code == HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.status_code == HTTP_422_UNPROCESSABLE_CONTENT
     assert response_body['success'] is False
     assert response_body['message'] == 'Validation Error'
     assert response_body['data'] == [

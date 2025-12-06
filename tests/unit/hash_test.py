@@ -13,7 +13,7 @@ def test_bcrypt():
     '''
     Tests if the bcrypt method hashes a plain password correctly.
     '''
-    plain_password = fake.password()
+    plain_password = fake.password(length=20)
     hashed_password = Hash.bcrypt(plain_password)
     assert (
         hashed_password != plain_password
@@ -25,7 +25,7 @@ def test_verify():
     '''
     Tests if the verify method correctly identifies matching and non-matching plain passwords.
     '''
-    plain_password = fake.password()
+    plain_password = fake.password(length=20)
     hashed_password = Hash.bcrypt(plain_password)
     assert Hash.verify(
         hashed_password, plain_password

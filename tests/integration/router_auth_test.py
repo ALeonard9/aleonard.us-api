@@ -39,7 +39,7 @@ def test_api_user_token_bad_password(
     Test token creation with bad password.
     """
     email = test_client.first_user.email
-    password = fake.password()
+    password = fake.password(length=20)
     response = test_client.post(
         '/v1/auth/token',
         files={

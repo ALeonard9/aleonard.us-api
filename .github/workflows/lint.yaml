@@ -28,6 +28,7 @@ jobs:
       run: |
           python -m venv .venv
           source .venv/bin/activate
+          pip install --upgrade pip setuptools wheel
           pip install -r requirements/dev.txt
 
     - name: Run Black
@@ -38,7 +39,7 @@ jobs:
     - name: Run Pylint
       run: |
           source .venv/bin/activate
-          ./.venv/bin/pylint .
+          ./.venv/bin/pylint . --ignore=.venv --disable=too-few-public-methods
 
     - name: Validate OpenAPI Spec
       run: |
