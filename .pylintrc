@@ -1,8 +1,10 @@
 [MASTER]
 ignore=.venv
+ignore-patterns=^\.venv/
 init-hook='import sys; sys.path.append("/app")'
 
 [MESSAGES CONTROL]
-disable=too-few-public-methods,R0801
+disable=too-few-public-methods,invalid-name,R0801
 ; Reason: too-few-public-methods is too restrictive for our use case, and R0801
 ; (Similar lines in 2 files) is being disabled to avoid spurious duplicate code warnings.
+; invalid-name is disabled to allow for more flexibility in naming conventions.

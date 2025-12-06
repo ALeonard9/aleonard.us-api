@@ -120,7 +120,7 @@ def fixture_test_user_data_generator():
                 InUserBase(
                     display_name=fake.name(),
                     email=f'{fake.first_name()}.{fake.last_name_nonbinary()}@zoho.com',
-                    password=fake.password(),
+                    password=fake.password(length=20),
                 )
             )
         return user_data
