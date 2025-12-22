@@ -1,11 +1,11 @@
-fastapi==0.124.4
-uvicorn==0.38.0
+fastapi==0.127.0
+uvicorn==0.40.0
 h11>=0.16.0 # Pinned to fix HTTP Request Smuggling vulnerability
 SQLAlchemy==2.0.45
 pydantic==2.12.5
 passlib[bcrypt]==1.7.4
-bcrypt==4.3.0
-python-multipart==0.0.20
+bcrypt==5.0.0
+python-multipart==0.0.21
 email-validator==2.3.0
 psycopg2-binary==2.9.11
 python-dotenv==1.2.1
