@@ -1,16 +1,16 @@
-fastapi==0.124.4
-uvicorn==0.38.0
+fastapi==0.135.1
+uvicorn==0.41.0
 h11>=0.16.0 # Pinned to fix HTTP Request Smuggling vulnerability
-SQLAlchemy==2.0.45
+SQLAlchemy==2.0.47
 pydantic==2.12.5
 passlib[bcrypt]==1.7.4
-bcrypt==4.3.0
-python-multipart==0.0.20
+bcrypt==5.0.0
+python-multipart==0.0.22
 email-validator==2.3.0
 psycopg2-binary==2.9.11
-python-dotenv==1.2.1
+python-dotenv==1.2.2
 python-logging-loki==0.3.1
-PyJWT==2.10.1
+PyJWT==2.11.0
 requests>=2.32.2 # not directly required, pinned by Snyk to avoid a vulnerability
 urllib3>=2.2.2 # not directly required, pinned by Snyk to avoid a vulnerability
 zipp>=3.19.1 # not directly required, pinned by Snyk to avoid a vulnerability
