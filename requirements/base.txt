@@ -5,7 +5,7 @@ SQLAlchemy==2.0.45
 pydantic==2.12.5
 passlib[bcrypt]==1.7.4
 bcrypt==4.3.0
-python-multipart==0.0.20
+python-multipart==0.0.22
 email-validator==2.3.0
 psycopg2-binary==2.9.11
 python-dotenv==1.2.1
