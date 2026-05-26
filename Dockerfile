@@ -15,7 +15,7 @@ COPY --chown=adam:adam requirements/base.txt requirements/base.txt
 
 # Install system dependencies as root
 USER root
-RUN apk update && apk add --no-cache \
+RUN apk update && apk upgrade xz && apk add --no-cache \
     postgresql-dev \
     gcc \
     python3-dev \
