@@ -21,7 +21,8 @@ RUN apk update && apk add --no-cache \
     python3-dev \
     musl-dev \
     rust \
-    cargo
+    cargo \
+    xz
 
 # Switch to non-root user for pip operations
 USER adam
