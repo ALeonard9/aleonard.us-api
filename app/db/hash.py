@@ -1,10 +1,11 @@
 """
-This module provides hashing utilities for passwords.
+This module provides hashing utilities for passwords using Argon2.
 """
 
-from passlib.context import CryptContext
+from pwdlib import PasswordHash
+from pwdlib.hashers.argon2 import Argon2Hasher
 
-pwd_cxt = CryptContext(schemes=['bcrypt'], deprecated='auto')
+pwd_cxt = PasswordHash((Argon2Hasher(),))
 
 
 class Hash:
@@ -13,9 +14,9 @@ class Hash:
     """
 
     @staticmethod
-    def bcrypt(password: str) -> str:
+    def hash_password(password: str) -> str:
         """
-        Hash a password using bcrypt.
+        Hash a password using Argon2.
 
         Args:
             password (str): The plain password to hash.

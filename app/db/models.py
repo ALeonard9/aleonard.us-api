@@ -38,3 +38,7 @@ class DbUser(DBBaseModel):
     display_name = Column(String(length=30))
     user_group = Column(String, default='user')
     password = Column(String)
+
+
+# Import sandbox models to ensure they are registered with the Base metadata
+from app.db import models_sandbox  # noqa: F401

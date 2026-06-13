@@ -43,7 +43,7 @@ def create_user(db: Session, request: InUserBase) -> list[DbUser]:
     new_user = DbUser(
         display_name=request.display_name,
         email=request.email,
-        password=Hash.bcrypt(request.password),
+        password=Hash.hash_password(request.password),
     )
     try:
         db.add(new_user)
@@ -106,7 +106,7 @@ def create_admin_user(db: Session) -> list[DbUser]:
         display_name=admin_display_name,
         email=admin_email,
         user_group='admin',
-        password=Hash.bcrypt(admin_password),
+        password=Hash.hash_password(admin_password),
     )
     try:
         db.add(new_user)
@@ -195,7 +195,7 @@ def update_user(db: Session, user_id: str, request: InUserBase) -> list[DbUser]:
         ) from exc
     user.display_name = request.display_name
     user.email = request.email
-    user.password = Hash.bcrypt(request.password)
+    user.password = Hash.hash_password(request.password)
     db.commit()
     db.refresh(user)
     logger.info(
