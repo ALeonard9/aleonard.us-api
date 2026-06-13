@@ -9,16 +9,16 @@ from app.db.hash import Hash
 fake = Faker()
 
 
-def test_bcrypt():
+def test_hash_password():
     '''
-    Tests if the bcrypt method hashes a plain password correctly.
+    Tests if the hash_password method hashes a plain password correctly.
     '''
     plain_password = fake.password(length=20)
-    hashed_password = Hash.bcrypt(plain_password)
+    hashed_password = Hash.hash_password(plain_password)
     assert (
         hashed_password != plain_password
     ), 'Hashed password should not match the plain password'
-    assert isinstance(hashed_password, str), 'Hash.bcrypt should return a string'
+    assert isinstance(hashed_password, str), 'Hash.hash_password should return a string'
 
 
 def test_verify():
@@ -26,7 +26,7 @@ def test_verify():
     Tests if the verify method correctly identifies matching and non-matching plain passwords.
     '''
     plain_password = fake.password(length=20)
-    hashed_password = Hash.bcrypt(plain_password)
+    hashed_password = Hash.hash_password(plain_password)
     assert Hash.verify(
         hashed_password, plain_password
     ), 'Verify should pass with the correct plain password'
