@@ -1,5 +1,5 @@
 # Use an official Python runtime as a parent image
-FROM python:3.13-alpine
+FROM python:3.14.5-alpine
 
 # Set the working directory in the container
 WORKDIR /app
@@ -21,7 +21,8 @@ RUN apk update && apk add --no-cache \
     python3-dev \
     musl-dev \
     rust \
-    cargo
+    cargo \
+    xz
 
 # Switch to non-root user for pip operations
 USER adam

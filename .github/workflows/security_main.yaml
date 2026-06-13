@@ -17,15 +17,15 @@ jobs:
       matrix:
         scan_type: [sast, sca, container]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up Snyk CLI
         uses: snyk/actions/setup@806182742461562b67788a64410098c9d9b96adb
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
-          python-version: "3.13"
+          python-version: "3.14"
 
       - name: Install dependencies
         run: |
@@ -47,7 +47,7 @@ jobs:
 
       - name: Set up Docker Buildx
         if: matrix.scan_type == 'container'
-        uses: docker/setup-buildx-action@f7ce87c1d6bead3e36075b2ce75da1f6cc28aaca
+        uses: docker/setup-buildx-action@v4
 
       - name: Snyk Container Scan
         if: matrix.scan_type == 'container'
@@ -70,6 +70,6 @@ jobs:
           sed -i 's/"security-severity": "null"/"security-severity": "0"/g' snyk-${{ matrix.scan_type }}.sarif
 
       - name: Upload scan results to GitHub Code Scanning
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: snyk-${{ matrix.scan_type }}.sarif

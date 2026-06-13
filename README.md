@@ -1,158 +1,171 @@
 [![Pylint](https://github.com/ALeonard9/aleonard.us-api/actions/workflows/lint.yaml/badge.svg?branch=main)](https://github.com/ALeonard9/aleonard.us-api/actions/workflows/lint.yaml)
 [![Pytest](https://github.com/ALeonard9/aleonard.us-api/actions/workflows/test.yaml/badge.svg?branch=main)](https://github.com/ALeonard9/aleonard.us-api/actions/workflows/test.yaml)
-[![Snyk SCA & SAST](https://github.com/ALeonard9/aleonard.us-api/actions/workflows/security.yaml/badge.svg?branch=main)](https://github.com/ALeonard9/aleonard.us-api/actions/workflows/security.yaml)
+[![Snyk SCA & SAST](https://github.com/ALeonard9/aleonard.us-api/actions/workflows/security_main.yaml/badge.svg?branch=main)](https://github.com/ALeonard9/aleonard.us-api/actions/workflows/security_main.yaml)
 
-# aleonard.us-api
+# aleonard.us API
 
-Source code for aleonard.us API
-
-## Overview
-
-Welcome to the **aleonard.us-api** repository! This project provides a robust and scalable API for managing users, built with FastAPI and SQLAlchemy. The API supports user creation, retrieval, updating, and deletion with comprehensive validation and error handling.
+Personal API for [aleonard.us](https://www.aleonard.us) — a JWT-authenticated FastAPI service with role-based user management, auto-generated OpenAPI docs, and CI/CD with Snyk security scanning.
 
 ## Features
 
-- **User Management**: Create, retrieve, update, and delete users.
-- **Authentication**: Secure endpoints with JWT-based authentication.
-- **Data Validation**: Ensure data integrity with Pydantic models.
-- **Testing**: Comprehensive test suite using pytest.
-- **Documentation**: Automatic API documentation with Swagger UI.
+- **JWT Authentication** — Login endpoint returns a bearer token for subsequent requests
+- **User CRUD** — Create, read, update, delete users with email validation and duplicate detection
+- **Role-Based Access Control** — Admins manage all users; regular users can only access their own account
+- **Auto-generated Docs** — Swagger UI at `/docs`, OpenAPI spec at `/openapi.json`
+- **Containerized** — Multi-arch Docker images, Python 3.14 on Alpine
+- **Security Pipeline** — Snyk SCA, SAST, and container scans on every PR and push
 
-## Technology Stack
+## Tech Stack
 
-- **Backend Framework**: [FastAPI](https://fastapi.tiangolo.com/)
-- **ORM**: [SQLAlchemy](https://www.sqlalchemy.org/)
-- **Database**: PostgreSQL (or another as specified)
-- **Authentication**: JWT (JSON Web Tokens)
-- **Testing**: [pytest](https://docs.pytest.org/en/stable/)
-- **Others**: Pydantic, Alembic for migrations, etc.
+| Layer | Technology |
+|---|---|
+| Framework | [FastAPI](https://fastapi.tiangolo.com/) |
+| ORM | [SQLAlchemy](https://www.sqlalchemy.org/) |
+| Validation | [Pydantic](https://docs.pydantic.dev/) |
+| Auth | JWT via [PyJWT](https://github.com/jpadilla/pyjwt) + OAuth2 |
+| Database | PostgreSQL (SQLite for local dev) |
+| Container | Docker, Alpine 3.22, Python 3.14 |
+| CI/CD | GitHub Actions, Snyk |
 
-## Installation
+## Quick Start
 
-### Prerequisites
-
-- **Python**: 3.13 or higher
-- **pip**: Package installer for Python
-- **virtualenv**: (optional but recommended)
-
-### Steps
-
-1. **Clone the Repository**
-
-   ```bash
-   git clone https://github.com/ALeonard9/aleonard.us-api.git
-   cd aleonard.us-api
-
-   ```
-
-2. **Create Virtual Environment**
-
-   ```bash
-   python -m venv .venv
-   source .venv/bin/activate
-
-   ```
-
-3. **Install Dependencies**
-
-### Production Dependencies
+### Local
 
 ```bash
-pip install -r requirements/base.txt
-```
-
-### Development Dependencies
-
-```bash
+git clone https://github.com/ALeonard9/aleonard.us-api.git
+cd aleonard.us-api
+python -m venv .venv && source .venv/bin/activate
 pip install -r requirements/dev.txt
+uvicorn app.run:app --reload
 ```
 
-### Testing Dependencies
+### Docker (preferred)
 
 ```bash
-pip install -r requirements/test.txt
+docker compose -f dc-dev.yml --env-file env/dev.env up -d
 ```
 
-4. **Set Environment Variables**
+The API is available at `http://localhost:8000`. Open `http://localhost:8000/docs` for Swagger UI.
 
-   Create a `.env` file in the root directory and add the following:
+## Environment Variables
 
-   ```plaintext
-    LZ=<your landing zone>
-    ENV=dev
-    LOG_LEVEL=INFO
-    JWT_SECRET_KEY=<your secret key>
-    ADMIN_DISPLAY_NAME=<your display name>
-    ADMIN_PASSWORD=<your api password>
-    ADMIN_EMAIL=<your email>
-    COMPOSE_PROJECT_NAME=phoenix_dev
-    POSTGRES_USER=functional_data_api_dev
-    POSTGRES_PASSWORD=<your database password>
-    POSTGRES_HOST=m3_phoenix_db_dev
-    POSTGRES_DB=phoenix
-    POSTGRES_EXPOSED_PORT=5430
-    POSTGRES_PORT=5432
-    POSTGRES_CONNECTION_PORT=5432
-    LOKI_URL=http://loki:3100
-   ```
+Create a `.env` file in the project root:
 
-5. **Run Migrations**
+```plaintext
+ENV=dev
+LOG_LEVEL=INFO
+JWT_SECRET_KEY=<your-secret-key>
 
-   Apply database migrations using Alembic to set up the database schema:
+ADMIN_DISPLAY_NAME=<admin-name>
+ADMIN_PASSWORD=<admin-password>
+ADMIN_EMAIL=<admin-email>
 
-   ```bash
-   alembic upgrade head
-   ```
+POSTGRES_USER=functional_data_api_dev
+POSTGRES_PASSWORD=<db-password>
+POSTGRES_HOST=m3_phoenix_db_dev
+POSTGRES_DB=phoenix
+POSTGRES_PORT=5432
+POSTGRES_EXPOSED_PORT=5430
+POSTGRES_CONNECTION_PORT=5432
 
-6. **Run the Application**
+LOKI_URL=http://loki:3100
+COMPOSE_PROJECT_NAME=phoenix_dev
+```
 
-   Start the FastAPI application:
+### Notable Env Vars
 
-   ```bash
-   uvicorn app.main:app --reload
-   ```
+| Variable | Purpose |
+|---|---|
+| `ENV` | `local` — drops/recreates tables on startup; `dev` — persistent DB |
+| `JWT_SECRET_KEY` | HMAC signing key for JWT tokens (min 32 bytes recommended) |
+| `ADMIN_*` | Credentials for the admin user created at startup |
+| `POSTGRES_*` | PostgreSQL connection — defaults to a local Docker Postgres |
 
-   The API will be available at `http://localhost:8000`.
+## API Reference
 
-7. **Access the API Documnentation**
+All endpoints prefixed with `/v1`. Protected endpoints require `Authorization: Bearer <token>`.
 
-   Open your browser and go to `http://localhost:8000/docs` to view the Swagger UI documentation.
+### Authentication
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| `POST` | `/v1/auth/token` | No | Login with email + password, returns JWT |
+
+### Users
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| `POST` | `/v1/users` | No | Register a new user |
+| `GET` | `/v1/users` | Admin | List all users |
+| `GET` | `/v1/users/{uuid}` | User | Get own user (any) or any user (admin) |
+| `PUT` | `/v1/users/{uuid}` | User | Update own account (any) or any (admin) |
+| `DELETE` | `/v1/users/{uuid}` | User | Delete own account (any) or any (admin) |
+
+### Books
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| `GET` | `/v1/books` | No | List books (stub) |
+
+### Docs
+
+| Path | Description |
+|---|---|
+| `/docs` | Swagger UI |
+| `/redoc` | ReDoc |
+| `/openapi.json` | OpenAPI schema |
 
 ## Testing
 
-Ensure that you have a test database set up in your `.env` file. The test database should have the same schema as the development database.
+```bash
+task test             # pytest with coverage and HTML reports
+                      # or just: pytest
+```
 
-Run the following command to execute the test suite:
+Tests run in CI on every push and pull request.
+
+## Project Scripts
+
+This project uses a [Taskfile](https://taskfile.dev/) for common operations:
 
 ```bash
-pytest
+task du               # Docker compose up (dev)
+task dd               # Docker compose down
+task dr               # Rebuild and restart containers
+task test             # Run pytest with coverage
+task sca              # Snyk SCA (dependency scan)
+task sast             # Snyk SAST (static analysis)
+task container        # Build + Snyk container scan
 ```
+
+## Security Pipeline
+
+GitHub Actions runs Snyk scans on every PR (labeled `scan`) and push to `main`:
+
+- **SCA** — Dependency vulnerability scan
+- **SAST** — Static code analysis
+- **Container** — Image vulnerability scan (Dockerfile + base image)
+
+Results are uploaded to GitHub Code Scanning for the main branch.
 
 ## Pre-commit Hooks
 
-This repository uses pre-commit hooks to automatically enforce code quality:
+Pre-commit enforces code quality on every commit:
 
-- **Linting and Styling**: Tools like `pylint` and `black` ensure consistent styling.
-- **Consistency Checks**: Configuration checks help maintain best practices.
+- Black (formatting)
+- Pylint (linting)
+- OpenAPI spec validation
+- YAML/JSON validation
+- Trailing whitespace, EOF fixer, debug statement checks
 
-## Continuous Integration and Security
-
-Our CI pipeline leverages GitHub Actions to ensure code quality and security:
-
-- **Testing**: Automated tests are run on every push and pull request.
-- **Security Scans**:
-  - Snyk SCA Scan: Scans for vulnerabilities in dependencies.
-  - Snyk SAST Scan: Scans for vulnerabilities in the codebase.
-  - CodeQL: Provides secret scanning and vulnerability detection.
+```bash
+pip install pre-commit && pre-commit install
+```
 
 ## Contributing
 
-Contributions are welcome. Please fork the repository and submit a pull request.
+Fork the repo and submit a pull request.
 
 ## License
 
-This project is open source and available under the GNU General Public License v3.0. See the [LICENSE](LICENSE) file for more information.
-
-```
-
-```
+GNU General Public License v3.0. See [LICENSE](LICENSE).
