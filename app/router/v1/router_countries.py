@@ -1,3 +1,4 @@
+# pylint: disable=missing-function-docstring, useless-return
 """
 This module contains the API routes for Countries.
 """
@@ -8,7 +9,6 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.db.database import get_db
-from app.db.models import DbUser
 from app.db.models_sandbox import DbCountry, DbUserCountry
 from app.auth.oauth2 import get_current_user
 from app.schemas.schemas_sandbox import (

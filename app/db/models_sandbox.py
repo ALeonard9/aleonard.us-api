@@ -2,6 +2,8 @@
 This module defines the database models for the Sandbox entities.
 """
 
+# pylint: disable=missing-class-docstring
+
 from sqlalchemy import (
     Column,
     Integer,
@@ -14,7 +16,6 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import relationship
 
-from app.db.database import Base
 from app.db.models import DBBaseModel
 
 

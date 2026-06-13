@@ -2,6 +2,8 @@
 This module contains Pydantic schemas for Sandbox entities.
 """
 
+# pylint: disable=missing-class-docstring
+
 from datetime import datetime
 from typing import Optional
 

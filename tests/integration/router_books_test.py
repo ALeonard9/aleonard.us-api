@@ -1,4 +1,4 @@
-import pytest
+# pylint: disable=missing-module-docstring, missing-function-docstring
 from fastapi.testclient import TestClient
 
 

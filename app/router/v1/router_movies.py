@@ -1,3 +1,4 @@
+# pylint: disable=missing-function-docstring, useless-return
 """
 This module contains the API routes for Movies.
 """
