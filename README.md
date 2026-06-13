@@ -101,11 +101,20 @@ All endpoints prefixed with `/v1`. Protected endpoints require `Authorization: B
 | `PUT` | `/v1/users/{uuid}` | User | Update own account (any) or any (admin) |
 | `DELETE` | `/v1/users/{uuid}` | User | Delete own account (any) or any (admin) |
 
-### Books
+### Sandbox Data Entities
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| `GET` | `/v1/books` | No | List books (stub) |
+| `GET` | `/v1/{entity}` | No | List global entities (countries, movies, tv-shows, games, books) |
+| `POST` | `/v1/{entity}` | Admin | Create a new global entity |
+| `PUT` | `/v1/{entity}/{id}` | Admin | Update a global entity |
+| `DELETE` | `/v1/{entity}/{id}` | Admin | Delete a global entity |
+| `GET` | `/v1/users/me/{entity}` | User | List user's tracked entities |
+| `POST` | `/v1/users/me/{entity}/{id}`| User | Mark entity as tracked (visited, watched, played, etc.) |
+| `PUT` | `/v1/users/me/{entity}/{id}`| User | Update tracking details for an entity |
+| `DELETE` | `/v1/users/me/{entity}/{id}`| User | Remove entity from tracker |
+
+*(Note: TV Shows also include nested `/episodes` and `/users/me/episodes` endpoints.)*
 
 ### Docs
 
