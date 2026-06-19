@@ -19,8 +19,11 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl='v1/auth/token')
 
 # openssl rand -hex 32 to generate new secret key
 # Get secret key from environment with a default for tests
-SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'test_secret_key')
-if SECRET_KEY == 'test_secret_key':
+SECRET_KEY = (
+    os.getenv('JWT_SECRET_KEY')
+    or 'test_secret_key_which_must_be_at_least_32_bytes_long'
+)
+if SECRET_KEY == 'test_secret_key_which_must_be_at_least_32_bytes_long':
     logger.warning('Using default test secret key for JWT.')
 ALGORITHM = 'HS256'
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
