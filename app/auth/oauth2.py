@@ -3,6 +3,7 @@ This module creates access tokens and verifys tokens.
 """
 
 import os
+import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
@@ -18,13 +19,15 @@ from app.log.logging_config import logger
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl='v1/auth/token')
 
 # openssl rand -hex 32 to generate new secret key
-# Get secret key from environment with a default for tests
-SECRET_KEY = (
-    os.getenv('JWT_SECRET_KEY')
-    or 'test_secret_key_which_must_be_at_least_32_bytes_long'
-)
-if SECRET_KEY == 'test_secret_key_which_must_be_at_least_32_bytes_long':
-    logger.warning('Using default test secret key for JWT.')
+# Get secret key from environment; if unset, generate a random one so that
+# no fixed, guessable key can ever be used to sign or verify tokens.
+SECRET_KEY = os.getenv('JWT_SECRET_KEY') or secrets.token_hex(32)
+if not os.getenv('JWT_SECRET_KEY'):
+    logger.warning(
+        'JWT_SECRET_KEY not set; using a randomly generated key for this '
+        'process. Tokens will not persist across restarts or be shared '
+        'across workers.'
+    )
 ALGORITHM = 'HS256'
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
