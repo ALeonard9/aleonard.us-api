@@ -2,7 +2,6 @@
 This module creates access tokens and verifys tokens.
 """
 
-import os
 import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Optional
@@ -12,24 +11,42 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
+from app.config import get_settings
 from app.db import db_user
 from app.db.database import get_db
 from app.log.logging_config import logger
 
+settings = get_settings()
+
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl='v1/auth/token')
 
-# openssl rand -hex 32 to generate new secret key
-# Get secret key from environment; if unset, generate a random one so that
-# no fixed, guessable key can ever be used to sign or verify tokens.
-SECRET_KEY = os.getenv('JWT_SECRET_KEY') or secrets.token_hex(32)
-if not os.getenv('JWT_SECRET_KEY'):
+
+def _resolve_secret_key() -> str:
+    """
+    Resolve the JWT signing secret.
+
+    A fixed ``JWT_SECRET_KEY`` is required in deployed environments (dev/prod)
+    so tokens survive restarts and are shared across workers. Local/CI fall
+    back to a random per-process key with a warning.
+    """
+    # openssl rand -hex 32 to generate a new secret key
+    if settings.jwt_secret_key:
+        return settings.jwt_secret_key
+    if settings.env in ('dev', 'prod', 'gs'):
+        raise RuntimeError(
+            f'JWT_SECRET_KEY must be set in the {settings.env} environment'
+        )
     logger.warning(
         'JWT_SECRET_KEY not set; using a randomly generated key for this '
         'process. Tokens will not persist across restarts or be shared '
         'across workers.'
     )
+    return secrets.token_hex(32)
+
+
+SECRET_KEY = _resolve_secret_key()
 ALGORITHM = 'HS256'
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = settings.access_token_expire_minutes
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
@@ -70,3 +87,18 @@ def get_current_user(
     if user is None:
         raise credentials_exception
     return user
+
+
+def require_admin(current_user: list = Depends(get_current_user)) -> list:
+    """
+    Dependency that allows only admin users through.
+
+    ``get_current_user`` returns a one-element list (``[DbUser]``); reuse it so
+    the same object is available to the route.
+    """
+    if not current_user or current_user[0].user_group != 'admin':
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail='Admin privileges required',
+        )
+    return current_user

@@ -4,7 +4,6 @@ This module contains the main application setup and routing.
 
 import asyncio
 import json
-import os
 
 import uvicorn
 from fastapi import FastAPI
@@ -16,11 +15,11 @@ from sqlalchemy.exc import SQLAlchemyError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from .auth import authentication
+from .config import get_settings
 from .db import db_user, models
 from .db.database import engine, get_db
 from .log.logging_config import logger
 from .router.v1 import (
-    book,
     user,
     router_countries,
     router_movies,
@@ -35,10 +34,12 @@ from .utils.exceptions import (
     validation_exception_handler,
 )
 
+settings = get_settings()
+
 
 # Create FastAPI app
 app = FastAPI(
-    title='aleonard.us API ' + os.getenv('ENV', 'local'),
+    title='aleonard.us API ' + settings.env,
     description='This is the API for aleonard.us',
     version='0.0.1',
     contact={
@@ -47,24 +48,30 @@ app = FastAPI(
         'email': 'aleonard9@hotmail.com',
     },
     openapi_tags=[
-        {'name': 'users', 'description': 'User operations'},
-        {'name': 'authentication', 'description': 'Auth operations'},
-        {'name': 'books', 'description': 'Book operations'},
         {'name': 'intro', 'description': 'Welcome message'},
+        {'name': 'authentication', 'description': 'Auth operations'},
+        {'name': 'users', 'description': 'User operations'},
+        {
+            'name': 'Movies',
+            'description': 'Movie catalog, search, and per-user tracker',
+        },
+        {'name': 'TV', 'description': 'TV shows, episodes, and per-user tracker'},
+        {'name': 'Games', 'description': 'Video game catalog and per-user tracker'},
+        {'name': 'Books', 'description': 'Book catalog and per-user tracker'},
+        {'name': 'Countries', 'description': 'Country catalog and per-user tracker'},
     ],
     openapi_url='/openapi.json',
     servers=[
         {'url': 'http://localhost:8000', 'description': 'Local server'},
     ],
     license_info={
-        'name': 'Apache 2.0',
-        'url': 'https://www.apache.org/licenses/LICENSE-2.0.html',
+        'name': 'GPL-3.0',
+        'url': 'https://www.gnu.org/licenses/gpl-3.0.html',
     },
 )
 
 app.include_router(authentication.router, prefix='/v1/auth')
 app.include_router(user.router, prefix='/v1/users')
-app.include_router(book.router, prefix='/v1/books')
 app.include_router(router_countries.router)
 app.include_router(router_movies.router)
 app.include_router(router_games.router)
@@ -107,11 +114,10 @@ async def generate_openapi_json():
     logger.info('OpenAPI schema generated and written to openapi.json')
 
 
-if os.getenv('ENV') == 'local':
-    origins = ['http://localhost:3000']
+if settings.env in ('local', 'dev'):
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=origins,
+        allow_origins=settings.cors_origin_list,
         allow_credentials=True,
         allow_methods=['*'],
         allow_headers=['*'],
@@ -121,13 +127,17 @@ if os.getenv('ENV') == 'local':
 async def start_server():
     """
     Starts uvicorn server with the FastAPI app.
-    """
-    if os.getenv('ENV') in ['local', 'dev']:
-        models.Base.metadata.drop_all(bind=engine)
-        logger.debug('Dropped all tables')
 
-    models.Base.metadata.create_all(engine)
-    logger.info('Created all tables')
+    Schema ownership: local/CI use SQLite and create tables directly for a
+    zero-setup developer loop. Deployed environments (dev/prod) own their schema
+    through Alembic migrations (``alembic upgrade head``) so data is never
+    dropped on restart.
+    """
+    if settings.is_local or settings.is_ci:
+        models.Base.metadata.create_all(engine)
+        logger.info('Created all tables (local/CI)')
+    else:
+        logger.info('Skipping create_all; schema managed by Alembic migrations')
 
     try:
         db = next(get_db())
@@ -135,7 +145,7 @@ async def start_server():
     except SQLAlchemyError as e:
         logger.error('Unexpected error: %s', e)
 
-    if os.getenv('ENV') == 'local':
+    if settings.is_local:
         await generate_openapi_json()
 
     uvicorn.run(
@@ -143,7 +153,7 @@ async def start_server():
         host='0.0.0.0',
         port=8000,
         reload=True,
-        log_level=os.getenv('LOG_LEVEL', 'INFO').lower(),
+        log_level=settings.log_level.lower(),
     )
 
 

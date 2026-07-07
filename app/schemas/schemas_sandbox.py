@@ -89,6 +89,14 @@ class MovieResponse(MovieBase):
     model_config = ConfigDict(from_attributes=True)
 
 
+class MovieSearchResult(BaseModel):
+    imdb: str
+    title: str
+    year: Optional[str] = None
+    poster_url: Optional[str] = None
+    type: Optional[str] = None
+
+
 class UserMovieBase(BaseModel):
     rank: Optional[int] = None
     completed: Optional[int] = None

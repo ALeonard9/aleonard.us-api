@@ -3,13 +3,12 @@ Logging configuration for the API
 """
 
 import logging
-import os
 from logging.handlers import RotatingFileHandler
 from typing import override
 
 import logging_loki
 
-# from dotenv import load_dotenv
+from app.config import get_settings
 
 
 class CustomFormatter(logging.Formatter):
@@ -57,54 +56,51 @@ def configure_logger():
     # Avoid adding handlers multiple times
     if logger.hasHandlers():
         return
+
+    settings = get_settings()
+
     # Create a console handler and set the level
     ch = logging.StreamHandler()
 
-    # Create a file handler and set the level
-    # Mode 'w' will overwrite the log file each time the API is started, 'a' will append
-    log_file = 'app/log/api.log'
-    fh = logging.FileHandler(log_file, mode='a')
-
-    # Create a Loki handler
-    logging_loki.emitter.LokiEmitter.level_tag = 'level'
-    loki_url = f'{os.getenv("LOKI_URL")}/loki/api/v1/push'
-    print('Loki URL:', loki_url)
-
-    lh = logging_loki.LokiHandler(
-        url=loki_url,
-        version='1',
-        tags={
-            'service': 'aleonard-us-api',
-            'environment': os.getenv('ENV'),
-            'landing_zone': os.getenv('LZ'),
-        },
-    )
-
-    logger.debug('API Env set to: %s', os.getenv('ENV'))
-    # load_dotenv(dotenv_path='env/dev.env')
-
     # Set the level for the logger
-    log_level_var = os.getenv('LOG_LEVEL', 'INFO').upper()
-    logger.setLevel(log_level_var)
+    logger.setLevel(settings.log_level.upper())
 
     # Create a formatter and set it for the handler
     file_log_formatter = logging.Formatter(
         '%(levelname)s: [%(name)s] %(asctime)s => %(message)s (%(filename)s:%(lineno)d)'
     )
-
-    # Set date format
     file_log_formatter.datefmt = '%Y-%m-%d %H:%M:%S'
 
     # Used separate formatters as color ASCII threw off the file log formatting
     ch.setFormatter(CustomFormatter())
+    logger.addHandler(ch)
+
+    logger.debug('API env set to: %s', settings.env)
+
+    # File + Loki handlers are noise in CI; only attach them when deployed/local.
+    if settings.is_ci:
+        return
+
+    # Mode 'a' appends to the log file across restarts.
+    log_file = 'app/log/api.log'
+    fh = logging.FileHandler(log_file, mode='a')
     fh.setFormatter(file_log_formatter)
 
-    # add a rotating handler
-    handler = RotatingFileHandler(log_file, maxBytes=10485760, backupCount=10)
-    logger.addHandler(handler)
+    # Rotating file handler
+    rotating_handler = RotatingFileHandler(log_file, maxBytes=10485760, backupCount=10)
+    logger.addHandler(rotating_handler)
+    logger.addHandler(fh)
 
-    # Add the handler to the logger
-    logger.addHandler(ch)
-    if os.getenv('ENV') != 'github':
-        logger.addHandler(fh)
-        logger.addHandler(lh)
+    # Ship logs to Grafana Loki when a URL is configured.
+    if settings.loki_url:
+        logging_loki.emitter.LokiEmitter.level_tag = 'level'
+        loki_handler = logging_loki.LokiHandler(
+            url=f'{settings.loki_url}/loki/api/v1/push',
+            version='1',
+            tags={
+                'service': 'aleonard-us-api',
+                'environment': settings.env,
+                'landing_zone': settings.lz,
+            },
+        )
+        logger.addHandler(loki_handler)

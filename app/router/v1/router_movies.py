@@ -10,15 +10,17 @@ from sqlalchemy.orm import Session
 
 from app.db.database import get_db
 from app.db.models_sandbox import DbMovie, DbUserMovie
-from app.auth.oauth2 import get_current_user
+from app.auth.oauth2 import get_current_user, require_admin
 from app.schemas.schemas_sandbox import (
     MovieCreate,
     MovieResponse,
+    MovieSearchResult,
     MovieUpdate,
     UserMovieCreate,
     UserMovieResponse,
     UserMovieUpdate,
 )
+from app.services.movie_search import search_movies as omdb_search_movies
 
 router = APIRouter(prefix='/v1', tags=['Movies'])
 
@@ -29,10 +31,24 @@ def get_all_movies(db: Session = Depends(get_db)):
     return db.query(DbMovie).all()
 
 
+@router.get('/movies/search', response_model=List[MovieSearchResult])
+def search_movies_endpoint(
+    q: str,
+    current_user: list = Depends(get_current_user),
+):
+    del current_user  # any authenticated user may search
+    return omdb_search_movies(q)
+
+
 @router.post(
     '/movies', response_model=MovieResponse, status_code=status.HTTP_201_CREATED
 )
-def create_movie(request: MovieCreate, db: Session = Depends(get_db)):
+def create_movie(
+    request: MovieCreate,
+    db: Session = Depends(get_db),
+    current_user: list = Depends(require_admin),
+):
+    del current_user
     existing = db.query(DbMovie).filter(DbMovie.imdb == request.imdb).first()
     if existing:
         raise HTTPException(
@@ -47,7 +63,13 @@ def create_movie(request: MovieCreate, db: Session = Depends(get_db)):
 
 
 @router.put('/movies/{movie_id}', response_model=MovieResponse)
-def update_movie(movie_id: str, request: MovieUpdate, db: Session = Depends(get_db)):
+def update_movie(
+    movie_id: str,
+    request: MovieUpdate,
+    db: Session = Depends(get_db),
+    current_user: list = Depends(require_admin),
+):
+    del current_user
     movie = db.query(DbMovie).filter(DbMovie.id == movie_id).first()
     if not movie:
         raise HTTPException(
@@ -64,7 +86,12 @@ def update_movie(movie_id: str, request: MovieUpdate, db: Session = Depends(get_
 
 
 @router.delete('/movies/{movie_id}', status_code=status.HTTP_204_NO_CONTENT)
-def delete_movie(movie_id: str, db: Session = Depends(get_db)):
+def delete_movie(
+    movie_id: str,
+    db: Session = Depends(get_db),
+    current_user: list = Depends(require_admin),
+):
+    del current_user
     movie = db.query(DbMovie).filter(DbMovie.id == movie_id).first()
     if not movie:
         raise HTTPException(
