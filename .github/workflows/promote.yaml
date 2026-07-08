@@ -1,0 +1,66 @@
+name: Promote image
+
+# Promote a tested+scanned artifact between environments by DIGEST — never rebuilds.
+# See www.aleonard.us-docker/docs/PROMOTION.md. Copy this file to -web / -mcp
+# (only IMAGE_NAME differs, which is derived from the repo automatically).
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_tag:
+        description: 'Source tag to promote (the tested artifact, e.g. dev or qa)'
+        default: 'dev'
+        required: true
+      target:
+        description: 'Target environment'
+        type: choice
+        options: [qa, prod]
+        required: true
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    # Maps to a GitHub Environment; add a required reviewer on `prod` so this
+    # job pauses for manual approval before promoting to production.
+    environment: ${{ inputs.target }}
+    steps:
+      - name: Log in to GHCR
+        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Resolve source digest
+        id: src
+        run: |
+          set -euo pipefail
+          ref="${REGISTRY}/${IMAGE_NAME}:${{ inputs.source_tag }}"
+          digest=$(docker buildx imagetools inspect "$ref" --format '{{.Manifest.Digest}}')
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+          echo "Promoting ${IMAGE_NAME}@${digest} → :${{ inputs.target }}"
+
+      - name: Re-tag the exact digest to the target (no rebuild)
+        run: |
+          set -euo pipefail
+          docker buildx imagetools create \
+            --tag "${REGISTRY}/${IMAGE_NAME}:${{ inputs.target }}" \
+            --tag "${REGISTRY}/${IMAGE_NAME}:${{ inputs.target }}-${{ github.run_number }}" \
+            "${REGISTRY}/${IMAGE_NAME}@${{ steps.src.outputs.digest }}"
+
+      - name: Record promotion
+        run: |
+          {
+            echo "### Promoted \`${{ inputs.source_tag }}\` → \`${{ inputs.target }}\`"
+            echo ""
+            echo "- Image: \`${IMAGE_NAME}@${{ steps.src.outputs.digest }}\`"
+            echo "- Approved by: @${{ github.actor }}"
+          } >> "$GITHUB_STEP_SUMMARY"
