@@ -127,6 +127,12 @@ class RankingReorder(BaseModel):
     movie_ids: List[str]
 
 
+class RankPlacement(BaseModel):
+    """Target 1-based position at which to place a movie in the ranked list."""
+
+    position: int
+
+
 # --- TV Shows ---
 class TVShowBase(BaseModel):
     title: str

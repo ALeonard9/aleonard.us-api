@@ -39,7 +39,8 @@ def _make_movie(test_client: TestClient, imdb='tt1375666', title='Inception') ->
     return resp.json()['id']
 
 
-def test_mark_movie_to_rankings_assigns_rank(test_client: TestClient):
+def test_mark_movie_to_rankings_is_unplaced(test_client: TestClient):
+    """Adding to Rankings leaves the movie unplaced (rank None) until positioned."""
     movie_id = _make_movie(test_client)
     user_headers = {'Authorization': f"Bearer {test_client.first_user.token}"}
 
@@ -52,8 +53,51 @@ def test_mark_movie_to_rankings_assigns_rank(test_client: TestClient):
     data = response.json()
     assert data['on_rankings'] is True
     assert data['on_watchlist'] is False
-    assert data['rank'] == 1
+    assert data['rank'] is None
     assert data['notes'] == 'Mind-bending!'
+
+
+def test_set_movie_rank_inserts_and_shifts(test_client: TestClient):
+    """Placing a movie at position N shifts existing movies at/after N down."""
+    user_headers = {'Authorization': f"Bearer {test_client.first_user.token}"}
+    ids = []
+    for i in range(3):
+        mid = _make_movie(test_client, imdb=f"tt700{i}", title=f"Ranked {i}")
+        test_client.post(
+            f"/v1/users/me/movies/{mid}",
+            headers=user_headers,
+            json={'on_rankings': True},
+        )
+        ids.append(mid)
+    # Establish an initial 1..3 order.
+    test_client.put(
+        '/v1/users/me/movies/rankings/order',
+        headers=user_headers,
+        json={'movie_ids': ids},
+    )
+
+    # A fresh movie, added to rankings (unplaced), then placed at position 2.
+    new_id = _make_movie(test_client, imdb='tt7999', title='Inserted')
+    test_client.post(
+        f"/v1/users/me/movies/{new_id}",
+        headers=user_headers,
+        json={'on_rankings': True},
+    )
+    resp = test_client.put(
+        f"/v1/users/me/movies/{new_id}/rank",
+        headers=user_headers,
+        json={'position': 2},
+    )
+    assert resp.status_code == 200
+    assert resp.json()['rank'] == 2
+
+    listing = test_client.get('/v1/users/me/movies', headers=user_headers).json()
+    ranked = sorted(
+        [m for m in listing if m['rank'] is not None], key=lambda m: m['rank']
+    )
+    order = [(m['rank'], m['movie']['id']) for m in ranked]
+    # ids[0]=1, inserted=2, ids[1]=3, ids[2]=4
+    assert order == [(1, ids[0]), (2, new_id), (3, ids[1]), (4, ids[2])]
 
 
 def test_lists_are_independent(test_client: TestClient):
@@ -78,7 +122,7 @@ def test_lists_are_independent(test_client: TestClient):
     )
     assert r.json()['on_watchlist'] is True
     assert r.json()['on_rankings'] is True
-    assert r.json()['rank'] == 1
+    assert r.json()['rank'] is None  # unplaced until positioned
 
     # Remove from rankings -> still on watchlist, rank cleared.
     r = test_client.put(
@@ -139,7 +183,7 @@ def test_get_user_movies(test_client: TestClient):
     assert response.status_code == 200
     data = response.json()
     assert len(data) > 0
-    assert data[0]['rank'] == 1
+    assert data[0]['on_rankings'] is True
 
 
 def test_create_movie_unauthenticated(test_client: TestClient):

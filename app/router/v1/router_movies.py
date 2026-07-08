@@ -6,6 +6,7 @@ This module contains the API routes for Movies.
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.db.database import get_db
@@ -16,6 +17,7 @@ from app.schemas.schemas_sandbox import (
     MovieResponse,
     MovieSearchResult,
     MovieUpdate,
+    RankPlacement,
     RankingReorder,
     UserMovieCreate,
     UserMovieResponse,
@@ -121,19 +123,18 @@ def _get_tracker(db: Session, user_pk: int, movie_pk: int):
     )
 
 
-def _next_rank(db: Session, user_pk: int) -> int:
-    """Return the next rank position (append to the end of the ranked list)."""
-    highest = (
-        db.query(DbUserMovie.rank)
+def _placed_count(db: Session, user_pk: int) -> int:
+    """Number of movies with an assigned rank position for this user."""
+    return (
+        db.query(func.count())  # pylint: disable=not-callable
+        .select_from(DbUserMovie)
         .filter(
             DbUserMovie.user_id == user_pk,
             DbUserMovie.on_rankings.is_(True),
             DbUserMovie.rank.isnot(None),
         )
-        .order_by(DbUserMovie.rank.desc())
-        .first()
+        .scalar()
     )
-    return (highest[0] + 1) if highest and highest[0] is not None else 1
 
 
 @router.get('/users/me/movies', response_model=List[UserMovieResponse])
@@ -168,6 +169,53 @@ def reorder_rankings(
     )
 
 
+@router.put('/users/me/movies/{movie_id}/rank', response_model=UserMovieResponse)
+def set_movie_rank(
+    movie_id: str,
+    request: RankPlacement,
+    db: Session = Depends(get_db),
+    current_user: list = Depends(get_current_user),
+):
+    """
+    Place a movie at an exact 1-based position in the ranked list, shifting the
+    movies at and below that position down by one. Works for a not-yet-ranked
+    movie (jump it in) or an already-ranked one (move it).
+    """
+    user_pk = current_user[0].pk
+    movie = _get_movie(db, movie_id)
+    tracker = _get_tracker(db, user_pk, movie.pk)
+    if not tracker:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail='Movie not marked'
+        )
+
+    old_rank = tracker.rank
+    tracker.on_rankings = True
+    # Remove from its current slot first so the shift math excludes it.
+    tracker.rank = None
+    db.flush()
+    if old_rank is not None:
+        db.query(DbUserMovie).filter(
+            DbUserMovie.user_id == user_pk,
+            DbUserMovie.on_rankings.is_(True),
+            DbUserMovie.rank.isnot(None),
+            DbUserMovie.rank > old_rank,
+        ).update({DbUserMovie.rank: DbUserMovie.rank - 1}, synchronize_session=False)
+
+    target = max(1, min(request.position, _placed_count(db, user_pk) + 1))
+    db.query(DbUserMovie).filter(
+        DbUserMovie.user_id == user_pk,
+        DbUserMovie.on_rankings.is_(True),
+        DbUserMovie.rank.isnot(None),
+        DbUserMovie.rank >= target,
+    ).update({DbUserMovie.rank: DbUserMovie.rank + 1}, synchronize_session=False)
+
+    tracker.rank = target
+    db.commit()
+    db.refresh(tracker)
+    return tracker
+
+
 @router.post(
     '/users/me/movies/{movie_id}',
     response_model=UserMovieResponse,
@@ -199,8 +247,10 @@ def mark_movie(
             if key in data:
                 setattr(tracker, key, data[key])
 
-    if tracker.on_rankings and tracker.rank is None:
-        tracker.rank = _next_rank(db, user_pk)
+    # Newly added to Rankings stays unplaced (rank = None) until the user
+    # assigns a position — it should not jump to the top or bottom.
+    if not tracker.on_rankings:
+        tracker.rank = None
     db.commit()
     db.refresh(tracker)
     return tracker
@@ -225,10 +275,7 @@ def update_user_movie(
     for key, value in request.model_dump(exclude_unset=True).items():
         setattr(tracker, key, value)
 
-    # Newly added to rankings without a position -> append to the end.
-    if tracker.on_rankings and tracker.rank is None:
-        tracker.rank = _next_rank(db, user_pk)
-    # Removed from rankings -> clear its position.
+    # Added to Rankings stays unplaced until positioned; removed clears position.
     if not tracker.on_rankings:
         tracker.rank = None
 

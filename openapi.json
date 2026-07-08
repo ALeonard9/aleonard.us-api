@@ -951,6 +951,64 @@
         ]
       }
     },
+    "/v1/users/me/movies/{movie_id}/rank": {
+      "put": {
+        "tags": [
+          "Movies"
+        ],
+        "summary": "Set Movie Rank",
+        "description": "Place a movie at an exact 1-based position in the ranked list, shifting the\nmovies at and below that position down by one. Works for a not-yet-ranked\nmovie (jump it in) or an already-ranked one (move it).",
+        "operationId": "set_movie_rank_v1_users_me_movies__movie_id__rank_put",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "movie_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Movie Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RankPlacement"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserMovieResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/users/me/movies/{movie_id}": {
       "post": {
         "tags": [
@@ -3241,6 +3299,20 @@
         ],
         "title": "OutUserDisplay",
         "description": "Schema for displaying user data."
+      },
+      "RankPlacement": {
+        "properties": {
+          "position": {
+            "type": "integer",
+            "title": "Position"
+          }
+        },
+        "type": "object",
+        "required": [
+          "position"
+        ],
+        "title": "RankPlacement",
+        "description": "Target 1-based position at which to place a movie in the ranked list."
       },
       "RankingReorder": {
         "properties": {
