@@ -99,6 +99,24 @@ class MovieResponse(MovieBase):
     model_config = ConfigDict(from_attributes=True)
 
 
+class MovieSummary(BaseModel):
+    """Lightweight movie for list responses — omits the large ``plot`` field."""
+
+    id: str
+    title: str
+    imdb: str
+    release_date: Optional[datetime] = None
+    rating_imdb: Optional[float] = None
+    runtime: Optional[int] = None
+    rated: Optional[str] = None
+    poster_url: Optional[str] = None
+    year: Optional[int] = None
+    genre: Optional[str] = None
+    director: Optional[str] = None
+    actors: Optional[str] = None
+    model_config = ConfigDict(from_attributes=True)
+
+
 class MovieSearchResult(BaseModel):
     imdb: str
     title: str
@@ -125,7 +143,7 @@ class UserMovieUpdate(UserMovieBase):
 
 class UserMovieResponse(UserMovieBase):
     id: str
-    movie: MovieResponse
+    movie: MovieSummary
     created_at: datetime
     updated_at: datetime
     model_config = ConfigDict(from_attributes=True)

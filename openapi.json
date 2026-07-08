@@ -946,65 +946,14 @@
         ]
       }
     },
-    "/v1/users/me/movies/rankings/order": {
-      "put": {
+    "/v1/users/me/movies/{movie_id}": {
+      "get": {
         "tags": [
           "Movies"
         ],
-        "summary": "Reorder Rankings",
-        "description": "Persist a new ranking order (drag-and-drop). Rank = position in the list.",
-        "operationId": "reorder_rankings_v1_users_me_movies_rankings_order_put",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RankingReorder"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/UserMovieResponse"
-                  },
-                  "type": "array",
-                  "title": "Response Reorder Rankings V1 Users Me Movies Rankings Order Put"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ]
-      }
-    },
-    "/v1/users/me/movies/{movie_id}/rank": {
-      "put": {
-        "tags": [
-          "Movies"
-        ],
-        "summary": "Set Movie Rank",
-        "description": "Place a movie at an exact 1-based position in the ranked list, shifting the\nmovies at and below that position down by one. Works for a not-yet-ranked\nmovie (jump it in) or an already-ranked one (move it).",
-        "operationId": "set_movie_rank_v1_users_me_movies__movie_id__rank_put",
+        "summary": "Get User Movie",
+        "description": "Return the current user's tracker for one movie (404 if not tracked).",
+        "operationId": "get_user_movie_v1_users_me_movies__movie_id__get",
         "security": [
           {
             "OAuth2PasswordBearer": []
@@ -1021,16 +970,6 @@
             }
           }
         ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RankPlacement"
-              }
-            }
-          }
-        },
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -1053,9 +992,7 @@
             }
           }
         }
-      }
-    },
-    "/v1/users/me/movies/{movie_id}": {
+      },
       "post": {
         "tags": [
           "Movies"
@@ -1193,6 +1130,115 @@
         "responses": {
           "204": {
             "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/users/me/movies/rankings/order": {
+      "put": {
+        "tags": [
+          "Movies"
+        ],
+        "summary": "Reorder Rankings",
+        "description": "Persist a new ranking order (drag-and-drop). Rank = position in the list.",
+        "operationId": "reorder_rankings_v1_users_me_movies_rankings_order_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RankingReorder"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/UserMovieResponse"
+                  },
+                  "type": "array",
+                  "title": "Response Reorder Rankings V1 Users Me Movies Rankings Order Put"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/users/me/movies/{movie_id}/rank": {
+      "put": {
+        "tags": [
+          "Movies"
+        ],
+        "summary": "Set Movie Rank",
+        "description": "Place a movie at an exact 1-based position in the ranked list, shifting the\nmovies at and below that position down by one. Works for a not-yet-ranked\nmovie (jump it in) or an already-ranked one (move it).",
+        "operationId": "set_movie_rank_v1_users_me_movies__movie_id__rank_put",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "movie_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Movie Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RankPlacement"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserMovieResponse"
+                }
+              }
+            }
           },
           "422": {
             "description": "Validation Error",
@@ -3248,6 +3294,130 @@
         ],
         "title": "MovieSearchResult"
       },
+      "MovieSummary": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "imdb": {
+            "type": "string",
+            "title": "Imdb"
+          },
+          "release_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Release Date"
+          },
+          "rating_imdb": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rating Imdb"
+          },
+          "runtime": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Runtime"
+          },
+          "rated": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rated"
+          },
+          "poster_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Poster Url"
+          },
+          "year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Year"
+          },
+          "genre": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Genre"
+          },
+          "director": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Director"
+          },
+          "actors": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actors"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "imdb"
+        ],
+        "title": "MovieSummary",
+        "description": "Lightweight movie for list responses \u2014 omits the large ``plot`` field."
+      },
       "MovieUpdate": {
         "properties": {
           "title": {
@@ -4373,7 +4543,7 @@
             "title": "Id"
           },
           "movie": {
-            "$ref": "#/components/schemas/MovieResponse"
+            "$ref": "#/components/schemas/MovieSummary"
           },
           "created_at": {
             "type": "string",

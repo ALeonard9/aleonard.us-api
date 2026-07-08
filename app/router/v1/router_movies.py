@@ -171,6 +171,22 @@ def get_user_movies(
     return db.query(DbUserMovie).filter(DbUserMovie.user_id == current_user[0].pk).all()
 
 
+@router.get('/users/me/movies/{movie_id}', response_model=UserMovieResponse)
+def get_user_movie(
+    movie_id: str,
+    db: Session = Depends(get_db),
+    current_user: list = Depends(get_current_user),
+):
+    """Return the current user's tracker for one movie (404 if not tracked)."""
+    movie = _get_movie(db, movie_id)
+    tracker = _get_tracker(db, current_user[0].pk, movie.pk)
+    if not tracker:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail='Movie not marked'
+        )
+    return tracker
+
+
 @router.put('/users/me/movies/rankings/order', response_model=List[UserMovieResponse])
 def reorder_rankings(
     request: RankingReorder,
