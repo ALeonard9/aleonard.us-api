@@ -61,6 +61,46 @@
         }
       }
     },
+    "/v1/auth/google": {
+      "post": {
+        "tags": [
+          "authentication"
+        ],
+        "summary": "Google Login",
+        "description": "Sign in with a Google Identity Services ID token.\n\nVerifies the token against the configured Google client id, then upserts the\nuser (creating one on first sign-in) and returns a JWT \u2014 the same shape as\nthe password flow.",
+        "operationId": "google_login_v1_auth_google_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoogleAuthRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/users": {
       "get": {
         "tags": [
@@ -860,12 +900,64 @@
         ]
       }
     },
+    "/v1/users/me/movies/rankings/order": {
+      "put": {
+        "tags": [
+          "Movies"
+        ],
+        "summary": "Reorder Rankings",
+        "description": "Persist a new ranking order (drag-and-drop). Rank = position in the list.",
+        "operationId": "reorder_rankings_v1_users_me_movies_rankings_order_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RankingReorder"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/UserMovieResponse"
+                  },
+                  "type": "array",
+                  "title": "Response Reorder Rankings V1 Users Me Movies Rankings Order Put"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
     "/v1/users/me/movies/{movie_id}": {
       "post": {
         "tags": [
           "Movies"
         ],
         "summary": "Mark Movie",
+        "description": "Add a movie to the user's lists (idempotent \u2014 merges list membership).",
         "operationId": "mark_movie_v1_users_me_movies__movie_id__post",
         "security": [
           {
@@ -921,6 +1013,7 @@
           "Movies"
         ],
         "summary": "Update User Movie",
+        "description": "Update list membership, rank, or notes for a tracked movie.",
         "operationId": "update_user_movie_v1_users_me_movies__movie_id__put",
         "security": [
           {
@@ -2652,6 +2745,20 @@
         "type": "object",
         "title": "CountryUpdate"
       },
+      "GoogleAuthRequest": {
+        "properties": {
+          "credential": {
+            "type": "string",
+            "title": "Credential"
+          }
+        },
+        "type": "object",
+        "required": [
+          "credential"
+        ],
+        "title": "GoogleAuthRequest",
+        "description": "Payload carrying the Google Identity Services ID token (credential)."
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -3134,6 +3241,23 @@
         ],
         "title": "OutUserDisplay",
         "description": "Schema for displaying user data."
+      },
+      "RankingReorder": {
+        "properties": {
+          "movie_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Movie Ids"
+          }
+        },
+        "type": "object",
+        "required": [
+          "movie_ids"
+        ],
+        "title": "RankingReorder",
+        "description": "Ordered list of movie (catalog) ids defining the new ranking order."
       },
       "TVEpisodeCreate": {
         "properties": {
@@ -3845,6 +3969,28 @@
       },
       "UserMovieCreate": {
         "properties": {
+          "on_watchlist": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "On Watchlist"
+          },
+          "on_rankings": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "On Rankings"
+          },
           "rank": {
             "anyOf": [
               {
@@ -3884,6 +4030,28 @@
       },
       "UserMovieResponse": {
         "properties": {
+          "on_watchlist": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "On Watchlist"
+          },
+          "on_rankings": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "On Rankings"
+          },
           "rank": {
             "anyOf": [
               {
@@ -3946,6 +4114,28 @@
       },
       "UserMovieUpdate": {
         "properties": {
+          "on_watchlist": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "On Watchlist"
+          },
+          "on_rankings": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "On Rankings"
+          },
           "rank": {
             "anyOf": [
               {

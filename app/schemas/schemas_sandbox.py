@@ -5,7 +5,7 @@ This module contains Pydantic schemas for Sandbox entities.
 # pylint: disable=missing-class-docstring
 
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict
 
@@ -98,6 +98,8 @@ class MovieSearchResult(BaseModel):
 
 
 class UserMovieBase(BaseModel):
+    on_watchlist: Optional[bool] = None
+    on_rankings: Optional[bool] = None
     rank: Optional[int] = None
     completed: Optional[int] = None
     notes: Optional[str] = None
@@ -117,6 +119,12 @@ class UserMovieResponse(UserMovieBase):
     created_at: datetime
     updated_at: datetime
     model_config = ConfigDict(from_attributes=True)
+
+
+class RankingReorder(BaseModel):
+    """Ordered list of movie (catalog) ids defining the new ranking order."""
+
+    movie_ids: List[str]
 
 
 # --- TV Shows ---

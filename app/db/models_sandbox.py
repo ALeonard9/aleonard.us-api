@@ -64,6 +64,11 @@ class DbUserMovie(DBBaseModel):
     movie_id = Column(Integer, ForeignKey('movies.pk'), nullable=False)
     user_id = Column(Integer, ForeignKey('users.pk'), nullable=False)
 
+    # Two independent lists: a movie may be on the watchlist, in the ranked
+    # list (with a rank position), or both. `completed` is retained from the
+    # legacy import but no longer drives the UI.
+    on_watchlist = Column(Boolean, nullable=False, default=False)
+    on_rankings = Column(Boolean, nullable=False, default=False)
     rank = Column(Integer, nullable=True)
     completed = Column(Integer, nullable=True)
     notes = Column(Text, nullable=True)

@@ -2,10 +2,47 @@
 Tests the user API calls
 """
 
+from unittest.mock import patch
+
 from faker import Faker
 from fastapi.testclient import TestClient
 
+from app.config import Settings
+
 fake = Faker()
+
+
+@patch('app.auth.authentication.get_settings')
+@patch('app.auth.authentication.google_id_token.verify_oauth2_token')
+def test_google_login_creates_user(mock_verify, mock_settings, test_client: TestClient):
+    """A valid Google credential signs in and creates the user on first use."""
+    mock_settings.return_value = Settings(google_client_id='client-123', env='github')
+    email = f'{fake.user_name()}@gmail.com'
+    mock_verify.return_value = {
+        'email': email,
+        'email_verified': True,
+        'name': 'Test Google User',
+    }
+    response = test_client.post(
+        '/v1/auth/google', json={'credential': 'fake-google-id-token'}
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data['access_token']
+    assert data['email'] == email
+    assert data['user_group'] == 'user'
+
+
+@patch('app.auth.authentication.get_settings')
+@patch('app.auth.authentication.google_id_token.verify_oauth2_token')
+def test_google_login_rejects_invalid_token(
+    mock_verify, mock_settings, test_client: TestClient
+):
+    """An invalid Google credential is rejected with 401."""
+    mock_settings.return_value = Settings(google_client_id='client-123', env='github')
+    mock_verify.side_effect = ValueError('bad token')
+    response = test_client.post('/v1/auth/google', json={'credential': 'bad'})
+    assert response.status_code == 401
 
 
 def test_api_user_get_token(

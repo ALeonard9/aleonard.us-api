@@ -31,42 +31,108 @@ def test_get_movies(test_client: TestClient):
     assert len(data) > 0
 
 
-def test_mark_movie(test_client: TestClient):
-    admin_token = test_client.admin_user.token
-    headers = {'Authorization': f"Bearer {admin_token}"}
-
-    response = test_client.post(
-        '/v1/movies', headers=headers, json={'title': 'Inception', 'imdb': 'tt1375666'}
+def _make_movie(test_client: TestClient, imdb='tt1375666', title='Inception') -> str:
+    headers = {'Authorization': f"Bearer {test_client.admin_user.token}"}
+    resp = test_client.post(
+        '/v1/movies', headers=headers, json={'title': title, 'imdb': imdb}
     )
-    movie_id = response.json()['id']
+    return resp.json()['id']
 
-    user_token = test_client.first_user.token
-    user_headers = {'Authorization': f"Bearer {user_token}"}
+
+def test_mark_movie_to_rankings_assigns_rank(test_client: TestClient):
+    movie_id = _make_movie(test_client)
+    user_headers = {'Authorization': f"Bearer {test_client.first_user.token}"}
 
     response = test_client.post(
         f"/v1/users/me/movies/{movie_id}",
         headers=user_headers,
-        json={'rank': 1, 'notes': 'Mind-bending!'},
+        json={'on_rankings': True, 'notes': 'Mind-bending!'},
     )
     assert response.status_code == 201
     data = response.json()
+    assert data['on_rankings'] is True
+    assert data['on_watchlist'] is False
     assert data['rank'] == 1
     assert data['notes'] == 'Mind-bending!'
 
 
-def test_get_user_movies(test_client: TestClient):
-    admin_token = test_client.admin_user.token
-    headers = {'Authorization': f"Bearer {admin_token}"}
+def test_lists_are_independent(test_client: TestClient):
+    movie_id = _make_movie(test_client)
+    user_headers = {'Authorization': f"Bearer {test_client.first_user.token}"}
 
-    response = test_client.post(
-        '/v1/movies', headers=headers, json={'title': 'Inception', 'imdb': 'tt1375666'}
+    # Add to watchlist only.
+    r = test_client.post(
+        f"/v1/users/me/movies/{movie_id}",
+        headers=user_headers,
+        json={'on_watchlist': True},
     )
-    movie_id = response.json()['id']
+    assert r.json()['on_watchlist'] is True
+    assert r.json()['on_rankings'] is False
+    assert r.json()['rank'] is None
 
-    user_token = test_client.first_user.token
-    user_headers = {'Authorization': f"Bearer {user_token}"}
+    # Also add to rankings (idempotent merge) -> now on both.
+    r = test_client.post(
+        f"/v1/users/me/movies/{movie_id}",
+        headers=user_headers,
+        json={'on_rankings': True},
+    )
+    assert r.json()['on_watchlist'] is True
+    assert r.json()['on_rankings'] is True
+    assert r.json()['rank'] == 1
+
+    # Remove from rankings -> still on watchlist, rank cleared.
+    r = test_client.put(
+        f"/v1/users/me/movies/{movie_id}",
+        headers=user_headers,
+        json={'on_rankings': False},
+    )
+    assert r.json()['on_watchlist'] is True
+    assert r.json()['on_rankings'] is False
+    assert r.json()['rank'] is None
+
+    # Remove from watchlist too -> tracker deleted, gone from the list.
+    test_client.put(
+        f"/v1/users/me/movies/{movie_id}",
+        headers=user_headers,
+        json={'on_watchlist': False},
+    )
+    listing = test_client.get('/v1/users/me/movies', headers=user_headers).json()
+    assert all(m['movie']['id'] != movie_id for m in listing)
+
+
+def test_reorder_rankings(test_client: TestClient):
+    user_headers = {'Authorization': f"Bearer {test_client.first_user.token}"}
+    ids = []
+    for i in range(3):
+        mid = _make_movie(test_client, imdb=f"tt900{i}", title=f"Movie {i}")
+        test_client.post(
+            f"/v1/users/me/movies/{mid}",
+            headers=user_headers,
+            json={'on_rankings': True},
+        )
+        ids.append(mid)
+
+    # Reverse the order.
+    reordered = list(reversed(ids))
+    resp = test_client.put(
+        '/v1/users/me/movies/rankings/order',
+        headers=user_headers,
+        json={'movie_ids': reordered},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    ordered_ids = [m['movie']['id'] for m in data]
+    assert ordered_ids == reordered
+    assert [m['rank'] for m in data] == [1, 2, 3]
+
+
+def test_get_user_movies(test_client: TestClient):
+    movie_id = _make_movie(test_client)
+    user_headers = {'Authorization': f"Bearer {test_client.first_user.token}"}
     test_client.post(
-        f"/v1/users/me/movies/{movie_id}", headers=user_headers, json={'rank': 1}
+        f"/v1/users/me/movies/{movie_id}",
+        headers=user_headers,
+        json={'on_rankings': True},
     )
 
     response = test_client.get('/v1/users/me/movies', headers=user_headers)
