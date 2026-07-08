@@ -54,6 +54,12 @@ class DbMovie(DBBaseModel):
     language = Column(String(40), nullable=True)
     rated = Column(String(11), nullable=True)
     poster_url = Column(String(500), nullable=True)
+    # Rich detail (populated from OMDB) for the detail view + filtering.
+    year = Column(Integer, nullable=True)
+    genre = Column(String(255), nullable=True)
+    director = Column(String(512), nullable=True)
+    actors = Column(Text, nullable=True)
+    plot = Column(Text, nullable=True)
 
     user_movies = relationship('DbUserMovie', back_populates='movie')
 

@@ -48,6 +48,11 @@ tasks:
     cmds:
       - alembic revision --autogenerate -m "{{.MSG}}"
 
+  enrich:movies:
+    desc: "Backfill OMDB detail for existing movies (throttled, resumable)"
+    cmds:
+      - python -m app.migration.enrich_movies
+
   import:orion:
     desc: "Import legacy orion (MySQL) data into phoenix. Usage: task import:orion -- --dry-run"
     cmds:

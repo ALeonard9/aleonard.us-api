@@ -23,7 +23,11 @@ from app.schemas.schemas_sandbox import (
     UserMovieResponse,
     UserMovieUpdate,
 )
-from app.services.movie_search import search_movies as omdb_search_movies
+from app.services.movie_search import (
+    apply_detail_to_movie,
+    get_movie_detail,
+    search_movies as omdb_search_movies,
+)
 
 router = APIRouter(prefix='/v1', tags=['Movies'])
 
@@ -59,10 +63,33 @@ def create_movie(
         )
 
     new_movie = DbMovie(**request.model_dump())
+    # Enrich from OMDB on add so detail/filtering work immediately (best effort).
+    detail = get_movie_detail(request.imdb)
+    if detail:
+        apply_detail_to_movie(new_movie, detail)
     db.add(new_movie)
     db.commit()
     db.refresh(new_movie)
     return new_movie
+
+
+@router.get('/movies/{movie_id}', response_model=MovieResponse)
+def get_movie(
+    movie_id: str,
+    db: Session = Depends(get_db),
+    current_user: list = Depends(get_current_user),
+):
+    """Return one movie's full detail, enriching from OMDB on first view."""
+    del current_user
+    movie = _get_movie(db, movie_id)
+    # Lazily backfill detail the first time a sparse movie is opened.
+    if movie.plot is None and movie.director is None:
+        detail = get_movie_detail(movie.imdb)
+        if detail:
+            apply_detail_to_movie(movie, detail)
+            db.commit()
+            db.refresh(movie)
+    return movie
 
 
 @router.put('/movies/{movie_id}', response_model=MovieResponse)

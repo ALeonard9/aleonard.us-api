@@ -186,6 +186,25 @@ def test_get_user_movies(test_client: TestClient):
     assert data[0]['on_rankings'] is True
 
 
+@patch('app.router.v1.router_movies.get_movie_detail')
+def test_get_movie_enriches_on_view(mock_detail, test_client: TestClient):
+    movie_id = _make_movie(test_client)
+    mock_detail.return_value = {
+        'director': 'Christopher Nolan',
+        'actors': 'Leonardo DiCaprio',
+        'genre': 'Sci-Fi',
+        'plot': 'A thief who steals corporate secrets.',
+        'year': 2010,
+    }
+    user_headers = {'Authorization': f"Bearer {test_client.first_user.token}"}
+    resp = test_client.get(f"/v1/movies/{movie_id}", headers=user_headers)
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data['director'] == 'Christopher Nolan'
+    assert data['genre'] == 'Sci-Fi'
+    assert data['year'] == 2010
+
+
 def test_create_movie_unauthenticated(test_client: TestClient):
     response = test_client.post(
         '/v1/movies', json={'title': 'Inception', 'imdb': 'tt1375666'}

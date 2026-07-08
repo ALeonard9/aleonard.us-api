@@ -65,6 +65,11 @@ class MovieBase(BaseModel):
     language: Optional[str] = None
     rated: Optional[str] = None
     poster_url: Optional[str] = None
+    year: Optional[int] = None
+    genre: Optional[str] = None
+    director: Optional[str] = None
+    actors: Optional[str] = None
+    plot: Optional[str] = None
 
 
 class MovieCreate(MovieBase):
@@ -80,6 +85,11 @@ class MovieUpdate(BaseModel):
     language: Optional[str] = None
     rated: Optional[str] = None
     poster_url: Optional[str] = None
+    year: Optional[int] = None
+    genre: Optional[str] = None
+    director: Optional[str] = None
+    actors: Optional[str] = None
+    plot: Optional[str] = None
 
 
 class MovieResponse(MovieBase):
