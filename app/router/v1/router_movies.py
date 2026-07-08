@@ -277,6 +277,7 @@ def mark_movie(
     data = request.model_dump(exclude_unset=True)
 
     if tracker is None:
+        was_on_rankings = False
         tracker = DbUserMovie(
             user_id=user_pk,
             movie_id=movie.pk,
@@ -286,13 +287,15 @@ def mark_movie(
         )
         db.add(tracker)
     else:
+        was_on_rankings = tracker.on_rankings
         for key in ('on_watchlist', 'on_rankings', 'notes'):
             if key in data:
                 setattr(tracker, key, data[key])
 
-    # Newly added to Rankings stays unplaced (rank = None) until the user
-    # assigns a position — it should not jump to the top or bottom.
-    if not tracker.on_rankings:
+    # A movie only holds a rank while it's on the ranked list AND was already
+    # placed. Entering Rankings (or leaving it) resets to unplaced so it lands
+    # in the "to rank" bucket rather than at a stale/leftover position.
+    if not tracker.on_rankings or not was_on_rankings:
         tracker.rank = None
     db.commit()
     db.refresh(tracker)
@@ -315,11 +318,13 @@ def update_user_movie(
             status_code=status.HTTP_404_NOT_FOUND, detail='Movie not marked'
         )
 
+    was_on_rankings = tracker.on_rankings
     for key, value in request.model_dump(exclude_unset=True).items():
         setattr(tracker, key, value)
 
-    # Added to Rankings stays unplaced until positioned; removed clears position.
-    if not tracker.on_rankings:
+    # Entering Rankings (or leaving it) resets to unplaced so a stale/leftover
+    # rank never places the movie automatically; it lands in "to rank" instead.
+    if not tracker.on_rankings or not was_on_rankings:
         tracker.rank = None
 
     # If it's on neither list, drop the tracker entirely.

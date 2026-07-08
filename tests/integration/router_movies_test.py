@@ -144,6 +144,30 @@ def test_lists_are_independent(test_client: TestClient):
     assert all(m['movie']['id'] != movie_id for m in listing)
 
 
+def test_reentering_rankings_starts_unplaced(test_client: TestClient):
+    """Re-adding a movie to Rankings ignores any leftover rank (starts unplaced)."""
+    movie_id = _make_movie(test_client)
+    h = {'Authorization': f"Bearer {test_client.first_user.token}"}
+    # place it at #1
+    test_client.post(
+        f"/v1/users/me/movies/{movie_id}", headers=h, json={'on_rankings': True}
+    )
+    test_client.put(
+        f"/v1/users/me/movies/{movie_id}/rank", headers=h, json={'position': 1}
+    )
+    # remove from rankings, then re-add -> must be unplaced again, not at its old rank
+    test_client.put(
+        f"/v1/users/me/movies/{movie_id}",
+        headers=h,
+        json={'on_watchlist': True, 'on_rankings': False},
+    )
+    r = test_client.post(
+        f"/v1/users/me/movies/{movie_id}", headers=h, json={'on_rankings': True}
+    )
+    assert r.json()['on_rankings'] is True
+    assert r.json()['rank'] is None
+
+
 def test_reorder_rankings(test_client: TestClient):
     user_headers = {'Authorization': f"Bearer {test_client.first_user.token}"}
     ids = []
