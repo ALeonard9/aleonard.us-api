@@ -18,7 +18,11 @@ if settings.is_local:
     )
 else:
     logger.info('SQLALCHEMY_DATABASE_URL host: %s', settings.postgres_host)
-    engine = create_engine(SQLALCHEMY_DATABASE_URL)
+    # pool_pre_ping recycles dead connections so the app survives a DB restart
+    # instead of erroring until the pool is exhausted.
+    engine = create_engine(
+        SQLALCHEMY_DATABASE_URL, pool_pre_ping=True, pool_recycle=1800
+    )
 SessionLocal = sessionmaker(
     autocommit=False, autoflush=False, bind=engine
 )  # pylint: disable=invalid-name
