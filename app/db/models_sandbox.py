@@ -91,6 +91,15 @@ class DbTVShow(DBBaseModel):
     tvmaze = Column(Integer, nullable=True)
     status = Column(String(254), nullable=True)
     poster_url = Column(String(254), nullable=True)
+    # Rich detail (populated from TVMaze) for the detail view + filtering.
+    premiered = Column(DateTime, nullable=True)
+    year = Column(Integer, nullable=True)
+    genre = Column(String(255), nullable=True)
+    network = Column(String(255), nullable=True)
+    runtime = Column(Integer, nullable=True)
+    language = Column(String(40), nullable=True)
+    rating = Column(Float, nullable=True)
+    summary = Column(Text, nullable=True)
 
     user_tv_shows = relationship('DbUserTVShow', back_populates='tv_show')
     episodes = relationship('DbTVEpisode', back_populates='tv_show')
@@ -102,7 +111,12 @@ class DbUserTVShow(DBBaseModel):
     tv_show_id = Column(Integer, ForeignKey('tv_shows.pk'), nullable=False)
     user_id = Column(Integer, ForeignKey('users.pk'), nullable=False)
 
+    # Two independent lists, mirroring the Movies tracker. `status` and
+    # `freeze` are retained from the legacy import but no longer drive the UI.
+    on_watchlist = Column(Boolean, nullable=False, default=False)
+    on_rankings = Column(Boolean, nullable=False, default=False)
     rank = Column(Integer, nullable=True)
+    notes = Column(Text, nullable=True)
     status = Column(String(254), nullable=True)
     freeze = Column(Integer, default=0)
 

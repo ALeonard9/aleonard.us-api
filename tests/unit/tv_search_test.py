@@ -1,0 +1,102 @@
+# pylint: disable=missing-module-docstring, missing-function-docstring
+# pylint: disable=protected-access, missing-class-docstring
+from unittest.mock import MagicMock, patch
+
+from app.services import tv_search
+
+
+def test_strip_html_and_to_date():
+    assert (
+        tv_search._strip_html('<p>Mark <b>Scout</b> leads a team.</p>')
+        == 'Mark Scout leads a team.'
+    )
+    assert tv_search._strip_html('') is None
+    assert tv_search._strip_html(None) is None
+    assert tv_search._to_date('2022-02-18').year == 2022
+    assert tv_search._to_date('not-a-date') is None
+    assert tv_search._to_date(None) is None
+
+
+def test_apply_detail_truncates_and_skips_none():
+    class Show:
+        genre = None
+        language = None
+        summary = None
+
+    s = Show()
+    tv_search.apply_detail_to_show(
+        s, {'genre': 'x' * 999, 'language': 'English', 'summary': None}
+    )
+    assert len(s.genre) == 255  # truncated to column limit
+    assert s.language == 'English'
+    assert s.summary is None  # None values are skipped
+
+
+@patch('app.services.tv_search.requests.get')
+def test_get_tv_show_detail_maps_fields(mock_get):
+    resp = MagicMock()
+    resp.raise_for_status.return_value = None
+    resp.json.return_value = {
+        'id': 44932,
+        'name': 'Severance',
+        'status': 'Running',
+        'premiered': '2022-02-18',
+        'genres': ['Drama', 'Science-Fiction', 'Thriller'],
+        'language': 'English',
+        'averageRuntime': 50,
+        'rating': {'average': 8.7},
+        'network': None,
+        'webChannel': {'name': 'Apple TV+'},
+        'externals': {'imdb': 'tt11280740'},
+        'image': {'medium': 'https://x/m.jpg', 'original': 'https://x/o.jpg'},
+        'summary': '<p>Mark leads a team of severed employees.</p>',
+    }
+    mock_get.return_value = resp
+
+    detail = tv_search.get_tv_show_detail(44932)
+    assert detail['title'] == 'Severance'
+    assert detail['imdb'] == 'tt11280740'
+    assert detail['status'] == 'Running'
+    assert detail['year'] == 2022
+    assert detail['genre'] == 'Drama, Science-Fiction, Thriller'
+    assert detail['network'] == 'Apple TV+'
+    assert detail['runtime'] == 50
+    assert detail['rating'] == 8.7
+    assert detail['summary'] == 'Mark leads a team of severed employees.'
+    assert detail['poster_url'] == 'https://x/o.jpg'
+
+
+def test_get_tv_show_detail_without_id_returns_none():
+    assert tv_search.get_tv_show_detail(None) is None
+
+
+@patch('app.services.tv_search.requests.get')
+def test_get_show_episodes_normalizes(mock_get):
+    resp = MagicMock()
+    resp.raise_for_status.return_value = None
+    resp.json.return_value = [
+        {
+            'id': 2128885,
+            'name': 'Good News About Hell',
+            'season': 1,
+            'number': 1,
+            'airdate': '2022-02-18',
+        },
+        {'id': 2128886, 'name': None, 'season': 1, 'number': 2, 'airdate': ''},
+    ]
+    mock_get.return_value = resp
+
+    episodes = tv_search.get_show_episodes(44932)
+    assert len(episodes) == 2
+    assert episodes[0]['tvmaze'] == 2128885
+    assert episodes[0]['title'] == 'Good News About Hell'
+    assert episodes[0]['season'] == 1
+    assert episodes[0]['season_number'] == 1
+    assert episodes[0]['airdate'].year == 2022
+    # Missing name falls back; missing airdate stays None.
+    assert episodes[1]['title'] == 'Untitled'
+    assert episodes[1]['airdate'] is None
+
+
+def test_get_show_episodes_without_id_returns_empty():
+    assert not tv_search.get_show_episodes(None)

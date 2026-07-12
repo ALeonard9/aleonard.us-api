@@ -53,6 +53,11 @@ tasks:
     cmds:
       - python -m app.migration.enrich_movies
 
+  enrich:tv:
+    desc: "Backfill TVMaze detail + episodes for existing TV shows (throttled, resumable)"
+    cmds:
+      - python -m app.migration.enrich_tv
+
   import:orion:
     desc: "Import legacy orion (MySQL) data into phoenix. Usage: task import:orion -- --dry-run"
     cmds:
