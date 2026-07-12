@@ -168,12 +168,17 @@ class DbVideoGame(DBBaseModel):
 
     title = Column(String(255))
     igdb = Column(Integer, unique=True, nullable=True)
-    poster_url = Column(String(100), nullable=True)
+    poster_url = Column(String(254), nullable=True)
     release_date = Column(DateTime, nullable=True)
     rating = Column(Float, nullable=True)
     time_to_beat = Column(Integer, nullable=True)
     igdb_last_update = Column(DateTime, nullable=True)
     slug = Column(String(255), nullable=True)
+    # Rich detail (populated from IGDB) for the detail view + filtering.
+    year = Column(Integer, nullable=True)
+    genre = Column(String(255), nullable=True)
+    platforms = Column(String(254), nullable=True)
+    summary = Column(Text, nullable=True)
 
     user_games = relationship('DbUserVideoGame', back_populates='game')
 
@@ -184,6 +189,11 @@ class DbUserVideoGame(DBBaseModel):
     game_id = Column(Integer, ForeignKey('video_games.pk'), nullable=False)
     user_id = Column(Integer, ForeignKey('users.pk'), nullable=False)
 
+    # Two independent lists, mirroring the Movies tracker: on_watchlist is the
+    # backlog, on_rankings the played-and-ranked list. `completed` is retained
+    # from the legacy import but no longer drives the UI.
+    on_watchlist = Column(Boolean, nullable=False, default=False)
+    on_rankings = Column(Boolean, nullable=False, default=False)
     rank = Column(Integer, nullable=True)
     completed = Column(Integer, nullable=True)
     notes = Column(Text, nullable=True)

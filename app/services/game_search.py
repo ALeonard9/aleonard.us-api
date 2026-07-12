@@ -1,0 +1,241 @@
+"""
+Video game search proxy.
+
+Wraps the IGDB API (https://api.igdb.com — authenticated with Twitch OAuth
+client credentials, mirroring the legacy orion games page) so the web and
+MCP frontends can look up games without holding the credentials. Results are
+normalized into the shape the ``/v1/games`` create endpoint expects. IGDB is
+also the enrichment source, keyed on the catalog's ``igdb`` id: release
+year, genres, platforms, summary, rating (0–100), and cover art.
+
+Raises 503 when ``TWITCH_CLIENT_ID``/``TWITCH_CLIENT_SECRET`` are not
+configured (same graceful degradation as the OMDB movie search).
+"""
+
+import time
+from datetime import datetime, timezone
+from typing import List, Optional, Tuple
+
+import requests
+from fastapi import HTTPException, status
+
+from app.config import get_settings
+from app.log.logging_config import logger
+
+TWITCH_OAUTH_URL = 'https://id.twitch.tv/oauth2/token'
+IGDB_URL = 'https://api.igdb.com/v4'
+COVER_URL = 'https://images.igdb.com/igdb/image/upload/t_cover_big'
+REQUEST_TIMEOUT = 10
+
+_DETAIL_FIELDS = (
+    'name,slug,first_release_date,total_rating,genres.name,'
+    'platforms.abbreviation,summary,cover.image_id,updated_at'
+)
+
+# (token, expires_at_epoch) — Twitch app tokens last ~60 days; refresh early.
+_token_cache: Tuple[Optional[str], float] = (None, 0.0)
+
+
+def _credentials() -> Tuple[str, str]:
+    settings = get_settings()
+    if not (settings.twitch_client_id and settings.twitch_client_secret):
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail='Game search is not configured '
+            '(TWITCH_CLIENT_ID/TWITCH_CLIENT_SECRET missing)',
+        )
+    return settings.twitch_client_id, settings.twitch_client_secret
+
+
+def _access_token() -> str:
+    """Return a cached Twitch app token, refreshing when near expiry."""
+    global _token_cache  # pylint: disable=global-statement
+    token, expires_at = _token_cache
+    if token and time.time() < expires_at - 300:
+        return token
+
+    client_id, client_secret = _credentials()
+    try:
+        response = requests.post(
+            TWITCH_OAUTH_URL,
+            params={
+                'client_id': client_id,
+                'client_secret': client_secret,
+                'grant_type': 'client_credentials',
+            },
+            timeout=REQUEST_TIMEOUT,
+        )
+        response.raise_for_status()
+        payload = response.json()
+    except (requests.RequestException, ValueError) as exc:
+        logger.error('Twitch OAuth token request failed: %s', exc)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail='Upstream game auth failed',
+        ) from exc
+
+    token = payload['access_token']
+    _token_cache = (token, time.time() + payload.get('expires_in', 3600))
+    return token
+
+
+def _igdb_query(endpoint: str, body: str) -> list:
+    """
+    POST an APIcalypse query to IGDB and return the JSON list.
+
+    On a 401 (token revoked/rotated before its cached expiry) the token
+    cache is evicted and the request retried once with a fresh token.
+    """
+    global _token_cache  # pylint: disable=global-statement
+    client_id, _ = _credentials()
+    for attempt in (1, 2):
+        headers = {
+            'Client-ID': client_id,
+            'Authorization': f'Bearer {_access_token()}',
+        }
+        response = requests.post(
+            f'{IGDB_URL}/{endpoint}',
+            data=body,
+            headers=headers,
+            timeout=REQUEST_TIMEOUT,
+        )
+        if response.status_code == 401 and attempt == 1:
+            _token_cache = (None, 0.0)
+            continue
+        response.raise_for_status()
+        return response.json()
+    return []  # unreachable; keeps the type checker honest
+
+
+def _cover(game: dict) -> Optional[str]:
+    image_id = (game.get('cover') or {}).get('image_id')
+    return f'{COVER_URL}/{image_id}.jpg' if image_id else None
+
+
+def _release(game: dict) -> Optional[datetime]:
+    ts = game.get('first_release_date')
+    if not ts:
+        return None
+    return datetime.fromtimestamp(ts, tz=timezone.utc).replace(tzinfo=None)
+
+
+def _names(game: dict, key: str, name_key: str = 'name') -> Optional[str]:
+    items = game.get(key) or []
+    names = [i.get(name_key) for i in items if i.get(name_key)]
+    return ', '.join(names) if names else None
+
+
+def search_games(query: str) -> List[dict]:
+    """
+    Search IGDB for games matching ``query``.
+
+    Returns a list of normalized dicts (``igdb``, ``title``, ``year``,
+    ``platforms``, ``poster_url``). Raises 400 on an empty query, 503 when
+    unconfigured, and 502 when the upstream call fails.
+    """
+    query = (query or '').strip()
+    if not query:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='Search query must not be empty',
+        )
+
+    # Escape backslashes first, then quotes — otherwise a trailing backslash
+    # (or crafted \" sequence) breaks out of the APIcalypse string literal.
+    escaped = query.replace('\\', '\\\\').replace('"', '\\"')
+    try:
+        payload = _igdb_query(
+            'games',
+            f'search "{escaped}"; fields name,first_release_date,'
+            'platforms.abbreviation,cover.image_id; limit 20;',
+        )
+    except (requests.RequestException, ValueError) as exc:
+        # HTTPExceptions from _igdb_query (503 unconfigured / 502 auth)
+        # propagate untouched — they aren't caught here.
+        logger.error('IGDB search failed for %r: %s', query, exc)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail='Upstream game search failed',
+        ) from exc
+
+    results = []
+    for game in payload:
+        release = _release(game)
+        results.append(
+            {
+                'igdb': game.get('id'),
+                'title': game.get('name'),
+                'year': str(release.year) if release else None,
+                'platforms': _names(game, 'platforms', 'abbreviation'),
+                'poster_url': _cover(game),
+            }
+        )
+    return results
+
+
+# Max lengths for the bounded catalog columns (see models_sandbox.DbVideoGame).
+_FIELD_LIMITS = {
+    'title': 255,
+    'slug': 255,
+    'poster_url': 254,
+    'genre': 255,
+    'platforms': 254,
+}
+
+
+def apply_detail_to_game(game, detail: dict) -> None:
+    """
+    Copy IGDB detail onto a DbVideoGame, truncating to column limits and
+    skipping None values (never clobber a good value with None).
+    """
+    for key, value in detail.items():
+        if value is None:
+            continue
+        if key in _FIELD_LIMITS and isinstance(value, str):
+            value = value[: _FIELD_LIMITS[key]]
+        setattr(game, key, value)
+
+
+def get_game_detail(igdb_id: Optional[int]) -> Optional[dict]:
+    """
+    Fetch full detail for a game by IGDB id and map it to the fields the
+    catalog stores. Returns None when unavailable/unconfigured so callers
+    can skip enrichment gracefully.
+    """
+    if not igdb_id:
+        return None
+    try:
+        payload = _igdb_query(
+            'games',
+            f'fields {_DETAIL_FIELDS}; where id = {int(igdb_id)};',
+        )
+    except HTTPException:
+        # Unconfigured (503) or upstream auth failure — skip enrichment.
+        return None
+    except (requests.RequestException, ValueError) as exc:
+        logger.warning('IGDB detail failed for %s: %s', igdb_id, exc)
+        return None
+    if not payload:
+        return None
+
+    game = payload[0]
+    release = _release(game)
+    rating = game.get('total_rating')
+    updated = game.get('updated_at')
+    return {
+        'title': game.get('name'),
+        'igdb': game.get('id'),
+        'slug': game.get('slug'),
+        'release_date': release,
+        'year': release.year if release else None,
+        'genre': _names(game, 'genres'),
+        'platforms': _names(game, 'platforms', 'abbreviation'),
+        'summary': game.get('summary'),
+        'rating': round(rating, 1) if rating else None,
+        'poster_url': _cover(game),
+        'igdb_last_update': (
+            datetime.fromtimestamp(updated, tz=timezone.utc).replace(tzinfo=None)
+            if updated
+            else None
+        ),
+    }

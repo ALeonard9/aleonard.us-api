@@ -1508,7 +1508,7 @@
               "application/json": {
                 "schema": {
                   "items": {
-                    "$ref": "#/components/schemas/VideoGameResponse"
+                    "$ref": "#/components/schemas/VideoGameSummary"
                   },
                   "type": "array",
                   "title": "Response Get All Games V1 Games Get"
@@ -1555,16 +1555,123 @@
               }
             }
           }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/games/search": {
+      "get": {
+        "tags": [
+          "Video Games"
+        ],
+        "summary": "Search Games Endpoint",
+        "operationId": "search_games_endpoint_v1_games_search_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Q"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/GameSearchResult"
+                  },
+                  "title": "Response Search Games Endpoint V1 Games Search Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
         }
       }
     },
     "/v1/games/{game_id}": {
+      "get": {
+        "tags": [
+          "Video Games"
+        ],
+        "summary": "Get Game",
+        "description": "Return one game's full detail, enriching from IGDB on first view.",
+        "operationId": "get_game_v1_games__game_id__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "game_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Game Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoGameResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
       "put": {
         "tags": [
           "Video Games"
         ],
         "summary": "Update Game",
         "operationId": "update_game_v1_games__game_id__put",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "game_id",
@@ -1615,6 +1722,11 @@
         ],
         "summary": "Delete Game",
         "operationId": "delete_game_v1_games__game_id__delete",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "game_id",
@@ -1673,12 +1785,110 @@
         ]
       }
     },
+    "/v1/users/me/games/rankings/order": {
+      "put": {
+        "tags": [
+          "Video Games"
+        ],
+        "summary": "Reorder Rankings",
+        "description": "Persist a new ranking order (drag-and-drop). Rank = position in the list.",
+        "operationId": "reorder_rankings_v1_users_me_games_rankings_order_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GameRankingReorder"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/UserVideoGameResponse"
+                  },
+                  "type": "array",
+                  "title": "Response Reorder Rankings V1 Users Me Games Rankings Order Put"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
     "/v1/users/me/games/{game_id}": {
+      "get": {
+        "tags": [
+          "Video Games"
+        ],
+        "summary": "Get User Game",
+        "description": "Return the current user's tracker for one game (404 if not tracked).",
+        "operationId": "get_user_game_v1_users_me_games__game_id__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "game_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Game Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserVideoGameResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
       "post": {
         "tags": [
           "Video Games"
         ],
         "summary": "Mark Game",
+        "description": "Add a game to the user's lists (idempotent \u2014 merges list membership).",
         "operationId": "mark_game_v1_users_me_games__game_id__post",
         "security": [
           {
@@ -1734,6 +1944,7 @@
           "Video Games"
         ],
         "summary": "Update User Game",
+        "description": "Update list membership, rank, notes, or 100% flag for a tracked game.",
         "operationId": "update_user_game_v1_users_me_games__game_id__put",
         "security": [
           {
@@ -1809,6 +2020,64 @@
         "responses": {
           "204": {
             "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/users/me/games/{game_id}/rank": {
+      "put": {
+        "tags": [
+          "Video Games"
+        ],
+        "summary": "Set Game Rank",
+        "description": "Place a game at an exact 1-based position in the ranked list, shifting the\ngames at and below that position down by one. Works for a not-yet-ranked\ngame (jump it in) or an already-ranked one (move it).",
+        "operationId": "set_game_rank_v1_users_me_games__game_id__rank_put",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "game_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Game Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RankPlacement"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserVideoGameResponse"
+                }
+              }
+            }
           },
           "422": {
             "description": "Validation Error",
@@ -4355,6 +4624,80 @@
         },
         "type": "object",
         "title": "CountryUpdate"
+      },
+      "GameRankingReorder": {
+        "properties": {
+          "game_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Game Ids"
+          }
+        },
+        "type": "object",
+        "required": [
+          "game_ids"
+        ],
+        "title": "GameRankingReorder",
+        "description": "Ordered list of game (catalog) ids defining the new ranking order."
+      },
+      "GameSearchResult": {
+        "properties": {
+          "igdb": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Igdb"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "year": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Year"
+          },
+          "platforms": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Platforms"
+          },
+          "poster_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Poster Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title"
+        ],
+        "title": "GameSearchResult"
       },
       "GoogleAuthRequest": {
         "properties": {
@@ -6982,6 +7325,28 @@
       },
       "UserVideoGameCreate": {
         "properties": {
+          "on_watchlist": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "On Watchlist"
+          },
+          "on_rankings": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "On Rankings"
+          },
           "rank": {
             "anyOf": [
               {
@@ -7024,8 +7389,7 @@
                 "type": "null"
               }
             ],
-            "title": "Is 100 Percent",
-            "default": false
+            "title": "Is 100 Percent"
           }
         },
         "type": "object",
@@ -7033,6 +7397,28 @@
       },
       "UserVideoGameResponse": {
         "properties": {
+          "on_watchlist": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "On Watchlist"
+          },
+          "on_rankings": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "On Rankings"
+          },
           "rank": {
             "anyOf": [
               {
@@ -7075,15 +7461,14 @@
                 "type": "null"
               }
             ],
-            "title": "Is 100 Percent",
-            "default": false
+            "title": "Is 100 Percent"
           },
           "id": {
             "type": "string",
             "title": "Id"
           },
           "game": {
-            "$ref": "#/components/schemas/VideoGameResponse"
+            "$ref": "#/components/schemas/VideoGameSummary"
           },
           "created_at": {
             "type": "string",
@@ -7107,6 +7492,28 @@
       },
       "UserVideoGameUpdate": {
         "properties": {
+          "on_watchlist": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "On Watchlist"
+          },
+          "on_rankings": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "On Rankings"
+          },
           "rank": {
             "anyOf": [
               {
@@ -7149,8 +7556,7 @@
                 "type": "null"
               }
             ],
-            "title": "Is 100 Percent",
-            "default": false
+            "title": "Is 100 Percent"
           }
         },
         "type": "object",
@@ -7280,6 +7686,50 @@
               }
             ],
             "title": "Slug"
+          },
+          "year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Year"
+          },
+          "genre": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Genre"
+          },
+          "platforms": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Platforms"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary"
           }
         },
         "type": "object",
@@ -7373,6 +7823,50 @@
             ],
             "title": "Slug"
           },
+          "year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Year"
+          },
+          "genre": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Genre"
+          },
+          "platforms": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Platforms"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary"
+          },
           "id": {
             "type": "string",
             "title": "Id"
@@ -7396,6 +7890,113 @@
           "updated_at"
         ],
         "title": "VideoGameResponse"
+      },
+      "VideoGameSummary": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "igdb": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Igdb"
+          },
+          "poster_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Poster Url"
+          },
+          "rating": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rating"
+          },
+          "time_to_beat": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time To Beat"
+          },
+          "slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slug"
+          },
+          "year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Year"
+          },
+          "genre": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Genre"
+          },
+          "platforms": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Platforms"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title"
+        ],
+        "title": "VideoGameSummary",
+        "description": "Lightweight game for list responses \u2014 omits the large ``summary``."
       },
       "VideoGameUpdate": {
         "properties": {
@@ -7488,6 +8089,50 @@
               }
             ],
             "title": "Slug"
+          },
+          "year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Year"
+          },
+          "genre": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Genre"
+          },
+          "platforms": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Platforms"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary"
           }
         },
         "type": "object",
