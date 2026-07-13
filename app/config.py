@@ -37,7 +37,6 @@ class Settings(BaseSettings):
     # --- Auth ---
     jwt_secret_key: Optional[str] = None
     access_token_expire_minutes: int = 30
-    google_client_id: Optional[str] = None
 
     # --- Observability ---
     loki_url: Optional[str] = None

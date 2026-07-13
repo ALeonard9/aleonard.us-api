@@ -23,11 +23,7 @@ from app.schemas.schemas_sandbox import (
     UserMovieResponse,
     UserMovieUpdate,
 )
-from app.services.movie_search import (
-    apply_detail_to_movie,
-    get_movie_detail,
-    search_movies as omdb_search_movies,
-)
+from app.services.movie_search import search_movies as omdb_search_movies
 
 router = APIRouter(prefix='/v1', tags=['Movies'])
 
