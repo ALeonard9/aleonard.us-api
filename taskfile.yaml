@@ -36,6 +36,23 @@ tasks:
       - task: du
         vars: { ENV: '{{.ENV}}' }
 
+  migrate:
+    desc: "Apply Alembic migrations (alembic upgrade head)"
+    cmds:
+      - alembic upgrade head
+
+  revision:
+    desc: "Autogenerate a new Alembic migration. Usage: task revision -- \"message\""
+    vars:
+      MSG: '{{default "migration" .CLI_ARGS}}'
+    cmds:
+      - alembic revision --autogenerate -m "{{.MSG}}"
+
+  import:orion:
+    desc: "Import legacy orion (MySQL) data into phoenix. Usage: task import:orion -- --dry-run"
+    cmds:
+      - python -m app.migration.orion_import {{.CLI_ARGS}}
+
   gh:
     desc: "Open project repository in GitHub"
     cmds:

@@ -1,5 +1,6 @@
 -r base.txt
 -r test.txt
+PyMySQL==1.2.0  # legacy orion (MySQL) source reader for one-off data migration
 black==26.5.1
 pylint==4.0.6
 pre-commit==4.6.0
