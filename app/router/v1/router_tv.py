@@ -1,66 +1,129 @@
 # pylint: disable=missing-function-docstring, useless-return
 """
 This module contains the API routes for TV Shows and Episodes.
+
+Mirrors the Movies pattern: admin-only global catalog CRUD, a TVMaze search
+proxy, lazy enrichment on detail view, and per-user trackers with independent
+Watchlist/Rankings lists plus episode-level watched marks.
 """
 
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.db.database import get_db
 from app.db.models_sandbox import DbTVShow, DbUserTVShow, DbTVEpisode, DbUserTVEpisode
-from app.auth.oauth2 import get_current_user
+from app.auth.oauth2 import get_current_user, require_admin
 from app.schemas.schemas_sandbox import (
-    TVShowCreate,
-    TVShowResponse,
-    TVShowUpdate,
-    UserTVShowCreate,
-    UserTVShowResponse,
-    UserTVShowUpdate,
+    RankPlacement,
     TVEpisodeCreate,
     TVEpisodeResponse,
     TVEpisodeUpdate,
-    UserTVEpisodeCreate,
+    TVRankingReorder,
+    TVShowCreate,
+    TVShowResponse,
+    TVShowSearchResult,
+    TVShowSummary,
+    TVShowUpdate,
     UserTVEpisodeResponse,
-    UserTVEpisodeUpdate,
+    UserTVShowCreate,
+    UserTVShowResponse,
+    UserTVShowUpdate,
+)
+from app.services.tv_search import (
+    apply_detail_to_show,
+    get_tv_show_detail,
+    search_tv_shows as tvmaze_search_shows,
+    sync_episodes,
 )
 
-router = APIRouter(prefix='/v1', tags=['TV Shows'])
+router = APIRouter(prefix='/v1', tags=['TV'])
 
 
-# --- TV Shows Global ---
-@router.get('/tv-shows', response_model=List[TVShowResponse])
+# Global Entity Endpoints
+@router.get('/tv-shows', response_model=List[TVShowSummary])
 def get_all_tv_shows(db: Session = Depends(get_db)):
     return db.query(DbTVShow).all()
+
+
+@router.get('/tv-shows/search', response_model=List[TVShowSearchResult])
+def search_tv_shows_endpoint(
+    q: str,
+    current_user: list = Depends(get_current_user),
+):
+    del current_user  # any authenticated user may search
+    return tvmaze_search_shows(q)
 
 
 @router.post(
     '/tv-shows', response_model=TVShowResponse, status_code=status.HTTP_201_CREATED
 )
-def create_tv_show(request: TVShowCreate, db: Session = Depends(get_db)):
+def create_tv_show(
+    request: TVShowCreate,
+    db: Session = Depends(get_db),
+    current_user: list = Depends(require_admin),
+):
+    del current_user
+    if request.tvmaze:
+        existing = db.query(DbTVShow).filter(DbTVShow.tvmaze == request.tvmaze).first()
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail='TV Show tvmaze id already exists',
+            )
     if request.imdb:
         existing = db.query(DbTVShow).filter(DbTVShow.imdb == request.imdb).first()
         if existing:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail='TV Show IMDB ID already exists',
+                detail='TV Show imdb already exists',
             )
 
     new_show = DbTVShow(**request.model_dump())
+    # Enrich from TVMaze on add so detail/filtering work immediately, and pull
+    # the episode list while we're at it (both best effort).
+    detail = get_tv_show_detail(request.tvmaze)
+    if detail:
+        apply_detail_to_show(new_show, detail)
     db.add(new_show)
+    db.flush()
+    sync_episodes(db, new_show)
     db.commit()
     db.refresh(new_show)
     return new_show
 
 
+@router.get('/tv-shows/{show_id}', response_model=TVShowResponse)
+def get_tv_show(
+    show_id: str,
+    db: Session = Depends(get_db),
+    current_user: list = Depends(get_current_user),
+):
+    """Return one show's full detail, enriching from TVMaze on first view."""
+    del current_user
+    show = _get_show(db, show_id)
+    # Lazily backfill detail + episodes the first time a sparse show is opened.
+    if show.summary is None and show.premiered is None:
+        detail = get_tv_show_detail(show.tvmaze)
+        if detail:
+            apply_detail_to_show(show, detail)
+            sync_episodes(db, show)
+            db.commit()
+            db.refresh(show)
+    return show
+
+
 @router.put('/tv-shows/{show_id}', response_model=TVShowResponse)
-def update_tv_show(show_id: str, request: TVShowUpdate, db: Session = Depends(get_db)):
-    show = db.query(DbTVShow).filter(DbTVShow.id == show_id).first()
-    if not show:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail='TV Show not found'
-        )
+def update_tv_show(
+    show_id: str,
+    request: TVShowUpdate,
+    db: Session = Depends(get_db),
+    current_user: list = Depends(require_admin),
+):
+    del current_user
+    show = _get_show(db, show_id)
 
     update_data = request.model_dump(exclude_unset=True)
     for key, value in update_data.items():
@@ -72,18 +135,146 @@ def update_tv_show(show_id: str, request: TVShowUpdate, db: Session = Depends(ge
 
 
 @router.delete('/tv-shows/{show_id}', status_code=status.HTTP_204_NO_CONTENT)
-def delete_tv_show(show_id: str, db: Session = Depends(get_db)):
-    show = db.query(DbTVShow).filter(DbTVShow.id == show_id).first()
-    if not show:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail='TV Show not found'
-        )
+def delete_tv_show(
+    show_id: str,
+    db: Session = Depends(get_db),
+    current_user: list = Depends(require_admin),
+):
+    del current_user
+    show = _get_show(db, show_id)
     db.delete(show)
     db.commit()
     return None
 
 
-# --- TV Shows User Trackers ---
+# Episode Catalog Endpoints
+@router.get('/tv-shows/{show_id}/episodes', response_model=List[TVEpisodeResponse])
+def get_all_episodes(show_id: str, db: Session = Depends(get_db)):
+    show = _get_show(db, show_id)
+    return (
+        db.query(DbTVEpisode)
+        .filter(DbTVEpisode.tv_show_id == show.pk)
+        .order_by(DbTVEpisode.season, DbTVEpisode.season_number)
+        .all()
+    )
+
+
+@router.post(
+    '/tv-shows/{show_id}/episodes/sync',
+    response_model=List[TVEpisodeResponse],
+)
+def sync_show_episodes(
+    show_id: str,
+    db: Session = Depends(get_db),
+    current_user: list = Depends(require_admin),
+):
+    """Refresh the episode list from TVMaze (for ongoing shows)."""
+    del current_user
+    show = _get_show(db, show_id)
+    sync_episodes(db, show)
+    db.commit()
+    return (
+        db.query(DbTVEpisode)
+        .filter(DbTVEpisode.tv_show_id == show.pk)
+        .order_by(DbTVEpisode.season, DbTVEpisode.season_number)
+        .all()
+    )
+
+
+@router.post(
+    '/tv-shows/{show_id}/episodes',
+    response_model=TVEpisodeResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_episode(
+    show_id: str,
+    request: TVEpisodeCreate,
+    db: Session = Depends(get_db),
+    current_user: list = Depends(require_admin),
+):
+    del current_user
+    show = _get_show(db, show_id)
+
+    new_episode = DbTVEpisode(tv_show_id=show.pk, **request.model_dump())
+    db.add(new_episode)
+    db.commit()
+    db.refresh(new_episode)
+    return new_episode
+
+
+@router.put('/episodes/{episode_id}', response_model=TVEpisodeResponse)
+def update_episode(
+    episode_id: str,
+    request: TVEpisodeUpdate,
+    db: Session = Depends(get_db),
+    current_user: list = Depends(require_admin),
+):
+    del current_user
+    episode = _get_episode(db, episode_id)
+
+    update_data = request.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(episode, key, value)
+
+    db.commit()
+    db.refresh(episode)
+    return episode
+
+
+@router.delete('/episodes/{episode_id}', status_code=status.HTTP_204_NO_CONTENT)
+def delete_episode(
+    episode_id: str,
+    db: Session = Depends(get_db),
+    current_user: list = Depends(require_admin),
+):
+    del current_user
+    episode = _get_episode(db, episode_id)
+    db.delete(episode)
+    db.commit()
+    return None
+
+
+# User Tracker Endpoints
+def _get_show(db: Session, show_id: str) -> DbTVShow:
+    show = db.query(DbTVShow).filter(DbTVShow.id == show_id).first()
+    if not show:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail='TV Show not found'
+        )
+    return show
+
+
+def _get_episode(db: Session, episode_id: str) -> DbTVEpisode:
+    episode = db.query(DbTVEpisode).filter(DbTVEpisode.id == episode_id).first()
+    if not episode:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail='Episode not found'
+        )
+    return episode
+
+
+def _get_tracker(db: Session, user_pk: int, show_pk: int):
+    return (
+        db.query(DbUserTVShow)
+        .filter(DbUserTVShow.user_id == user_pk, DbUserTVShow.tv_show_id == show_pk)
+        .first()
+    )
+
+
+def _placed_count(db: Session, user_pk: int) -> int:
+    """Number of shows with an assigned rank position for this user."""
+    return (
+        db.query(func.count())  # pylint: disable=not-callable
+        .select_from(DbUserTVShow)
+        .filter(
+            DbUserTVShow.user_id == user_pk,
+            DbUserTVShow.on_rankings.is_(True),
+            DbUserTVShow.rank.isnot(None),
+        )
+        .scalar()
+    )
+
+
 @router.get('/users/me/tv-shows', response_model=List[UserTVShowResponse])
 def get_user_tv_shows(
     db: Session = Depends(get_db), current_user: list = Depends(get_current_user)
@@ -91,6 +282,96 @@ def get_user_tv_shows(
     return (
         db.query(DbUserTVShow).filter(DbUserTVShow.user_id == current_user[0].pk).all()
     )
+
+
+@router.put(
+    '/users/me/tv-shows/rankings/order', response_model=List[UserTVShowResponse]
+)
+def reorder_rankings(
+    request: TVRankingReorder,
+    db: Session = Depends(get_db),
+    current_user: list = Depends(get_current_user),
+):
+    """Persist a new ranking order (drag-and-drop). Rank = position in the list."""
+    user_pk = current_user[0].pk
+    for position, show_id in enumerate(request.show_ids, start=1):
+        show = db.query(DbTVShow).filter(DbTVShow.id == show_id).first()
+        if not show:
+            continue
+        tracker = _get_tracker(db, user_pk, show.pk)
+        if tracker:
+            tracker.rank = position
+            tracker.on_rankings = True
+    db.commit()
+    return (
+        db.query(DbUserTVShow)
+        .filter(DbUserTVShow.user_id == user_pk, DbUserTVShow.on_rankings.is_(True))
+        .order_by(DbUserTVShow.rank)
+        .all()
+    )
+
+
+@router.get('/users/me/tv-shows/{show_id}', response_model=UserTVShowResponse)
+def get_user_tv_show(
+    show_id: str,
+    db: Session = Depends(get_db),
+    current_user: list = Depends(get_current_user),
+):
+    """Return the current user's tracker for one show (404 if not tracked)."""
+    show = _get_show(db, show_id)
+    tracker = _get_tracker(db, current_user[0].pk, show.pk)
+    if not tracker:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail='TV Show not marked'
+        )
+    return tracker
+
+
+@router.put('/users/me/tv-shows/{show_id}/rank', response_model=UserTVShowResponse)
+def set_show_rank(
+    show_id: str,
+    request: RankPlacement,
+    db: Session = Depends(get_db),
+    current_user: list = Depends(get_current_user),
+):
+    """
+    Place a show at an exact 1-based position in the ranked list, shifting the
+    shows at and below that position down by one. Works for a not-yet-ranked
+    show (jump it in) or an already-ranked one (move it).
+    """
+    user_pk = current_user[0].pk
+    show = _get_show(db, show_id)
+    tracker = _get_tracker(db, user_pk, show.pk)
+    if not tracker:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail='TV Show not marked'
+        )
+
+    old_rank = tracker.rank
+    tracker.on_rankings = True
+    # Remove from its current slot first so the shift math excludes it.
+    tracker.rank = None
+    db.flush()
+    if old_rank is not None:
+        db.query(DbUserTVShow).filter(
+            DbUserTVShow.user_id == user_pk,
+            DbUserTVShow.on_rankings.is_(True),
+            DbUserTVShow.rank.isnot(None),
+            DbUserTVShow.rank > old_rank,
+        ).update({DbUserTVShow.rank: DbUserTVShow.rank - 1}, synchronize_session=False)
+
+    target = max(1, min(request.position, _placed_count(db, user_pk) + 1))
+    db.query(DbUserTVShow).filter(
+        DbUserTVShow.user_id == user_pk,
+        DbUserTVShow.on_rankings.is_(True),
+        DbUserTVShow.rank.isnot(None),
+        DbUserTVShow.rank >= target,
+    ).update({DbUserTVShow.rank: DbUserTVShow.rank + 1}, synchronize_session=False)
+
+    tracker.rank = target
+    db.commit()
+    db.refresh(tracker)
+    return tracker
 
 
 @router.post(
@@ -104,32 +385,36 @@ def mark_tv_show(
     db: Session = Depends(get_db),
     current_user: list = Depends(get_current_user),
 ):
-    show = db.query(DbTVShow).filter(DbTVShow.id == show_id).first()
-    if not show:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail='TV Show not found'
-        )
+    """Add a show to the user's lists (idempotent — merges list membership)."""
+    user_pk = current_user[0].pk
+    show = _get_show(db, show_id)
+    tracker = _get_tracker(db, user_pk, show.pk)
+    data = request.model_dump(exclude_unset=True)
 
-    existing_tracker = (
-        db.query(DbUserTVShow)
-        .filter(
-            DbUserTVShow.user_id == current_user[0].pk,
-            DbUserTVShow.tv_show_id == show.pk,
+    if tracker is None:
+        was_on_rankings = False
+        tracker = DbUserTVShow(
+            user_id=user_pk,
+            tv_show_id=show.pk,
+            on_watchlist=bool(data.get('on_watchlist', False)),
+            on_rankings=bool(data.get('on_rankings', False)),
+            notes=data.get('notes'),
         )
-        .first()
-    )
-    if existing_tracker:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail='TV Show already marked'
-        )
+        db.add(tracker)
+    else:
+        was_on_rankings = tracker.on_rankings
+        for key in ('on_watchlist', 'on_rankings', 'notes'):
+            if key in data:
+                setattr(tracker, key, data[key])
 
-    new_tracker = DbUserTVShow(
-        user_id=current_user[0].pk, tv_show_id=show.pk, **request.model_dump()
-    )
-    db.add(new_tracker)
+    # A show only holds a rank while it's on the ranked list AND was already
+    # placed. Entering Rankings (or leaving it) resets to unplaced so it lands
+    # in the "to rank" bucket rather than at a stale/leftover position.
+    if not tracker.on_rankings or not was_on_rankings:
+        tracker.rank = None
     db.commit()
-    db.refresh(new_tracker)
-    return new_tracker
+    db.refresh(tracker)
+    return tracker
 
 
 @router.put('/users/me/tv-shows/{show_id}', response_model=UserTVShowResponse)
@@ -139,28 +424,30 @@ def update_user_tv_show(
     db: Session = Depends(get_db),
     current_user: list = Depends(get_current_user),
 ):
-    show = db.query(DbTVShow).filter(DbTVShow.id == show_id).first()
-    if not show:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail='TV Show not found'
-        )
-
-    tracker = (
-        db.query(DbUserTVShow)
-        .filter(
-            DbUserTVShow.user_id == current_user[0].pk,
-            DbUserTVShow.tv_show_id == show.pk,
-        )
-        .first()
-    )
+    """Update list membership, rank, or notes for a tracked show."""
+    user_pk = current_user[0].pk
+    show = _get_show(db, show_id)
+    tracker = _get_tracker(db, user_pk, show.pk)
     if not tracker:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail='TV Show not marked'
         )
 
-    update_data = request.model_dump(exclude_unset=True)
-    for key, value in update_data.items():
+    was_on_rankings = tracker.on_rankings
+    for key, value in request.model_dump(exclude_unset=True).items():
         setattr(tracker, key, value)
+
+    # Entering Rankings (or leaving it) resets to unplaced so a stale/leftover
+    # rank never places the show automatically; it lands in "to rank" instead.
+    if not tracker.on_rankings or not was_on_rankings:
+        tracker.rank = None
+
+    # If it's on neither list, drop the tracker entirely.
+    if not tracker.on_watchlist and not tracker.on_rankings:
+        response = UserTVShowResponse.model_validate(tracker)
+        db.delete(tracker)
+        db.commit()
+        return response
 
     db.commit()
     db.refresh(tracker)
@@ -173,163 +460,68 @@ def unmark_tv_show(
     db: Session = Depends(get_db),
     current_user: list = Depends(get_current_user),
 ):
-    show = db.query(DbTVShow).filter(DbTVShow.id == show_id).first()
-    if not show:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail='TV Show not found'
-        )
-
-    tracker = (
-        db.query(DbUserTVShow)
-        .filter(
-            DbUserTVShow.user_id == current_user[0].pk,
-            DbUserTVShow.tv_show_id == show.pk,
-        )
-        .first()
-    )
+    user_pk = current_user[0].pk
+    show = _get_show(db, show_id)
+    tracker = _get_tracker(db, user_pk, show.pk)
     if not tracker:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail='TV Show not marked'
         )
-
     db.delete(tracker)
     db.commit()
     return None
 
 
-# --- TV Episodes Global ---
-@router.get('/tv-shows/{show_id}/episodes', response_model=List[TVEpisodeResponse])
-def get_all_episodes(show_id: str, db: Session = Depends(get_db)):
-    show = db.query(DbTVShow).filter(DbTVShow.id == show_id).first()
-    if not show:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail='TV Show not found'
-        )
-    return db.query(DbTVEpisode).filter(DbTVEpisode.tv_show_id == show.pk).all()
-
-
-@router.post(
-    '/tv-shows/{show_id}/episodes',
-    response_model=TVEpisodeResponse,
-    status_code=status.HTTP_201_CREATED,
+# User Episode Tracker Endpoints
+@router.get(
+    '/users/me/tv-shows/{show_id}/episodes',
+    response_model=List[UserTVEpisodeResponse],
 )
-def create_episode(
-    show_id: str, request: TVEpisodeCreate, db: Session = Depends(get_db)
+def get_user_episodes(
+    show_id: str,
+    db: Session = Depends(get_db),
+    current_user: list = Depends(get_current_user),
 ):
-    show = db.query(DbTVShow).filter(DbTVShow.id == show_id).first()
-    if not show:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail='TV Show not found'
+    """The current user's episode watch marks for one show."""
+    show = _get_show(db, show_id)
+    return (
+        db.query(DbUserTVEpisode)
+        .join(DbTVEpisode, DbUserTVEpisode.episode_id == DbTVEpisode.pk)
+        .filter(
+            DbUserTVEpisode.user_id == current_user[0].pk,
+            DbTVEpisode.tv_show_id == show.pk,
         )
-
-    new_episode = DbTVEpisode(tv_show_id=show.pk, **request.model_dump())
-    db.add(new_episode)
-    db.commit()
-    db.refresh(new_episode)
-    return new_episode
+        .all()
+    )
 
 
-@router.put('/episodes/{episode_id}', response_model=TVEpisodeResponse)
-def update_episode(
-    episode_id: str, request: TVEpisodeUpdate, db: Session = Depends(get_db)
-):
-    episode = db.query(DbTVEpisode).filter(DbTVEpisode.id == episode_id).first()
-    if not episode:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail='Episode not found'
-        )
-
-    update_data = request.model_dump(exclude_unset=True)
-    for key, value in update_data.items():
-        setattr(episode, key, value)
-
-    db.commit()
-    db.refresh(episode)
-    return episode
-
-
-@router.delete('/episodes/{episode_id}', status_code=status.HTTP_204_NO_CONTENT)
-def delete_episode(episode_id: str, db: Session = Depends(get_db)):
-    episode = db.query(DbTVEpisode).filter(DbTVEpisode.id == episode_id).first()
-    if not episode:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail='Episode not found'
-        )
-    db.delete(episode)
-    db.commit()
-    return None
-
-
-# --- TV Episodes User Trackers ---
 @router.post(
     '/users/me/episodes/{episode_id}',
     response_model=UserTVEpisodeResponse,
     status_code=status.HTTP_201_CREATED,
 )
-def mark_episode(
+def mark_episode_watched(
     episode_id: str,
-    request: UserTVEpisodeCreate,
     db: Session = Depends(get_db),
     current_user: list = Depends(get_current_user),
 ):
-    episode = db.query(DbTVEpisode).filter(DbTVEpisode.id == episode_id).first()
-    if not episode:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail='Episode not found'
-        )
-
-    existing_tracker = (
-        db.query(DbUserTVEpisode)
-        .filter(
-            DbUserTVEpisode.user_id == current_user[0].pk,
-            DbUserTVEpisode.episode_id == episode.pk,
-        )
-        .first()
-    )
-    if existing_tracker:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail='Episode already marked'
-        )
-
-    new_tracker = DbUserTVEpisode(
-        user_id=current_user[0].pk, episode_id=episode.pk, **request.model_dump()
-    )
-    db.add(new_tracker)
-    db.commit()
-    db.refresh(new_tracker)
-    return new_tracker
-
-
-@router.put('/users/me/episodes/{episode_id}', response_model=UserTVEpisodeResponse)
-def update_user_episode(
-    episode_id: str,
-    request: UserTVEpisodeUpdate,
-    db: Session = Depends(get_db),
-    current_user: list = Depends(get_current_user),
-):
-    episode = db.query(DbTVEpisode).filter(DbTVEpisode.id == episode_id).first()
-    if not episode:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail='Episode not found'
-        )
+    """Mark an episode watched (idempotent)."""
+    user_pk = current_user[0].pk
+    episode = _get_episode(db, episode_id)
 
     tracker = (
         db.query(DbUserTVEpisode)
         .filter(
-            DbUserTVEpisode.user_id == current_user[0].pk,
+            DbUserTVEpisode.user_id == user_pk,
             DbUserTVEpisode.episode_id == episode.pk,
         )
         .first()
     )
-    if not tracker:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail='Episode not marked'
-        )
-
-    update_data = request.model_dump(exclude_unset=True)
-    for key, value in update_data.items():
-        setattr(tracker, key, value)
-
+    if tracker is None:
+        tracker = DbUserTVEpisode(user_id=user_pk, episode_id=episode.pk, watched=1)
+        db.add(tracker)
+    else:
+        tracker.watched = 1
     db.commit()
     db.refresh(tracker)
     return tracker
@@ -338,21 +530,17 @@ def update_user_episode(
 @router.delete(
     '/users/me/episodes/{episode_id}', status_code=status.HTTP_204_NO_CONTENT
 )
-def unmark_episode(
+def unmark_episode_watched(
     episode_id: str,
     db: Session = Depends(get_db),
     current_user: list = Depends(get_current_user),
 ):
-    episode = db.query(DbTVEpisode).filter(DbTVEpisode.id == episode_id).first()
-    if not episode:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail='Episode not found'
-        )
-
+    user_pk = current_user[0].pk
+    episode = _get_episode(db, episode_id)
     tracker = (
         db.query(DbUserTVEpisode)
         .filter(
-            DbUserTVEpisode.user_id == current_user[0].pk,
+            DbUserTVEpisode.user_id == user_pk,
             DbUserTVEpisode.episode_id == episode.pk,
         )
         .first()
@@ -361,7 +549,6 @@ def unmark_episode(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail='Episode not marked'
         )
-
     db.delete(tracker)
     db.commit()
     return None

@@ -414,7 +414,7 @@
           }
         },
         "responses": {
-          "201": {
+          "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
@@ -776,6 +776,52 @@
       }
     },
     "/v1/movies/{movie_id}": {
+      "get": {
+        "tags": [
+          "Movies"
+        ],
+        "summary": "Get Movie",
+        "description": "Return one movie's full detail, enriching from OMDB on first view.",
+        "operationId": "get_movie_v1_movies__movie_id__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "movie_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Movie Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MovieResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
       "put": {
         "tags": [
           "Movies"
@@ -901,11 +947,58 @@
       }
     },
     "/v1/users/me/movies/{movie_id}": {
+      "get": {
+        "tags": [
+          "Movies"
+        ],
+        "summary": "Get User Movie",
+        "description": "Return the current user's tracker for one movie (404 if not tracked).",
+        "operationId": "get_user_movie_v1_users_me_movies__movie_id__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "movie_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Movie Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserMovieResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
       "post": {
         "tags": [
           "Movies"
         ],
         "summary": "Mark Movie",
+        "description": "Add a movie to the user's lists (idempotent \u2014 merges list membership).",
         "operationId": "mark_movie_v1_users_me_movies__movie_id__post",
         "security": [
           {
@@ -961,6 +1054,7 @@
           "Movies"
         ],
         "summary": "Update User Movie",
+        "description": "Update list membership, rank, or notes for a tracked movie.",
         "operationId": "update_user_movie_v1_users_me_movies__movie_id__put",
         "security": [
           {
@@ -1036,6 +1130,115 @@
         "responses": {
           "204": {
             "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/users/me/movies/rankings/order": {
+      "put": {
+        "tags": [
+          "Movies"
+        ],
+        "summary": "Reorder Rankings",
+        "description": "Persist a new ranking order (drag-and-drop). Rank = position in the list.",
+        "operationId": "reorder_rankings_v1_users_me_movies_rankings_order_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RankingReorder"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/UserMovieResponse"
+                  },
+                  "type": "array",
+                  "title": "Response Reorder Rankings V1 Users Me Movies Rankings Order Put"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/users/me/movies/{movie_id}/rank": {
+      "put": {
+        "tags": [
+          "Movies"
+        ],
+        "summary": "Set Movie Rank",
+        "description": "Place a movie at an exact 1-based position in the ranked list, shifting the\nmovies at and below that position down by one. Works for a not-yet-ranked\nmovie (jump it in) or an already-ranked one (move it).",
+        "operationId": "set_movie_rank_v1_users_me_movies__movie_id__rank_put",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "movie_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Movie Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RankPlacement"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserMovieResponse"
+                }
+              }
+            }
           },
           "422": {
             "description": "Validation Error",
@@ -1711,7 +1914,7 @@
     "/v1/tv-shows": {
       "get": {
         "tags": [
-          "TV Shows"
+          "TV"
         ],
         "summary": "Get All Tv Shows",
         "operationId": "get_all_tv_shows_v1_tv_shows_get",
@@ -1722,7 +1925,7 @@
               "application/json": {
                 "schema": {
                   "items": {
-                    "$ref": "#/components/schemas/TVShowResponse"
+                    "$ref": "#/components/schemas/TVShowSummary"
                   },
                   "type": "array",
                   "title": "Response Get All Tv Shows V1 Tv Shows Get"
@@ -1734,7 +1937,7 @@
       },
       "post": {
         "tags": [
-          "TV Shows"
+          "TV"
         ],
         "summary": "Create Tv Show",
         "operationId": "create_tv_show_v1_tv_shows_post",
@@ -1769,16 +1972,123 @@
               }
             }
           }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/tv-shows/search": {
+      "get": {
+        "tags": [
+          "TV"
+        ],
+        "summary": "Search Tv Shows Endpoint",
+        "operationId": "search_tv_shows_endpoint_v1_tv_shows_search_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Q"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TVShowSearchResult"
+                  },
+                  "title": "Response Search Tv Shows Endpoint V1 Tv Shows Search Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
         }
       }
     },
     "/v1/tv-shows/{show_id}": {
+      "get": {
+        "tags": [
+          "TV"
+        ],
+        "summary": "Get Tv Show",
+        "description": "Return one show's full detail, enriching from TVMaze on first view.",
+        "operationId": "get_tv_show_v1_tv_shows__show_id__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "show_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Show Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TVShowResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
       "put": {
         "tags": [
-          "TV Shows"
+          "TV"
         ],
         "summary": "Update Tv Show",
         "operationId": "update_tv_show_v1_tv_shows__show_id__put",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "show_id",
@@ -1825,10 +2135,15 @@
       },
       "delete": {
         "tags": [
-          "TV Shows"
+          "TV"
         ],
         "summary": "Delete Tv Show",
         "operationId": "delete_tv_show_v1_tv_shows__show_id__delete",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "show_id",
@@ -1857,10 +2172,258 @@
         }
       }
     },
+    "/v1/tv-shows/{show_id}/episodes": {
+      "get": {
+        "tags": [
+          "TV"
+        ],
+        "summary": "Get All Episodes",
+        "operationId": "get_all_episodes_v1_tv_shows__show_id__episodes_get",
+        "parameters": [
+          {
+            "name": "show_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Show Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TVEpisodeResponse"
+                  },
+                  "title": "Response Get All Episodes V1 Tv Shows  Show Id  Episodes Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "TV"
+        ],
+        "summary": "Create Episode",
+        "operationId": "create_episode_v1_tv_shows__show_id__episodes_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "show_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Show Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TVEpisodeCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TVEpisodeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tv-shows/{show_id}/episodes/sync": {
+      "post": {
+        "tags": [
+          "TV"
+        ],
+        "summary": "Sync Show Episodes",
+        "description": "Refresh the episode list from TVMaze (for ongoing shows).",
+        "operationId": "sync_show_episodes_v1_tv_shows__show_id__episodes_sync_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "show_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Show Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TVEpisodeResponse"
+                  },
+                  "title": "Response Sync Show Episodes V1 Tv Shows  Show Id  Episodes Sync Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/episodes/{episode_id}": {
+      "put": {
+        "tags": [
+          "TV"
+        ],
+        "summary": "Update Episode",
+        "operationId": "update_episode_v1_episodes__episode_id__put",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "episode_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Episode Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TVEpisodeUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TVEpisodeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "TV"
+        ],
+        "summary": "Delete Episode",
+        "operationId": "delete_episode_v1_episodes__episode_id__delete",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "episode_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Episode Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/users/me/tv-shows": {
       "get": {
         "tags": [
-          "TV Shows"
+          "TV"
         ],
         "summary": "Get User Tv Shows",
         "operationId": "get_user_tv_shows_v1_users_me_tv_shows_get",
@@ -1887,12 +2450,110 @@
         ]
       }
     },
+    "/v1/users/me/tv-shows/rankings/order": {
+      "put": {
+        "tags": [
+          "TV"
+        ],
+        "summary": "Reorder Rankings",
+        "description": "Persist a new ranking order (drag-and-drop). Rank = position in the list.",
+        "operationId": "reorder_rankings_v1_users_me_tv_shows_rankings_order_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TVRankingReorder"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/UserTVShowResponse"
+                  },
+                  "type": "array",
+                  "title": "Response Reorder Rankings V1 Users Me Tv Shows Rankings Order Put"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
     "/v1/users/me/tv-shows/{show_id}": {
+      "get": {
+        "tags": [
+          "TV"
+        ],
+        "summary": "Get User Tv Show",
+        "description": "Return the current user's tracker for one show (404 if not tracked).",
+        "operationId": "get_user_tv_show_v1_users_me_tv_shows__show_id__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "show_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Show Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserTVShowResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
       "post": {
         "tags": [
-          "TV Shows"
+          "TV"
         ],
         "summary": "Mark Tv Show",
+        "description": "Add a show to the user's lists (idempotent \u2014 merges list membership).",
         "operationId": "mark_tv_show_v1_users_me_tv_shows__show_id__post",
         "security": [
           {
@@ -1945,9 +2606,10 @@
       },
       "put": {
         "tags": [
-          "TV Shows"
+          "TV"
         ],
         "summary": "Update User Tv Show",
+        "description": "Update list membership, rank, or notes for a tracked show.",
         "operationId": "update_user_tv_show_v1_users_me_tv_shows__show_id__put",
         "security": [
           {
@@ -2000,7 +2662,7 @@
       },
       "delete": {
         "tags": [
-          "TV Shows"
+          "TV"
         ],
         "summary": "Unmark Tv Show",
         "operationId": "unmark_tv_show_v1_users_me_tv_shows__show_id__delete",
@@ -2037,13 +2699,77 @@
         }
       }
     },
-    "/v1/tv-shows/{show_id}/episodes": {
+    "/v1/users/me/tv-shows/{show_id}/rank": {
+      "put": {
+        "tags": [
+          "TV"
+        ],
+        "summary": "Set Show Rank",
+        "description": "Place a show at an exact 1-based position in the ranked list, shifting the\nshows at and below that position down by one. Works for a not-yet-ranked\nshow (jump it in) or an already-ranked one (move it).",
+        "operationId": "set_show_rank_v1_users_me_tv_shows__show_id__rank_put",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "show_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Show Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RankPlacement"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserTVShowResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/users/me/tv-shows/{show_id}/episodes": {
       "get": {
         "tags": [
-          "TV Shows"
+          "TV"
         ],
-        "summary": "Get All Episodes",
-        "operationId": "get_all_episodes_v1_tv_shows__show_id__episodes_get",
+        "summary": "Get User Episodes",
+        "description": "The current user's episode watch marks for one show.",
+        "operationId": "get_user_episodes_v1_users_me_tv_shows__show_id__episodes_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "show_id",
@@ -2063,147 +2789,12 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/TVEpisodeResponse"
+                    "$ref": "#/components/schemas/UserTVEpisodeResponse"
                   },
-                  "title": "Response Get All Episodes V1 Tv Shows  Show Id  Episodes Get"
+                  "title": "Response Get User Episodes V1 Users Me Tv Shows  Show Id  Episodes Get"
                 }
               }
             }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "TV Shows"
-        ],
-        "summary": "Create Episode",
-        "operationId": "create_episode_v1_tv_shows__show_id__episodes_post",
-        "parameters": [
-          {
-            "name": "show_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Show Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/TVEpisodeCreate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TVEpisodeResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/episodes/{episode_id}": {
-      "put": {
-        "tags": [
-          "TV Shows"
-        ],
-        "summary": "Update Episode",
-        "operationId": "update_episode_v1_episodes__episode_id__put",
-        "parameters": [
-          {
-            "name": "episode_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Episode Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/TVEpisodeUpdate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TVEpisodeResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "TV Shows"
-        ],
-        "summary": "Delete Episode",
-        "operationId": "delete_episode_v1_episodes__episode_id__delete",
-        "parameters": [
-          {
-            "name": "episode_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Episode Id"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Successful Response"
           },
           "422": {
             "description": "Validation Error",
@@ -2221,10 +2812,11 @@
     "/v1/users/me/episodes/{episode_id}": {
       "post": {
         "tags": [
-          "TV Shows"
+          "TV"
         ],
-        "summary": "Mark Episode",
-        "operationId": "mark_episode_v1_users_me_episodes__episode_id__post",
+        "summary": "Mark Episode Watched",
+        "description": "Mark an episode watched (idempotent).",
+        "operationId": "mark_episode_watched_v1_users_me_episodes__episode_id__post",
         "security": [
           {
             "OAuth2PasswordBearer": []
@@ -2241,16 +2833,6 @@
             }
           }
         ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UserTVEpisodeCreate"
-              }
-            }
-          }
-        },
         "responses": {
           "201": {
             "description": "Successful Response",
@@ -2274,67 +2856,12 @@
           }
         }
       },
-      "put": {
-        "tags": [
-          "TV Shows"
-        ],
-        "summary": "Update User Episode",
-        "operationId": "update_user_episode_v1_users_me_episodes__episode_id__put",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "episode_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Episode Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UserTVEpisodeUpdate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserTVEpisodeResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
       "delete": {
         "tags": [
-          "TV Shows"
+          "TV"
         ],
-        "summary": "Unmark Episode",
-        "operationId": "unmark_episode_v1_users_me_episodes__episode_id__delete",
+        "summary": "Unmark Episode Watched",
+        "operationId": "unmark_episode_watched_v1_users_me_episodes__episode_id__delete",
         "security": [
           {
             "OAuth2PasswordBearer": []
@@ -2692,6 +3219,20 @@
         "type": "object",
         "title": "CountryUpdate"
       },
+      "GoogleAuthRequest": {
+        "properties": {
+          "credential": {
+            "type": "string",
+            "title": "Credential"
+          }
+        },
+        "type": "object",
+        "required": [
+          "credential"
+        ],
+        "title": "GoogleAuthRequest",
+        "description": "Payload carrying the Google Identity Services ID token (credential)."
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -2805,6 +3346,61 @@
               }
             ],
             "title": "Poster Url"
+          },
+          "year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Year"
+          },
+          "genre": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Genre"
+          },
+          "director": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Director"
+          },
+          "actors": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actors"
+          },
+          "plot": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plot"
           }
         },
         "type": "object",
@@ -2891,6 +3487,61 @@
             ],
             "title": "Poster Url"
           },
+          "year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Year"
+          },
+          "genre": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Genre"
+          },
+          "director": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Director"
+          },
+          "actors": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actors"
+          },
+          "plot": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plot"
+          },
           "id": {
             "type": "string",
             "title": "Id"
@@ -2966,6 +3617,130 @@
           "title"
         ],
         "title": "MovieSearchResult"
+      },
+      "MovieSummary": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "imdb": {
+            "type": "string",
+            "title": "Imdb"
+          },
+          "release_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Release Date"
+          },
+          "rating_imdb": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rating Imdb"
+          },
+          "runtime": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Runtime"
+          },
+          "rated": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rated"
+          },
+          "poster_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Poster Url"
+          },
+          "year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Year"
+          },
+          "genre": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Genre"
+          },
+          "director": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Director"
+          },
+          "actors": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actors"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "imdb"
+        ],
+        "title": "MovieSummary",
+        "description": "Lightweight movie for list responses \u2014 omits the large ``plot`` field."
       },
       "MovieUpdate": {
         "properties": {
@@ -3057,6 +3832,61 @@
               }
             ],
             "title": "Poster Url"
+          },
+          "year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Year"
+          },
+          "genre": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Genre"
+          },
+          "director": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Director"
+          },
+          "actors": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actors"
+          },
+          "plot": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plot"
           }
         },
         "type": "object",
@@ -3174,6 +4004,37 @@
         ],
         "title": "OutUserDisplay",
         "description": "Schema for displaying user data."
+      },
+      "RankPlacement": {
+        "properties": {
+          "position": {
+            "type": "integer",
+            "title": "Position"
+          }
+        },
+        "type": "object",
+        "required": [
+          "position"
+        ],
+        "title": "RankPlacement",
+        "description": "Target 1-based position at which to place a movie in the ranked list."
+      },
+      "RankingReorder": {
+        "properties": {
+          "movie_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Movie Ids"
+          }
+        },
+        "type": "object",
+        "required": [
+          "movie_ids"
+        ],
+        "title": "RankingReorder",
+        "description": "Ordered list of movie (catalog) ids defining the new ranking order."
       },
       "TVEpisodeCreate": {
         "properties": {
@@ -3375,6 +4236,23 @@
         "type": "object",
         "title": "TVEpisodeUpdate"
       },
+      "TVRankingReorder": {
+        "properties": {
+          "show_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Show Ids"
+          }
+        },
+        "type": "object",
+        "required": [
+          "show_ids"
+        ],
+        "title": "TVRankingReorder",
+        "description": "Ordered list of show (catalog) ids defining the new ranking order."
+      },
       "TVShowCreate": {
         "properties": {
           "title": {
@@ -3424,6 +4302,95 @@
               }
             ],
             "title": "Poster Url"
+          },
+          "premiered": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Premiered"
+          },
+          "year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Year"
+          },
+          "genre": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Genre"
+          },
+          "network": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Network"
+          },
+          "runtime": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Runtime"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language"
+          },
+          "rating": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rating"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary"
           }
         },
         "type": "object",
@@ -3482,6 +4449,95 @@
             ],
             "title": "Poster Url"
           },
+          "premiered": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Premiered"
+          },
+          "year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Year"
+          },
+          "genre": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Genre"
+          },
+          "network": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Network"
+          },
+          "runtime": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Runtime"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language"
+          },
+          "rating": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rating"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary"
+          },
           "id": {
             "type": "string",
             "title": "Id"
@@ -3505,6 +4561,203 @@
           "updated_at"
         ],
         "title": "TVShowResponse"
+      },
+      "TVShowSearchResult": {
+        "properties": {
+          "tvmaze": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tvmaze"
+          },
+          "imdb": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Imdb"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "year": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Year"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "network": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Network"
+          },
+          "poster_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Poster Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title"
+        ],
+        "title": "TVShowSearchResult"
+      },
+      "TVShowSummary": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "imdb": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Imdb"
+          },
+          "tvmaze": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tvmaze"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "poster_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Poster Url"
+          },
+          "year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Year"
+          },
+          "genre": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Genre"
+          },
+          "network": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Network"
+          },
+          "runtime": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Runtime"
+          },
+          "rating": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rating"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title"
+        ],
+        "title": "TVShowSummary",
+        "description": "Lightweight show for list responses \u2014 omits the large ``summary``."
       },
       "TVShowUpdate": {
         "properties": {
@@ -3562,6 +4815,95 @@
               }
             ],
             "title": "Poster Url"
+          },
+          "premiered": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Premiered"
+          },
+          "year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Year"
+          },
+          "genre": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Genre"
+          },
+          "network": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Network"
+          },
+          "runtime": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Runtime"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language"
+          },
+          "rating": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rating"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary"
           }
         },
         "type": "object",
@@ -3885,6 +5227,28 @@
       },
       "UserMovieCreate": {
         "properties": {
+          "on_watchlist": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "On Watchlist"
+          },
+          "on_rankings": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "On Rankings"
+          },
           "rank": {
             "anyOf": [
               {
@@ -3924,6 +5288,28 @@
       },
       "UserMovieResponse": {
         "properties": {
+          "on_watchlist": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "On Watchlist"
+          },
+          "on_rankings": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "On Rankings"
+          },
           "rank": {
             "anyOf": [
               {
@@ -3962,7 +5348,7 @@
             "title": "Id"
           },
           "movie": {
-            "$ref": "#/components/schemas/MovieResponse"
+            "$ref": "#/components/schemas/MovieSummary"
           },
           "created_at": {
             "type": "string",
@@ -3986,6 +5372,28 @@
       },
       "UserMovieUpdate": {
         "properties": {
+          "on_watchlist": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "On Watchlist"
+          },
+          "on_rankings": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "On Rankings"
+          },
           "rank": {
             "anyOf": [
               {
@@ -4022,24 +5430,6 @@
         },
         "type": "object",
         "title": "UserMovieUpdate"
-      },
-      "UserTVEpisodeCreate": {
-        "properties": {
-          "watched": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Watched",
-            "default": 0
-          }
-        },
-        "type": "object",
-        "title": "UserTVEpisodeCreate"
       },
       "UserTVEpisodeResponse": {
         "properties": {
@@ -4082,26 +5472,30 @@
         ],
         "title": "UserTVEpisodeResponse"
       },
-      "UserTVEpisodeUpdate": {
+      "UserTVShowCreate": {
         "properties": {
-          "watched": {
+          "on_watchlist": {
             "anyOf": [
               {
-                "type": "integer"
+                "type": "boolean"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Watched",
-            "default": 0
-          }
-        },
-        "type": "object",
-        "title": "UserTVEpisodeUpdate"
-      },
-      "UserTVShowCreate": {
-        "properties": {
+            "title": "On Watchlist"
+          },
+          "on_rankings": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "On Rankings"
+          },
           "rank": {
             "anyOf": [
               {
@@ -4112,6 +5506,17 @@
               }
             ],
             "title": "Rank"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
           },
           "status": {
             "anyOf": [
@@ -4133,8 +5538,7 @@
                 "type": "null"
               }
             ],
-            "title": "Freeze",
-            "default": 0
+            "title": "Freeze"
           }
         },
         "type": "object",
@@ -4142,6 +5546,28 @@
       },
       "UserTVShowResponse": {
         "properties": {
+          "on_watchlist": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "On Watchlist"
+          },
+          "on_rankings": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "On Rankings"
+          },
           "rank": {
             "anyOf": [
               {
@@ -4152,6 +5578,17 @@
               }
             ],
             "title": "Rank"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
           },
           "status": {
             "anyOf": [
@@ -4173,15 +5610,14 @@
                 "type": "null"
               }
             ],
-            "title": "Freeze",
-            "default": 0
+            "title": "Freeze"
           },
           "id": {
             "type": "string",
             "title": "Id"
           },
           "tv_show": {
-            "$ref": "#/components/schemas/TVShowResponse"
+            "$ref": "#/components/schemas/TVShowSummary"
           },
           "created_at": {
             "type": "string",
@@ -4205,6 +5641,28 @@
       },
       "UserTVShowUpdate": {
         "properties": {
+          "on_watchlist": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "On Watchlist"
+          },
+          "on_rankings": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "On Rankings"
+          },
           "rank": {
             "anyOf": [
               {
@@ -4215,6 +5673,17 @@
               }
             ],
             "title": "Rank"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
           },
           "status": {
             "anyOf": [
@@ -4236,8 +5705,7 @@
                 "type": "null"
               }
             ],
-            "title": "Freeze",
-            "default": 0
+            "title": "Freeze"
           }
         },
         "type": "object",
@@ -4638,7 +6106,7 @@
           },
           "id": {
             "type": "string",
-            "title": "Title"
+            "title": "Id"
           },
           "created_at": {
             "type": "string",

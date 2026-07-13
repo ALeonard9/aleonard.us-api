@@ -99,6 +99,24 @@ class MovieResponse(MovieBase):
     model_config = ConfigDict(from_attributes=True)
 
 
+class MovieSummary(BaseModel):
+    """Lightweight movie for list responses — omits the large ``plot`` field."""
+
+    id: str
+    title: str
+    imdb: str
+    release_date: Optional[datetime] = None
+    rating_imdb: Optional[float] = None
+    runtime: Optional[int] = None
+    rated: Optional[str] = None
+    poster_url: Optional[str] = None
+    year: Optional[int] = None
+    genre: Optional[str] = None
+    director: Optional[str] = None
+    actors: Optional[str] = None
+    model_config = ConfigDict(from_attributes=True)
+
+
 class MovieSearchResult(BaseModel):
     imdb: str
     title: str
@@ -150,6 +168,14 @@ class TVShowBase(BaseModel):
     tvmaze: Optional[int] = None
     status: Optional[str] = None
     poster_url: Optional[str] = None
+    premiered: Optional[datetime] = None
+    year: Optional[int] = None
+    genre: Optional[str] = None
+    network: Optional[str] = None
+    runtime: Optional[int] = None
+    language: Optional[str] = None
+    rating: Optional[float] = None
+    summary: Optional[str] = None
 
 
 class TVShowCreate(TVShowBase):
@@ -162,6 +188,14 @@ class TVShowUpdate(BaseModel):
     tvmaze: Optional[int] = None
     status: Optional[str] = None
     poster_url: Optional[str] = None
+    premiered: Optional[datetime] = None
+    year: Optional[int] = None
+    genre: Optional[str] = None
+    network: Optional[str] = None
+    runtime: Optional[int] = None
+    language: Optional[str] = None
+    rating: Optional[float] = None
+    summary: Optional[str] = None
 
 
 class TVShowResponse(TVShowBase):
@@ -171,10 +205,40 @@ class TVShowResponse(TVShowBase):
     model_config = ConfigDict(from_attributes=True)
 
 
-class UserTVShowBase(BaseModel):
-    rank: Optional[int] = None
+class TVShowSummary(BaseModel):
+    """Lightweight show for list responses — omits the large ``summary``."""
+
+    id: str
+    title: str
+    imdb: Optional[str] = None
+    tvmaze: Optional[int] = None
     status: Optional[str] = None
-    freeze: Optional[int] = 0
+    poster_url: Optional[str] = None
+    year: Optional[int] = None
+    genre: Optional[str] = None
+    network: Optional[str] = None
+    runtime: Optional[int] = None
+    rating: Optional[float] = None
+    model_config = ConfigDict(from_attributes=True)
+
+
+class TVShowSearchResult(BaseModel):
+    tvmaze: Optional[int] = None
+    imdb: Optional[str] = None
+    title: str
+    year: Optional[str] = None
+    status: Optional[str] = None
+    network: Optional[str] = None
+    poster_url: Optional[str] = None
+
+
+class UserTVShowBase(BaseModel):
+    on_watchlist: Optional[bool] = None
+    on_rankings: Optional[bool] = None
+    rank: Optional[int] = None
+    notes: Optional[str] = None
+    status: Optional[str] = None
+    freeze: Optional[int] = None
 
 
 class UserTVShowCreate(UserTVShowBase):
@@ -187,10 +251,16 @@ class UserTVShowUpdate(UserTVShowBase):
 
 class UserTVShowResponse(UserTVShowBase):
     id: str
-    tv_show: TVShowResponse
+    tv_show: TVShowSummary
     created_at: datetime
     updated_at: datetime
     model_config = ConfigDict(from_attributes=True)
+
+
+class TVRankingReorder(BaseModel):
+    """Ordered list of show (catalog) ids defining the new ranking order."""
+
+    show_ids: List[str]
 
 
 # --- TV Episodes ---
@@ -224,14 +294,6 @@ class TVEpisodeResponse(TVEpisodeBase):
 
 class UserTVEpisodeBase(BaseModel):
     watched: Optional[int] = 0
-
-
-class UserTVEpisodeCreate(UserTVEpisodeBase):
-    pass
-
-
-class UserTVEpisodeUpdate(UserTVEpisodeBase):
-    pass
 
 
 class UserTVEpisodeResponse(UserTVEpisodeBase):
