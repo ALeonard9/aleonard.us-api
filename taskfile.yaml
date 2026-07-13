@@ -58,6 +58,16 @@ tasks:
     cmds:
       - python -m app.migration.enrich_tv
 
+  enrich:books:
+    desc: "Backfill Google Books detail for existing books (throttled, resumable)"
+    cmds:
+      - python -m app.migration.enrich_books
+
+  enrich:countries:
+    desc: "Seed the full world list + enrich countries from REST Countries"
+    cmds:
+      - python -m app.migration.enrich_countries
+
   import:orion:
     desc: "Import legacy orion (MySQL) data into phoenix. Usage: task import:orion -- --dry-run"
     cmds:
