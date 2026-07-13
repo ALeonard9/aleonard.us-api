@@ -334,6 +334,10 @@ class VideoGameBase(BaseModel):
     time_to_beat: Optional[int] = None
     igdb_last_update: Optional[datetime] = None
     slug: Optional[str] = None
+    year: Optional[int] = None
+    genre: Optional[str] = None
+    platforms: Optional[str] = None
+    summary: Optional[str] = None
 
 
 class VideoGameCreate(VideoGameBase):
@@ -349,6 +353,10 @@ class VideoGameUpdate(BaseModel):
     time_to_beat: Optional[int] = None
     igdb_last_update: Optional[datetime] = None
     slug: Optional[str] = None
+    year: Optional[int] = None
+    genre: Optional[str] = None
+    platforms: Optional[str] = None
+    summary: Optional[str] = None
 
 
 class VideoGameResponse(VideoGameBase):
@@ -358,11 +366,37 @@ class VideoGameResponse(VideoGameBase):
     model_config = ConfigDict(from_attributes=True)
 
 
+class VideoGameSummary(BaseModel):
+    """Lightweight game for list responses — omits the large ``summary``."""
+
+    id: str
+    title: str
+    igdb: Optional[int] = None
+    poster_url: Optional[str] = None
+    rating: Optional[float] = None
+    time_to_beat: Optional[int] = None
+    slug: Optional[str] = None
+    year: Optional[int] = None
+    genre: Optional[str] = None
+    platforms: Optional[str] = None
+    model_config = ConfigDict(from_attributes=True)
+
+
+class GameSearchResult(BaseModel):
+    igdb: Optional[int] = None
+    title: str
+    year: Optional[str] = None
+    platforms: Optional[str] = None
+    poster_url: Optional[str] = None
+
+
 class UserVideoGameBase(BaseModel):
+    on_watchlist: Optional[bool] = None
+    on_rankings: Optional[bool] = None
     rank: Optional[int] = None
     completed: Optional[int] = None
     notes: Optional[str] = None
-    is_100_percent: Optional[bool] = False
+    is_100_percent: Optional[bool] = None
 
 
 class UserVideoGameCreate(UserVideoGameBase):
@@ -375,10 +409,16 @@ class UserVideoGameUpdate(UserVideoGameBase):
 
 class UserVideoGameResponse(UserVideoGameBase):
     id: str
-    game: VideoGameResponse
+    game: VideoGameSummary
     created_at: datetime
     updated_at: datetime
     model_config = ConfigDict(from_attributes=True)
+
+
+class GameRankingReorder(BaseModel):
+    """Ordered list of game (catalog) ids defining the new ranking order."""
+
+    game_ids: List[str]
 
 
 # --- Books ---

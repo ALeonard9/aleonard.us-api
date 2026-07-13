@@ -381,10 +381,14 @@ def run_import(dry_run: bool = False) -> Report:
                         'game_id': game_map.get(r['videogames_id']),
                     },
                     {
-                        'rank': r['rank'],
+                        # Backlog games carry a meaningless rank-0 sentinel;
+                        # only played (completed) games keep their 1-based rank.
+                        'rank': r['rank'] if r['completed'] == 1 else None,
                         'completed': r['completed'],
                         'notes': _decode_blob(r['notes']),
                         'is_100_percent': bool(r['100_percent']),
+                        'on_rankings': r['completed'] == 1,
+                        'on_watchlist': r['completed'] != 1,
                     },
                 ),
                 lambda nf: nf['user_id'] and nf['game_id'],

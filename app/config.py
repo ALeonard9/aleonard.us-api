@@ -49,6 +49,10 @@ class Settings(BaseSettings):
     omdb_api_key: Optional[str] = None
     tmdb_api_key: Optional[str] = None
 
+    # --- External APIs (games search proxy — IGDB via Twitch OAuth) ---
+    twitch_client_id: Optional[str] = None
+    twitch_client_secret: Optional[str] = None
+
     @property
     def sqlalchemy_database_url(self) -> str:
         """
