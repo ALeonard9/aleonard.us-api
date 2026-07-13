@@ -5,7 +5,7 @@ This module contains Pydantic schemas for Sandbox entities.
 # pylint: disable=missing-class-docstring
 
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict
 
@@ -65,6 +65,11 @@ class MovieBase(BaseModel):
     language: Optional[str] = None
     rated: Optional[str] = None
     poster_url: Optional[str] = None
+    year: Optional[int] = None
+    genre: Optional[str] = None
+    director: Optional[str] = None
+    actors: Optional[str] = None
+    plot: Optional[str] = None
 
 
 class MovieCreate(MovieBase):
@@ -80,6 +85,11 @@ class MovieUpdate(BaseModel):
     language: Optional[str] = None
     rated: Optional[str] = None
     poster_url: Optional[str] = None
+    year: Optional[int] = None
+    genre: Optional[str] = None
+    director: Optional[str] = None
+    actors: Optional[str] = None
+    plot: Optional[str] = None
 
 
 class MovieResponse(MovieBase):
@@ -98,6 +108,8 @@ class MovieSearchResult(BaseModel):
 
 
 class UserMovieBase(BaseModel):
+    on_watchlist: Optional[bool] = None
+    on_rankings: Optional[bool] = None
     rank: Optional[int] = None
     completed: Optional[int] = None
     notes: Optional[str] = None
@@ -113,10 +125,22 @@ class UserMovieUpdate(UserMovieBase):
 
 class UserMovieResponse(UserMovieBase):
     id: str
-    movie: MovieResponse
+    movie: MovieSummary
     created_at: datetime
     updated_at: datetime
     model_config = ConfigDict(from_attributes=True)
+
+
+class RankingReorder(BaseModel):
+    """Ordered list of movie (catalog) ids defining the new ranking order."""
+
+    movie_ids: List[str]
+
+
+class RankPlacement(BaseModel):
+    """Target 1-based position at which to place a movie in the ranked list."""
+
+    position: int
 
 
 # --- TV Shows ---

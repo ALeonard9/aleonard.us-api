@@ -2,17 +2,41 @@
 This module creates tokens for users.
 """
 
+import secrets
+
 from fastapi import APIRouter, HTTPException, status
 from fastapi.param_functions import Depends
 from fastapi.security.oauth2 import OAuth2PasswordRequestForm
+from google.auth.transport import requests as google_requests
+from google.oauth2 import id_token as google_id_token
+from pydantic import BaseModel
 from sqlalchemy.orm.session import Session
 
 from app.auth import oauth2
+from app.config import get_settings
 from app.db import models
 from app.db.database import get_db
 from app.db.hash import Hash
 
 router = APIRouter(tags=['authentication'])
+
+
+class GoogleAuthRequest(BaseModel):
+    """Payload carrying the Google Identity Services ID token (credential)."""
+
+    credential: str
+
+
+def _token_response(user: models.DbUser) -> dict:
+    """Build the standard token response for a user."""
+    access_token = oauth2.create_access_token(data={'sub': user.id})
+    return {
+        'access_token': access_token,
+        'token_type': 'bearer',
+        'user_id': user.id,
+        'user_group': user.user_group,
+        'email': user.email,
+    }
 
 
 @router.post('/token')
@@ -44,12 +68,54 @@ def get_token(
             status_code=status.HTTP_404_NOT_FOUND, detail='Invalid credentials'
         )
 
-    access_token = oauth2.create_access_token(data={'sub': user.id})
+    return _token_response(user)
 
-    return {
-        'access_token': access_token,
-        'token_type': 'bearer',
-        'user_id': user.id,
-        'user_group': user.user_group,
-        'email': user.email,
-    }
+
+@router.post('/google')
+def google_login(request: GoogleAuthRequest, db: Session = Depends(get_db)):
+    """
+    Sign in with a Google Identity Services ID token.
+
+    Verifies the token against the configured Google client id, then upserts the
+    user (creating one on first sign-in) and returns a JWT — the same shape as
+    the password flow.
+    """
+    settings = get_settings()
+    if not settings.google_client_id:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail='Google sign-in is not configured',
+        )
+    try:
+        info = google_id_token.verify_oauth2_token(
+            request.credential,
+            google_requests.Request(),
+            settings.google_client_id,
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail='Invalid Google credential',
+        ) from exc
+
+    email = info.get('email')
+    if not email or not info.get('email_verified', False):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail='Google account email not verified',
+        )
+
+    user = db.query(models.DbUser).filter(models.DbUser.email == email).first()
+    if user is None:
+        user = models.DbUser(
+            email=email,
+            display_name=info.get('name') or email,
+            user_group='user',
+            # Google-authenticated users don't use a password; store an unusable one.
+            password=Hash.hash_password(secrets.token_hex(16)),
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
+    return _token_response(user)

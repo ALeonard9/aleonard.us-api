@@ -61,6 +61,46 @@
         }
       }
     },
+    "/v1/auth/google": {
+      "post": {
+        "tags": [
+          "authentication"
+        ],
+        "summary": "Google Login",
+        "description": "Sign in with a Google Identity Services ID token.\n\nVerifies the token against the configured Google client id, then upserts the\nuser (creating one on first sign-in) and returns a JWT \u2014 the same shape as\nthe password flow.",
+        "operationId": "google_login_v1_auth_google_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoogleAuthRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/users": {
       "get": {
         "tags": [
@@ -374,7 +414,7 @@
           }
         },
         "responses": {
-          "200": {
+          "201": {
             "description": "Successful Response",
             "content": {
               "application/json": {
@@ -4598,7 +4638,7 @@
           },
           "id": {
             "type": "string",
-            "title": "Id"
+            "title": "Title"
           },
           "created_at": {
             "type": "string",
