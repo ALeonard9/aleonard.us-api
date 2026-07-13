@@ -324,7 +324,6 @@
           "Countries"
         ],
         "summary": "Get All Countries",
-        "description": "Retrieve all countries.",
         "operationId": "get_all_countries_v1_countries_get",
         "responses": {
           "200": {
@@ -348,7 +347,6 @@
           "Countries"
         ],
         "summary": "Create Country",
-        "description": "Add a new country to the database.",
         "operationId": "create_country_v1_countries_post",
         "requestBody": {
           "content": {
@@ -381,17 +379,103 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/countries/sync": {
+      "post": {
+        "tags": [
+          "Countries"
+        ],
+        "summary": "Sync Countries",
+        "description": "Seed/refresh the full world catalog from REST Countries.",
+        "operationId": "sync_countries_v1_countries_sync_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CountryResponse"
+                  },
+                  "type": "array",
+                  "title": "Response Sync Countries V1 Countries Sync Post"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
       }
     },
     "/v1/countries/{country_id}": {
+      "get": {
+        "tags": [
+          "Countries"
+        ],
+        "summary": "Get Country",
+        "description": "Return one country's detail, enriching from REST Countries on first view.",
+        "operationId": "get_country_v1_countries__country_id__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "country_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Country Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CountryResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
       "put": {
         "tags": [
           "Countries"
         ],
         "summary": "Update Country",
-        "description": "Update a country's details.",
         "operationId": "update_country_v1_countries__country_id__put",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "country_id",
@@ -441,8 +525,12 @@
           "Countries"
         ],
         "summary": "Delete Country",
-        "description": "Delete a country from the database.",
         "operationId": "delete_country_v1_countries__country_id__delete",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "country_id",
@@ -477,7 +565,6 @@
           "Countries"
         ],
         "summary": "Get User Countries",
-        "description": "List countries the current user has visited.",
         "operationId": "get_user_countries_v1_users_me_countries_get",
         "responses": {
           "200": {
@@ -502,14 +589,111 @@
         ]
       }
     },
+    "/v1/users/me/countries/rankings/order": {
+      "put": {
+        "tags": [
+          "Countries"
+        ],
+        "summary": "Reorder Rankings",
+        "description": "Persist a new ranking order (drag-and-drop). Rank = position in the list.",
+        "operationId": "reorder_rankings_v1_users_me_countries_rankings_order_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CountryRankingReorder"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/UserCountryResponse"
+                  },
+                  "type": "array",
+                  "title": "Response Reorder Rankings V1 Users Me Countries Rankings Order Put"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
     "/v1/users/me/countries/{country_id}": {
+      "get": {
+        "tags": [
+          "Countries"
+        ],
+        "summary": "Get User Country",
+        "description": "Return the current user's tracker for one country (404 if not tracked).",
+        "operationId": "get_user_country_v1_users_me_countries__country_id__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "country_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Country Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserCountryResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
       "post": {
         "tags": [
           "Countries"
         ],
-        "summary": "Mark Country Visited",
-        "description": "Mark a country as visited by the current user.",
-        "operationId": "mark_country_visited_v1_users_me_countries__country_id__post",
+        "summary": "Mark Country",
+        "description": "Add a country to the user's lists (idempotent \u2014 merges list membership).",
+        "operationId": "mark_country_v1_users_me_countries__country_id__post",
         "security": [
           {
             "OAuth2PasswordBearer": []
@@ -564,7 +748,7 @@
           "Countries"
         ],
         "summary": "Update User Country",
-        "description": "Update user's visit details for a country.",
+        "description": "Update list membership, rank, notes, or first-visited for a country.",
         "operationId": "update_user_country_v1_users_me_countries__country_id__put",
         "security": [
           {
@@ -619,9 +803,8 @@
         "tags": [
           "Countries"
         ],
-        "summary": "Unmark Country Visited",
-        "description": "Remove a country from the user's visited list.",
-        "operationId": "unmark_country_visited_v1_users_me_countries__country_id__delete",
+        "summary": "Unmark Country",
+        "operationId": "unmark_country_v1_users_me_countries__country_id__delete",
         "security": [
           {
             "OAuth2PasswordBearer": []
@@ -641,6 +824,64 @@
         "responses": {
           "204": {
             "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/users/me/countries/{country_id}/rank": {
+      "put": {
+        "tags": [
+          "Countries"
+        ],
+        "summary": "Set Country Rank",
+        "description": "Place a country at an exact 1-based position in the visited ranking,\nshifting the countries at and below that position down by one.",
+        "operationId": "set_country_rank_v1_users_me_countries__country_id__rank_put",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "country_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Country Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RankPlacement"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserCountryResponse"
+                }
+              }
+            }
           },
           "422": {
             "description": "Validation Error",
@@ -1596,7 +1837,7 @@
               "application/json": {
                 "schema": {
                   "items": {
-                    "$ref": "#/components/schemas/BookResponse"
+                    "$ref": "#/components/schemas/BookSummary"
                   },
                   "type": "array",
                   "title": "Response Get All Books V1 Books Get"
@@ -1643,16 +1884,123 @@
               }
             }
           }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/books/search": {
+      "get": {
+        "tags": [
+          "Books"
+        ],
+        "summary": "Search Books Endpoint",
+        "operationId": "search_books_endpoint_v1_books_search_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Q"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BookSearchResult"
+                  },
+                  "title": "Response Search Books Endpoint V1 Books Search Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
         }
       }
     },
     "/v1/books/{book_id}": {
+      "get": {
+        "tags": [
+          "Books"
+        ],
+        "summary": "Get Book",
+        "description": "Return one book's full detail, enriching from Open Library on first view.",
+        "operationId": "get_book_v1_books__book_id__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "book_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Book Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
       "put": {
         "tags": [
           "Books"
         ],
         "summary": "Update Book",
         "operationId": "update_book_v1_books__book_id__put",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "book_id",
@@ -1703,6 +2051,11 @@
         ],
         "summary": "Delete Book",
         "operationId": "delete_book_v1_books__book_id__delete",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "book_id",
@@ -1761,12 +2114,110 @@
         ]
       }
     },
+    "/v1/users/me/books/rankings/order": {
+      "put": {
+        "tags": [
+          "Books"
+        ],
+        "summary": "Reorder Rankings",
+        "description": "Persist a new ranking order (drag-and-drop). Rank = position in the list.",
+        "operationId": "reorder_rankings_v1_users_me_books_rankings_order_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BookRankingReorder"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/UserBookResponse"
+                  },
+                  "type": "array",
+                  "title": "Response Reorder Rankings V1 Users Me Books Rankings Order Put"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
     "/v1/users/me/books/{book_id}": {
+      "get": {
+        "tags": [
+          "Books"
+        ],
+        "summary": "Get User Book",
+        "description": "Return the current user's tracker for one book (404 if not tracked).",
+        "operationId": "get_user_book_v1_users_me_books__book_id__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "book_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Book Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserBookResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
       "post": {
         "tags": [
           "Books"
         ],
         "summary": "Mark Book",
+        "description": "Add a book to the user's lists (idempotent \u2014 merges list membership).",
         "operationId": "mark_book_v1_users_me_books__book_id__post",
         "security": [
           {
@@ -1822,6 +2273,7 @@
           "Books"
         ],
         "summary": "Update User Book",
+        "description": "Update list membership, rank, or notes for a tracked book.",
         "operationId": "update_user_book_v1_users_me_books__book_id__put",
         "security": [
           {
@@ -1897,6 +2349,64 @@
         "responses": {
           "204": {
             "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/users/me/books/{book_id}/rank": {
+      "put": {
+        "tags": [
+          "Books"
+        ],
+        "summary": "Set Book Rank",
+        "description": "Place a book at an exact 1-based position in the ranked list, shifting the\nbooks at and below that position down by one. Works for a not-yet-ranked\nbook (jump it in) or an already-ranked one (move it).",
+        "operationId": "set_book_rank_v1_users_me_books__book_id__rank_put",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "book_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Book Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RankPlacement"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserBookResponse"
+                }
+              }
+            }
           },
           "422": {
             "description": "Validation Error",
@@ -3017,6 +3527,83 @@
               }
             ],
             "title": "Poster Url"
+          },
+          "authors": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Authors"
+          },
+          "year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Year"
+          },
+          "genre": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Genre"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "page_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page Count"
+          },
+          "rating": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rating"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language"
           }
         },
         "type": "object",
@@ -3024,6 +3611,23 @@
           "title"
         ],
         "title": "BookCreate"
+      },
+      "BookRankingReorder": {
+        "properties": {
+          "book_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Book Ids"
+          }
+        },
+        "type": "object",
+        "required": [
+          "book_ids"
+        ],
+        "title": "BookRankingReorder",
+        "description": "Ordered list of book (catalog) ids defining the new ranking order."
       },
       "BookResponse": {
         "properties": {
@@ -3064,6 +3668,83 @@
             ],
             "title": "Poster Url"
           },
+          "authors": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Authors"
+          },
+          "year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Year"
+          },
+          "genre": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Genre"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "page_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page Count"
+          },
+          "rating": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rating"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language"
+          },
           "id": {
             "type": "string",
             "title": "Id"
@@ -3087,6 +3768,170 @@
           "updated_at"
         ],
         "title": "BookResponse"
+      },
+      "BookSearchResult": {
+        "properties": {
+          "isbn": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Isbn"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "authors": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Authors"
+          },
+          "year": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Year"
+          },
+          "poster_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Poster Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title"
+        ],
+        "title": "BookSearchResult"
+      },
+      "BookSummary": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "isbn": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Isbn"
+          },
+          "googleid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Googleid"
+          },
+          "poster_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Poster Url"
+          },
+          "authors": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Authors"
+          },
+          "year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Year"
+          },
+          "genre": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Genre"
+          },
+          "page_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page Count"
+          },
+          "rating": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rating"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title"
+        ],
+        "title": "BookSummary",
+        "description": "Lightweight book for list responses \u2014 omits the large ``description``."
       },
       "BookUpdate": {
         "properties": {
@@ -3133,6 +3978,83 @@
               }
             ],
             "title": "Poster Url"
+          },
+          "authors": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Authors"
+          },
+          "year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Year"
+          },
+          "genre": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Genre"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "page_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page Count"
+          },
+          "rating": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rating"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language"
           }
         },
         "type": "object",
@@ -3147,6 +4069,72 @@
           "country_code": {
             "type": "string",
             "title": "Country Code"
+          },
+          "region": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Region"
+          },
+          "subregion": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subregion"
+          },
+          "capital": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capital"
+          },
+          "population": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Population"
+          },
+          "flag_emoji": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Flag Emoji"
+          },
+          "flag_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Flag Url"
           }
         },
         "type": "object",
@@ -3155,6 +4143,23 @@
           "country_code"
         ],
         "title": "CountryCreate"
+      },
+      "CountryRankingReorder": {
+        "properties": {
+          "country_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Country Ids"
+          }
+        },
+        "type": "object",
+        "required": [
+          "country_ids"
+        ],
+        "title": "CountryRankingReorder",
+        "description": "Ordered list of country (catalog) ids defining the new ranking order."
       },
       "CountryResponse": {
         "properties": {
@@ -3165,6 +4170,72 @@
           "country_code": {
             "type": "string",
             "title": "Country Code"
+          },
+          "region": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Region"
+          },
+          "subregion": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subregion"
+          },
+          "capital": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capital"
+          },
+          "population": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Population"
+          },
+          "flag_emoji": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Flag Emoji"
+          },
+          "flag_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Flag Url"
           },
           "id": {
             "type": "string",
@@ -3214,6 +4285,72 @@
               }
             ],
             "title": "Country Code"
+          },
+          "region": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Region"
+          },
+          "subregion": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subregion"
+          },
+          "capital": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capital"
+          },
+          "population": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Population"
+          },
+          "flag_emoji": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Flag Emoji"
+          },
+          "flag_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Flag Url"
           }
         },
         "type": "object",
@@ -4911,6 +6048,28 @@
       },
       "UserBookCreate": {
         "properties": {
+          "on_watchlist": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "On Watchlist"
+          },
+          "on_rankings": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "On Rankings"
+          },
           "rank": {
             "anyOf": [
               {
@@ -4950,6 +6109,28 @@
       },
       "UserBookResponse": {
         "properties": {
+          "on_watchlist": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "On Watchlist"
+          },
+          "on_rankings": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "On Rankings"
+          },
           "rank": {
             "anyOf": [
               {
@@ -4988,7 +6169,7 @@
             "title": "Id"
           },
           "book": {
-            "$ref": "#/components/schemas/BookResponse"
+            "$ref": "#/components/schemas/BookSummary"
           },
           "created_at": {
             "type": "string",
@@ -5012,6 +6193,28 @@
       },
       "UserBookUpdate": {
         "properties": {
+          "on_watchlist": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "On Watchlist"
+          },
+          "on_rankings": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "On Rankings"
+          },
           "rank": {
             "anyOf": [
               {
@@ -5051,6 +6254,28 @@
       },
       "UserCountryCreate": {
         "properties": {
+          "on_watchlist": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "On Watchlist"
+          },
+          "on_rankings": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "On Rankings"
+          },
           "rank": {
             "anyOf": [
               {
@@ -5102,6 +6327,28 @@
       },
       "UserCountryResponse": {
         "properties": {
+          "on_watchlist": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "On Watchlist"
+          },
+          "on_rankings": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "On Rankings"
+          },
           "rank": {
             "anyOf": [
               {
@@ -5176,6 +6423,28 @@
       },
       "UserCountryUpdate": {
         "properties": {
+          "on_watchlist": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "On Watchlist"
+          },
+          "on_rankings": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "On Rankings"
+          },
           "rank": {
             "anyOf": [
               {

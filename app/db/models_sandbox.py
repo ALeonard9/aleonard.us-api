@@ -24,6 +24,13 @@ class DbCountry(DBBaseModel):
 
     title = Column(String(255))
     country_code = Column(String(4), unique=True)
+    # Rich detail (populated from REST Countries) for the detail view.
+    region = Column(String(100), nullable=True)
+    subregion = Column(String(100), nullable=True)
+    capital = Column(String(255), nullable=True)
+    population = Column(Integer, nullable=True)
+    flag_emoji = Column(String(8), nullable=True)
+    flag_url = Column(String(500), nullable=True)
 
     user_countries = relationship('DbUserCountry', back_populates='country')
 
@@ -34,6 +41,11 @@ class DbUserCountry(DBBaseModel):
     country_id = Column(Integer, ForeignKey('countries.pk'), nullable=False)
     user_id = Column(Integer, ForeignKey('users.pk'), nullable=False)
 
+    # Two independent lists, mirroring the Movies tracker: on_watchlist is the
+    # travel bucket list, on_rankings is the visited-and-ranked list.
+    # `completed` is retained from the legacy import but no longer drives the UI.
+    on_watchlist = Column(Boolean, nullable=False, default=False)
+    on_rankings = Column(Boolean, nullable=False, default=False)
     rank = Column(Integer, nullable=True)
     completed = Column(Integer, nullable=True)
     notes = Column(Text, nullable=True)
@@ -188,6 +200,14 @@ class DbBook(DBBaseModel):
     isbn = Column(String(20), nullable=True)
     googleid = Column(String(254), nullable=True)
     poster_url = Column(String(254), nullable=True)
+    # Rich detail (populated from Google Books) for the detail view + filtering.
+    authors = Column(String(512), nullable=True)
+    year = Column(Integer, nullable=True)
+    genre = Column(String(255), nullable=True)
+    description = Column(Text, nullable=True)
+    page_count = Column(Integer, nullable=True)
+    rating = Column(Float, nullable=True)
+    language = Column(String(40), nullable=True)
 
     user_books = relationship('DbUserBook', back_populates='book')
 
@@ -198,6 +218,11 @@ class DbUserBook(DBBaseModel):
     book_id = Column(Integer, ForeignKey('books.pk'), nullable=False)
     user_id = Column(Integer, ForeignKey('users.pk'), nullable=False)
 
+    # Two independent lists, mirroring the Movies tracker: on_watchlist is the
+    # to-read list, on_rankings the read-and-ranked list. `completed` is
+    # retained from the legacy import but no longer drives the UI.
+    on_watchlist = Column(Boolean, nullable=False, default=False)
+    on_rankings = Column(Boolean, nullable=False, default=False)
     rank = Column(Integer, nullable=True)
     completed = Column(Integer, nullable=True)
     notes = Column(Text, nullable=True)

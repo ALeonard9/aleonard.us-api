@@ -14,6 +14,12 @@ from pydantic import BaseModel, ConfigDict
 class CountryBase(BaseModel):
     title: str
     country_code: str
+    region: Optional[str] = None
+    subregion: Optional[str] = None
+    capital: Optional[str] = None
+    population: Optional[int] = None
+    flag_emoji: Optional[str] = None
+    flag_url: Optional[str] = None
 
 
 class CountryCreate(CountryBase):
@@ -23,6 +29,12 @@ class CountryCreate(CountryBase):
 class CountryUpdate(BaseModel):
     title: Optional[str] = None
     country_code: Optional[str] = None
+    region: Optional[str] = None
+    subregion: Optional[str] = None
+    capital: Optional[str] = None
+    population: Optional[int] = None
+    flag_emoji: Optional[str] = None
+    flag_url: Optional[str] = None
 
 
 class CountryResponse(CountryBase):
@@ -33,6 +45,8 @@ class CountryResponse(CountryBase):
 
 
 class UserCountryBase(BaseModel):
+    on_watchlist: Optional[bool] = None
+    on_rankings: Optional[bool] = None
     rank: Optional[int] = None
     completed: Optional[int] = None
     notes: Optional[str] = None
@@ -53,6 +67,12 @@ class UserCountryResponse(UserCountryBase):
     created_at: datetime
     updated_at: datetime
     model_config = ConfigDict(from_attributes=True)
+
+
+class CountryRankingReorder(BaseModel):
+    """Ordered list of country (catalog) ids defining the new ranking order."""
+
+    country_ids: List[str]
 
 
 # --- Movies ---
@@ -367,6 +387,13 @@ class BookBase(BaseModel):
     isbn: Optional[str] = None
     googleid: Optional[str] = None
     poster_url: Optional[str] = None
+    authors: Optional[str] = None
+    year: Optional[int] = None
+    genre: Optional[str] = None
+    description: Optional[str] = None
+    page_count: Optional[int] = None
+    rating: Optional[float] = None
+    language: Optional[str] = None
 
 
 class BookCreate(BookBase):
@@ -378,6 +405,13 @@ class BookUpdate(BaseModel):
     isbn: Optional[str] = None
     googleid: Optional[str] = None
     poster_url: Optional[str] = None
+    authors: Optional[str] = None
+    year: Optional[int] = None
+    genre: Optional[str] = None
+    description: Optional[str] = None
+    page_count: Optional[int] = None
+    rating: Optional[float] = None
+    language: Optional[str] = None
 
 
 class BookResponse(BookBase):
@@ -387,7 +421,33 @@ class BookResponse(BookBase):
     model_config = ConfigDict(from_attributes=True)
 
 
+class BookSummary(BaseModel):
+    """Lightweight book for list responses — omits the large ``description``."""
+
+    id: str
+    title: str
+    isbn: Optional[str] = None
+    googleid: Optional[str] = None
+    poster_url: Optional[str] = None
+    authors: Optional[str] = None
+    year: Optional[int] = None
+    genre: Optional[str] = None
+    page_count: Optional[int] = None
+    rating: Optional[float] = None
+    model_config = ConfigDict(from_attributes=True)
+
+
+class BookSearchResult(BaseModel):
+    isbn: Optional[str] = None
+    title: str
+    authors: Optional[str] = None
+    year: Optional[str] = None
+    poster_url: Optional[str] = None
+
+
 class UserBookBase(BaseModel):
+    on_watchlist: Optional[bool] = None
+    on_rankings: Optional[bool] = None
     rank: Optional[int] = None
     completed: Optional[int] = None
     notes: Optional[str] = None
@@ -403,7 +463,13 @@ class UserBookUpdate(UserBookBase):
 
 class UserBookResponse(UserBookBase):
     id: str
-    book: BookResponse
+    book: BookSummary
     created_at: datetime
     updated_at: datetime
     model_config = ConfigDict(from_attributes=True)
+
+
+class BookRankingReorder(BaseModel):
+    """Ordered list of book (catalog) ids defining the new ranking order."""
+
+    book_ids: List[str]

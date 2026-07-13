@@ -256,6 +256,11 @@ def run_import(dry_run: bool = False) -> Report:
                         'rank': r['rank'],
                         'completed': r['completed'],
                         'notes': r['notes'],
+                        # Derive the two lists here too (not only in the alembic
+                        # backfill) so importing into an already-migrated schema
+                        # still lands rows on a list.
+                        'on_rankings': r['completed'] == 1,
+                        'on_watchlist': r['completed'] != 1,
                         'created_at': r['g_first'] or r['g_updated'],
                         'updated_at': r['g_updated'],
                     },
@@ -313,9 +318,13 @@ def run_import(dry_run: bool = False) -> Report:
                         'tv_show_id': tv_map.get(r['tv_id']),
                     },
                     {
-                        'rank': r['rank'],
+                        # Legacy TV ranks are 0-based; the API expects 1-based
+                        # (mirrors the alembic backfill for pre-migration rows).
+                        'rank': r['rank'] + 1 if r['rank'] is not None else None,
                         'status': _clean(r['status'], 254),
                         'freeze': r['freeze'] or 0,
+                        'on_rankings': r['rank'] is not None,
+                        'on_watchlist': r['rank'] is None,
                     },
                 ),
                 lambda nf: nf['user_id'] and nf['tv_show_id'],
@@ -412,9 +421,13 @@ def run_import(dry_run: bool = False) -> Report:
                         'book_id': book_map.get(r['books_id']),
                     },
                     {
-                        'rank': r['rank'],
+                        # Unread books carry a meaningless rank-0 sentinel;
+                        # only read (completed) books keep their 1-based rank.
+                        'rank': r['rank'] if r['completed'] == 1 else None,
                         'completed': r['completed'],
                         'notes': r['notes'],
+                        'on_rankings': r['completed'] == 1,
+                        'on_watchlist': r['completed'] != 1,
                     },
                 ),
                 lambda nf: nf['user_id'] and nf['book_id'],
@@ -429,7 +442,11 @@ def run_import(dry_run: bool = False) -> Report:
                 'id, title, country_code',
                 'country_code',
                 lambda r: (
-                    {'country_code': _clean(r['country_code'], 4)},
+                    # Lowercased to match the mledoze/flagcdn catalog keys.
+                    {
+                        'country_code': (_clean(r['country_code'], 4) or '').lower()
+                        or None
+                    },
                     {'title': _clean(r['title'], 255) or 'Unknown'},
                 ),
             )
@@ -446,10 +463,12 @@ def run_import(dry_run: bool = False) -> Report:
                         'country_id': country_map.get(r['countries_id']),
                     },
                     {
-                        'rank': r['rank'],
+                        'rank': r['rank'] if r['completed'] == 1 else None,
                         'completed': r['completed'],
                         'notes': r['notes'],
                         'first_visited': r['g_first'],
+                        'on_rankings': r['completed'] == 1,
+                        'on_watchlist': r['completed'] != 1,
                     },
                 ),
                 lambda nf: nf['user_id'] and nf['country_id'],
