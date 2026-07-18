@@ -16,7 +16,7 @@ from sqlalchemy.orm import Session
 
 from app.db.database import get_db
 from app.services.rate_limit import catalog_add_cap, search_rate_limit
-from app.services.tracker_rules import enforce_single_home
+from app.services.tracker_rules import enforce_single_home, utc_now
 from app.db.models_sandbox import DbVideoGame, DbUserVideoGame
 from app.auth.oauth2 import get_current_user, require_admin
 from app.schemas.schemas_sandbox import (
@@ -224,6 +224,8 @@ def reorder_rankings(
             continue
         tracker = _get_tracker(db, user_pk, game.pk)
         if tracker:
+            if tracker.rank != position:
+                tracker.ranked_at = utc_now()
             tracker.rank = position
             tracker.on_rankings = True
             tracker.on_watchlist = False
@@ -303,6 +305,7 @@ def set_game_rank(
     )
 
     tracker.rank = target
+    tracker.ranked_at = utc_now()
     db.commit()
     db.refresh(tracker)
     return tracker
@@ -350,6 +353,7 @@ def mark_game(
     enforce_single_home(tracker, data)
     if not tracker.on_rankings or not was_on_rankings:
         tracker.rank = None
+        tracker.ranked_at = None
     if old_rank is not None and tracker.rank is None:
         _close_rank_gap(db, user_pk, old_rank)
     db.commit()
@@ -384,6 +388,7 @@ def update_user_game(
     # rank never places the game automatically; it lands in "to rank" instead.
     if not tracker.on_rankings or not was_on_rankings:
         tracker.rank = None
+        tracker.ranked_at = None
 
     # A removed placement leaves a gap — shift everything below it up.
     if old_rank is not None and tracker.rank is None:
