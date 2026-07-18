@@ -316,3 +316,28 @@ def test_search_movies_returns_results(
     assert data[0]['poster_url'] == 'https://example.com/matrix.jpg'
     # 'N/A' posters are normalized to null.
     assert data[1]['poster_url'] is None
+
+
+@patch('app.router.v1.router_movies.omdb_search_movies')
+def test_search_retries_with_spelling_fix(mock_search, test_client: TestClient):
+    """An empty result retries once with a spell-corrected query."""
+    hit = [{'imdb': 'tt0107290', 'title': 'Jurassic Park', 'year': '1993'}]
+    mock_search.side_effect = [[], hit]
+    headers = {'Authorization': f"Bearer {test_client.first_user.token}"}
+
+    response = test_client.get('/v1/movies/search?q=jurrasic', headers=headers)
+    assert response.status_code == 200
+    assert response.json()[0]['title'] == 'Jurassic Park'
+    assert mock_search.call_count == 2
+    assert mock_search.call_args_list[1].args[0] == 'jurassic'
+
+
+@patch('app.router.v1.router_movies.omdb_search_movies')
+def test_search_no_retry_when_spelling_correct(mock_search, test_client: TestClient):
+    mock_search.return_value = []
+    headers = {'Authorization': f"Bearer {test_client.first_user.token}"}
+
+    response = test_client.get('/v1/movies/search?q=jurassic', headers=headers)
+    assert response.status_code == 200
+    assert response.json() == []
+    assert mock_search.call_count == 1

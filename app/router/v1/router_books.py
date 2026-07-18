@@ -33,6 +33,7 @@ from app.services.book_search import (
     get_book_detail,
     search_books as openlibrary_search_books,
 )
+from app.services.search_correction import correct_query
 
 router = APIRouter(prefix='/v1', tags=['Books'])
 
@@ -49,7 +50,12 @@ def search_books_endpoint(
     current_user: list = Depends(get_current_user),
 ):
     del current_user  # any authenticated user may search
-    return openlibrary_search_books(q)
+    results = openlibrary_search_books(q)
+    if not results:
+        corrected = correct_query(q)
+        if corrected:
+            results = openlibrary_search_books(corrected)
+    return results
 
 
 @router.post('/books', response_model=BookResponse, status_code=status.HTTP_201_CREATED)
