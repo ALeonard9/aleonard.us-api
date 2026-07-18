@@ -19,6 +19,27 @@ from sqlalchemy.orm import relationship
 from app.db.models import DBBaseModel
 
 
+class DbNotification(DBBaseModel):
+    __tablename__ = 'notifications'
+
+    user_id = Column(Integer, ForeignKey('users.pk'), nullable=False)
+
+    # Machine-readable kind (e.g. 'movie_release') so clients — web today,
+    # mobile later — can pick icons/routes without parsing the title.
+    type = Column(String(50), nullable=False)
+    title = Column(String(255), nullable=False)
+    body = Column(Text, nullable=True)
+    # Link target: which tracker domain and which catalog entity to open.
+    category = Column(String(20), nullable=True)
+    entity_id = Column(String(40), nullable=True)
+    # One notification per (user, event): generators upsert on this key, so
+    # re-running a sweep never duplicates. E.g. 'movie_release:tt1375666'.
+    dedupe_key = Column(String(120), nullable=False)
+    read = Column(Boolean, nullable=False, default=False)
+
+    user = relationship('DbUser', backref='notifications')
+
+
 class DbCountry(DBBaseModel):
     __tablename__ = 'countries'
 

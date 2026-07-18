@@ -18,16 +18,20 @@ from .auth import authentication
 from .config import get_settings
 from .db import db_user, models
 from .db.database import engine, get_db
+from .db.models_sandbox import DbCountry
 from .log.logging_config import logger
 from .router.v1 import (
     user,
+    router_activity,
     router_countries,
+    router_notifications,
     router_movies,
     router_games,
     router_books,
     router_tv,
 )
 from .schemas.model_schemas import OutResponseBaseModel
+from .services.country_data import seed_countries
 from .utils.exceptions import (
     generic_exception_handler,
     http_exception_handler,
@@ -59,6 +63,11 @@ app = FastAPI(
         {'name': 'Games', 'description': 'Video game catalog and per-user tracker'},
         {'name': 'Books', 'description': 'Book catalog and per-user tracker'},
         {'name': 'Countries', 'description': 'Country catalog and per-user tracker'},
+        {
+            'name': 'Activity',
+            'description': 'Cross-domain activity log and "I\'m bored" recommendation',
+        },
+        {'name': 'Notifications', 'description': 'Per-user notification feed'},
     ],
     openapi_url='/openapi.json',
     servers=[
@@ -77,6 +86,8 @@ app.include_router(router_movies.router)
 app.include_router(router_games.router)
 app.include_router(router_books.router)
 app.include_router(router_tv.router)
+app.include_router(router_activity.router)
+app.include_router(router_notifications.router)
 
 # Serve static files
 app.mount('/static', StaticFiles(directory='app/static'), name='static')
@@ -142,6 +153,12 @@ async def start_server():
     try:
         db = next(get_db())
         db_user.create_admin_user(db)
+        # The Countries catalog has no search proxy (it's the finite world
+        # list) — seed it once so "add a country" has anything to pick from.
+        if db.query(DbCountry).count() == 0:
+            created = seed_countries(db)
+            db.commit()
+            logger.info('Seeded countries catalog: %d created', created)
     except SQLAlchemyError as e:
         logger.error('Unexpected error: %s', e)
 

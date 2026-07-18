@@ -1,4 +1,5 @@
 # pylint: disable=missing-module-docstring, missing-function-docstring
+from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock, patch
 
 from fastapi.testclient import TestClient
@@ -13,14 +14,22 @@ def _make_show(test_client: TestClient, title='Breaking Bad', **extra) -> str:
     return resp.json()['id']
 
 
-def _make_episode(
-    test_client: TestClient, show_id: str, title='Pilot', season=1, number=1
+def _make_episode(  # pylint: disable=too-many-arguments, too-many-positional-arguments
+    test_client: TestClient,
+    show_id: str,
+    title='Pilot',
+    season=1,
+    number=1,
+    airdate=None,
 ) -> str:
     headers = {'Authorization': f"Bearer {test_client.admin_user.token}"}
+    payload = {'title': title, 'season': season, 'season_number': number}
+    if airdate is not None:
+        payload['airdate'] = airdate
     resp = test_client.post(
         f"/v1/tv-shows/{show_id}/episodes",
         headers=headers,
-        json={'title': title, 'season': season, 'season_number': number},
+        json=payload,
     )
     assert resp.status_code == 201
     return resp.json()['id']
@@ -360,6 +369,165 @@ def test_mark_and_unmark_episode_watched(test_client: TestClient):
 
     resp = test_client.delete(f"/v1/users/me/episodes/{episode_id}", headers=headers)
     assert resp.status_code == 404
+
+
+def test_mark_all_episodes_watched(test_client: TestClient):
+    show_id = _make_show(test_client)
+    s1e1 = _make_episode(test_client, show_id, title='S1E1', season=1, number=1)
+    s1e2 = _make_episode(test_client, show_id, title='S1E2', season=1, number=2)
+    s2e1 = _make_episode(test_client, show_id, title='S2E1', season=2, number=1)
+    headers = {'Authorization': f"Bearer {test_client.first_user.token}"}
+
+    resp = test_client.post(
+        f"/v1/users/me/tv-shows/{show_id}/episodes/watch-all", headers=headers
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert len(body) == 3
+    assert {e['episode']['id'] for e in body} == {s1e1, s1e2, s2e1}
+    assert all(e['watched'] == 1 for e in body)
+
+
+def test_mark_all_episodes_watched_by_season(test_client: TestClient):
+    show_id = _make_show(test_client)
+    s1e1 = _make_episode(test_client, show_id, title='S1E1', season=1, number=1)
+    _make_episode(test_client, show_id, title='S2E1', season=2, number=1)
+    headers = {'Authorization': f"Bearer {test_client.first_user.token}"}
+
+    resp = test_client.post(
+        f"/v1/users/me/tv-shows/{show_id}/episodes/watch-all?season=1",
+        headers=headers,
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert len(body) == 1
+    assert body[0]['episode']['id'] == s1e1
+
+    listing = test_client.get(
+        f"/v1/users/me/tv-shows/{show_id}/episodes", headers=headers
+    )
+    assert len(listing.json()) == 1
+
+
+def test_mark_all_episodes_watched_is_idempotent(test_client: TestClient):
+    show_id = _make_show(test_client)
+    _make_episode(test_client, show_id)
+    headers = {'Authorization': f"Bearer {test_client.first_user.token}"}
+
+    test_client.post(
+        f"/v1/users/me/tv-shows/{show_id}/episodes/watch-all", headers=headers
+    )
+    resp = test_client.post(
+        f"/v1/users/me/tv-shows/{show_id}/episodes/watch-all", headers=headers
+    )
+    assert resp.status_code == 200
+    assert len(resp.json()) == 1
+
+
+def test_mark_all_episodes_watched_no_match_404s(test_client: TestClient):
+    show_id = _make_show(test_client)
+    headers = {'Authorization': f"Bearer {test_client.first_user.token}"}
+
+    resp = test_client.post(
+        f"/v1/users/me/tv-shows/{show_id}/episodes/watch-all?season=9",
+        headers=headers,
+    )
+    assert resp.status_code == 404
+
+
+# --- Schedule ---
+def _iso(delta_days: int) -> str:
+    return (datetime.now(timezone.utc) + timedelta(days=delta_days)).isoformat()
+
+
+def test_schedule_splits_upcoming_and_catch_up(test_client: TestClient):
+    show_id = _make_show(test_client, title='Watched Show')
+    headers = {'Authorization': f"Bearer {test_client.first_user.token}"}
+    test_client.post(
+        f"/v1/users/me/tv-shows/{show_id}",
+        headers=headers,
+        json={'on_rankings': True},
+    )
+
+    upcoming_ep = _make_episode(
+        test_client, show_id, title='Airs in 2 days', airdate=_iso(2)
+    )
+    overdue_ep = _make_episode(
+        test_client,
+        show_id,
+        title='Aired yesterday',
+        season=1,
+        number=2,
+        airdate=_iso(-1),
+    )
+    far_past_ep = _make_episode(
+        test_client,
+        show_id,
+        title='Aired long ago',
+        season=1,
+        number=3,
+        airdate=_iso(-30),
+    )
+
+    resp = test_client.get('/v1/users/me/schedule', headers=headers)
+    assert resp.status_code == 200
+    body = resp.json()
+
+    upcoming_ids = {e['episode_id'] for e in body['upcoming']}
+    catch_up_ids = {e['episode_id'] for e in body['catch_up']}
+
+    assert upcoming_ids == {upcoming_ep, overdue_ep}
+    assert catch_up_ids == {overdue_ep, far_past_ep}
+    assert body['frozen_shows'] == []
+
+
+def test_schedule_excludes_watched_episodes(test_client: TestClient):
+    show_id = _make_show(test_client)
+    headers = {'Authorization': f"Bearer {test_client.first_user.token}"}
+    test_client.post(
+        f"/v1/users/me/tv-shows/{show_id}",
+        headers=headers,
+        json={'on_watchlist': True},
+    )
+    episode_id = _make_episode(test_client, show_id, airdate=_iso(-1))
+    test_client.post(f"/v1/users/me/episodes/{episode_id}", headers=headers)
+
+    resp = test_client.get('/v1/users/me/schedule', headers=headers)
+    body = resp.json()
+    assert body['upcoming'] == []
+    assert body['catch_up'] == []
+
+
+def test_schedule_excludes_frozen_shows(test_client: TestClient):
+    show_id = _make_show(test_client, title='Paused Show')
+    headers = {'Authorization': f"Bearer {test_client.first_user.token}"}
+    test_client.post(
+        f"/v1/users/me/tv-shows/{show_id}",
+        headers=headers,
+        json={'on_rankings': True},
+    )
+    _make_episode(test_client, show_id, airdate=_iso(-1))
+    test_client.put(
+        f"/v1/users/me/tv-shows/{show_id}", headers=headers, json={'freeze': 1}
+    )
+
+    resp = test_client.get('/v1/users/me/schedule', headers=headers)
+    body = resp.json()
+    assert body['upcoming'] == []
+    assert body['catch_up'] == []
+    assert body['frozen_shows'] == [{'show_id': show_id, 'show_title': 'Paused Show'}]
+
+
+def test_schedule_ignores_untracked_shows(test_client: TestClient):
+    show_id = _make_show(test_client)
+    headers = {'Authorization': f"Bearer {test_client.first_user.token}"}
+    _make_episode(test_client, show_id, airdate=_iso(-1))
+
+    resp = test_client.get('/v1/users/me/schedule', headers=headers)
+    body = resp.json()
+    assert body['upcoming'] == []
+    assert body['catch_up'] == []
+    assert body['frozen_shows'] == []
 
 
 def test_user_episode_marks_are_per_user(test_client: TestClient):
