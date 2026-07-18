@@ -10,6 +10,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.db.database import get_db
+from app.services.rate_limit import catalog_add_cap, search_rate_limit
 from app.services.tracker_rules import enforce_single_home
 from app.db.models_sandbox import DbMovie, DbUserMovie
 from app.auth.oauth2 import get_current_user, require_admin
@@ -40,7 +41,11 @@ def get_all_movies(db: Session = Depends(get_db)):
     return db.query(DbMovie).all()
 
 
-@router.get('/movies/search', response_model=List[MovieSearchResult])
+@router.get(
+    '/movies/search',
+    response_model=List[MovieSearchResult],
+    dependencies=[Depends(search_rate_limit)],
+)
 def search_movies_endpoint(
     q: str,
     current_user: list = Depends(get_current_user),
@@ -55,7 +60,10 @@ def search_movies_endpoint(
 
 
 @router.post(
-    '/movies', response_model=MovieResponse, status_code=status.HTTP_201_CREATED
+    '/movies',
+    response_model=MovieResponse,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(catalog_add_cap)],
 )
 def create_movie(
     request: MovieCreate,

@@ -1,0 +1,97 @@
+"""
+Abuse resistance (#148, threat model H1/H2): lightweight sliding-window rate
+limits served as FastAPI dependencies.
+
+Limits are in-memory and therefore per-instance — plenty for a small Cloud
+Run service where the caps exist to stop bots and runaway loops, not to
+meter a distributed fleet. Enforcement is on in deployed environments
+(dev/prod) and off in local/CI unless ``RATE_LIMITS_ENABLED`` says otherwise;
+defaults are generous enough that a human never notices them.
+"""
+
+import threading
+import time
+from collections import defaultdict, deque
+
+from fastapi import Depends, HTTPException, Request, status
+
+from app.auth.oauth2 import get_current_user
+from app.config import get_settings
+
+_lock = threading.Lock()
+_events: dict = defaultdict(deque)
+
+AUTH_WINDOW_SECONDS = 300
+SEARCH_WINDOW_SECONDS = 60
+CATALOG_WINDOW_SECONDS = 86400
+
+
+def reset() -> None:
+    """Clear all recorded events (tests only)."""
+    with _lock:
+        _events.clear()
+
+
+def _enforced() -> bool:
+    settings = get_settings()
+    if settings.rate_limits_enabled is not None:
+        return settings.rate_limits_enabled
+    return settings.env in ('dev', 'prod')
+
+
+def client_ip(request: Request) -> str:
+    """
+    Best-effort caller IP. Behind Cloud Run/Cloudflare the connecting peer is
+    the proxy, so prefer the first X-Forwarded-For hop.
+    """
+    forwarded = request.headers.get('x-forwarded-for')
+    if forwarded:
+        return forwarded.split(',')[0].strip()
+    return request.client.host if request.client else 'unknown'
+
+
+def _allow(key: str, limit: int, window_seconds: int) -> bool:
+    now = time.monotonic()
+    with _lock:
+        events = _events[key]
+        while events and events[0] <= now - window_seconds:
+            events.popleft()
+        if len(events) >= limit:
+            return False
+        events.append(now)
+        return True
+
+
+def _reject(what: str, retry_after_seconds: int):
+    raise HTTPException(
+        status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+        detail=f'Too many {what} — try again later',
+        headers={'Retry-After': str(retry_after_seconds)},
+    )
+
+
+def auth_rate_limit(request: Request) -> None:
+    """Per-IP cap on sign-in attempts (password and Google alike)."""
+    if not _enforced():
+        return
+    limit = get_settings().rate_limit_auth
+    if not _allow(f'auth:{client_ip(request)}', limit, AUTH_WINDOW_SECONDS):
+        _reject('sign-in attempts', AUTH_WINDOW_SECONDS)
+
+
+def search_rate_limit(current_user: list = Depends(get_current_user)) -> None:
+    """Per-user cap on external search-proxy calls (they burn API quotas)."""
+    if not _enforced():
+        return
+    limit = get_settings().rate_limit_search
+    if not _allow(f'search:{current_user[0].pk}', limit, SEARCH_WINDOW_SECONDS):
+        _reject('searches', SEARCH_WINDOW_SECONDS)
+
+
+def catalog_add_cap(current_user: list = Depends(get_current_user)) -> None:
+    """Per-user daily cap on catalog creation (spam/pollution brake)."""
+    if not _enforced():
+        return
+    limit = get_settings().catalog_add_daily_cap
+    if not _allow(f'catalog:{current_user[0].pk}', limit, CATALOG_WINDOW_SECONDS):
+        _reject('catalog additions for today', CATALOG_WINDOW_SECONDS)

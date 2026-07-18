@@ -13,6 +13,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm.session import Session
 
 from app.auth import oauth2
+from app.services.rate_limit import auth_rate_limit
 from app.config import get_settings
 from app.db import models
 from app.db.database import get_db
@@ -39,7 +40,7 @@ def _token_response(user: models.DbUser) -> dict:
     }
 
 
-@router.post('/token')
+@router.post('/token', dependencies=[Depends(auth_rate_limit)])
 def get_token(
     request: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)
 ):
@@ -53,6 +54,11 @@ def get_token(
     Returns:
         Access token
     """
+    if get_settings().disable_password_login:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail='Password sign-in is disabled — use Google or an API key',
+        )
     user = (
         # OAuth2PasswordRequestForm requires username instead of email
         db.query(models.DbUser)
@@ -71,7 +77,7 @@ def get_token(
     return _token_response(user)
 
 
-@router.post('/google')
+@router.post('/google', dependencies=[Depends(auth_rate_limit)])
 def google_login(request: GoogleAuthRequest, db: Session = Depends(get_db)):
     """
     Sign in with a Google Identity Services ID token.

@@ -15,6 +15,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.db.database import get_db
+from app.services.rate_limit import catalog_add_cap, search_rate_limit
 from app.services.tracker_rules import enforce_single_home
 from app.db.models_sandbox import DbTVShow, DbUserTVShow, DbTVEpisode, DbUserTVEpisode
 from app.auth.oauth2 import get_current_user, require_admin
@@ -55,7 +56,11 @@ def get_all_tv_shows(db: Session = Depends(get_db)):
     return db.query(DbTVShow).all()
 
 
-@router.get('/tv-shows/search', response_model=List[TVShowSearchResult])
+@router.get(
+    '/tv-shows/search',
+    response_model=List[TVShowSearchResult],
+    dependencies=[Depends(search_rate_limit)],
+)
 def search_tv_shows_endpoint(
     q: str,
     current_user: list = Depends(get_current_user),
@@ -70,7 +75,10 @@ def search_tv_shows_endpoint(
 
 
 @router.post(
-    '/tv-shows', response_model=TVShowResponse, status_code=status.HTTP_201_CREATED
+    '/tv-shows',
+    response_model=TVShowResponse,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(catalog_add_cap)],
 )
 def create_tv_show(
     request: TVShowCreate,
