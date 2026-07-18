@@ -236,13 +236,14 @@ def test_create_movie_unauthenticated(test_client: TestClient):
     assert response.status_code == 401
 
 
-def test_create_movie_requires_admin(test_client: TestClient):
+def test_create_movie_allowed_for_any_user(test_client: TestClient):
+    """Regular users add to the shared catalog via the add-from-search flow."""
     user_token = test_client.first_user.token
     headers = {'Authorization': f"Bearer {user_token}"}
     response = test_client.post(
         '/v1/movies', headers=headers, json={'title': 'Inception', 'imdb': 'tt1375666'}
     )
-    assert response.status_code == 403
+    assert response.status_code == 201
 
 
 def test_update_movie_requires_admin(test_client: TestClient):

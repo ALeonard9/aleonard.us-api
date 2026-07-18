@@ -53,8 +53,10 @@ def search_movies_endpoint(
 def create_movie(
     request: MovieCreate,
     db: Session = Depends(get_db),
-    current_user: list = Depends(require_admin),
+    current_user: list = Depends(get_current_user),
 ):
+    # Any signed-in user may add to the shared catalog (the add-from-search
+    # flow); editing and deleting catalog entries stay admin-only.
     del current_user
     existing = db.query(DbMovie).filter(DbMovie.imdb == request.imdb).first()
     if existing:

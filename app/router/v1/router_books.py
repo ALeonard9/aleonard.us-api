@@ -56,8 +56,10 @@ def search_books_endpoint(
 def create_book(
     request: BookCreate,
     db: Session = Depends(get_db),
-    current_user: list = Depends(require_admin),
+    current_user: list = Depends(get_current_user),
 ):
+    # Any signed-in user may add to the shared catalog (the add-from-search
+    # flow); editing and deleting catalog entries stay admin-only.
     del current_user
     # Normalize before the dedupe check — enrichment stores dash-free ISBNs.
     isbn = (request.isbn or '').replace('-', '').strip() or None
