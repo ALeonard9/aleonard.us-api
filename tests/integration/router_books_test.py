@@ -129,28 +129,35 @@ def test_mark_book_to_rankings_is_unplaced(test_client: TestClient):
     assert data['notes'] == 'A masterpiece.'
 
 
-def test_lists_are_independent(test_client: TestClient):
+def test_lists_are_exclusive(test_client: TestClient):
+    """One-home rule (#145): joining Rankings leaves the Watchlist."""
     book_id = _make_book(test_client)
     headers = {'Authorization': f"Bearer {test_client.first_user.token}"}
 
+    # Add to watchlist only.
     r = test_client.post(
-        f"/v1/users/me/books/{book_id}", headers=headers, json={'on_watchlist': True}
+        f"/v1/users/me/books/{book_id}",
+        headers=headers,
+        json={'on_watchlist': True},
     )
     assert r.json()['on_watchlist'] is True
     assert r.json()['on_rankings'] is False
 
+    # Promote to rankings -> leaves the watchlist (unplaced until positioned).
     r = test_client.post(
-        f"/v1/users/me/books/{book_id}", headers=headers, json={'on_rankings': True}
+        f"/v1/users/me/books/{book_id}",
+        headers=headers,
+        json={'on_rankings': True},
     )
-    assert r.json()['on_watchlist'] is True
     assert r.json()['on_rankings'] is True
+    assert r.json()['on_watchlist'] is False
     assert r.json()['rank'] is None
 
-    # Off both lists -> tracker dropped.
+    # Leave rankings -> on neither list, so the tracker is dropped entirely.
     test_client.put(
         f"/v1/users/me/books/{book_id}",
         headers=headers,
-        json={'on_watchlist': False, 'on_rankings': False},
+        json={'on_rankings': False},
     )
     listing = test_client.get('/v1/users/me/books', headers=headers).json()
     assert all(t['book']['id'] != book_id for t in listing)

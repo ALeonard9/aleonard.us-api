@@ -16,6 +16,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.db.database import get_db
+from app.services.tracker_rules import enforce_single_home
 from app.db.models_sandbox import DbCountry, DbUserCountry
 from app.auth.oauth2 import get_current_user, require_admin
 from app.schemas.schemas_sandbox import (
@@ -214,6 +215,7 @@ def reorder_rankings(
         if tracker:
             tracker.rank = position
             tracker.on_rankings = True
+            tracker.on_watchlist = False
     db.commit()
     return (
         db.query(DbUserCountry)
@@ -260,6 +262,7 @@ def set_country_rank(
 
     old_rank = tracker.rank
     tracker.on_rankings = True
+    tracker.on_watchlist = False
     # Remove from its current slot first so the shift math excludes it.
     tracker.rank = None
     db.flush()
@@ -306,6 +309,7 @@ def mark_country(
 
     if tracker is None:
         was_on_rankings = False
+        old_rank = None
         tracker = DbUserCountry(
             user_id=user_pk,
             country_id=country.pk,
@@ -317,6 +321,7 @@ def mark_country(
         db.add(tracker)
     else:
         was_on_rankings = tracker.on_rankings
+        old_rank = tracker.rank
         for key in ('on_watchlist', 'on_rankings', 'notes', 'first_visited'):
             if key in data:
                 setattr(tracker, key, data[key])
@@ -324,8 +329,11 @@ def mark_country(
     # A country only holds a rank while it's on the visited ranking AND was
     # already placed. Entering (or leaving) the ranking resets to unplaced so
     # it lands in the "to rank" bucket rather than at a stale position.
+    enforce_single_home(tracker, data)
     if not tracker.on_rankings or not was_on_rankings:
         tracker.rank = None
+    if old_rank is not None and tracker.rank is None:
+        _close_rank_gap(db, user_pk, old_rank)
     db.commit()
     db.refresh(tracker)
     return tracker
@@ -349,8 +357,10 @@ def update_user_country(
 
     old_rank = tracker.rank
     was_on_rankings = tracker.on_rankings
-    for key, value in request.model_dump(exclude_unset=True).items():
+    data = request.model_dump(exclude_unset=True)
+    for key, value in data.items():
         setattr(tracker, key, value)
+    enforce_single_home(tracker, data)
 
     # Entering (or leaving) the ranking resets to unplaced so a stale rank
     # never places the country automatically; it lands in "to rank" instead.
