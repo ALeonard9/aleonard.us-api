@@ -10,6 +10,7 @@ from starlette.status import (
     HTTP_500_INTERNAL_SERVER_ERROR,
 )
 
+from app.log.logging_config import logger
 from app.schemas.model_schemas import OutResponseBaseModel
 
 
@@ -37,10 +38,22 @@ async def validation_exception_handler(_: Request, exc: RequestValidationError):
     )
 
 
-async def generic_exception_handler(_: Request, exc: Exception):
+async def generic_exception_handler(request: Request, exc: Exception):
     """
     Custom handler for generic exceptions.
+
+    Logs the full traceback (severity ERROR) before responding — without this
+    a 500 leaves no trace in the logs, so alerting and Error Reporting
+    grouping would never see it.
     """
+    # scope.get keeps the logging path safe even for malformed/partial scopes
+    logger.error(
+        'Unhandled exception on %s %s: %s',
+        request.scope.get('method', '-'),
+        request.scope.get('path', '-'),
+        exc,
+        exc_info=exc,
+    )
     return JSONResponse(
         status_code=HTTP_500_INTERNAL_SERVER_ERROR,
         content=OutResponseBaseModel(

@@ -39,18 +39,22 @@ async def test_http_exception_handler():
 
 
 @pytest.mark.asyncio
-async def test_generic_exception_handler():
+async def test_generic_exception_handler(caplog):
     """
     Test the custom generic exception handler.
     """
-    request = Request(scope={'type': 'http'})
+    request = Request(scope={'type': 'http', 'method': 'GET', 'path': '/boom'})
     exc = Exception('Test exception')
-    response = await generic_exception_handler(request, exc)
+    with caplog.at_level('ERROR', logger='aleonard_api'):
+        response = await generic_exception_handler(request, exc)
     response_body = json.loads(response.body.decode('utf-8'))
     assert response.status_code == HTTP_500_INTERNAL_SERVER_ERROR
     assert response_body['success'] is False
     assert response_body['message'] == 'Test exception'
     assert response_body['data'] == []
+    # The 500 must leave a traceback in the logs (Error Reporting feeds on it)
+    assert 'Unhandled exception on GET /boom' in caplog.text
+    assert 'Test exception' in caplog.text
 
 
 @pytest.mark.asyncio

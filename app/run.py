@@ -4,6 +4,7 @@ This module contains the main application setup and routing.
 
 import asyncio
 import json
+import os
 
 import uvicorn
 from fastapi import FastAPI
@@ -171,8 +172,8 @@ async def start_server():
     uvicorn.run(
         'app.run:app',
         host='0.0.0.0',
-        port=8000,
-        reload=True,
+        port=int(os.getenv('PORT', '8000')),
+        reload=settings.is_local,
         log_level=settings.log_level.lower(),
     )
 

@@ -2,7 +2,9 @@
 Logging configuration for the API
 """
 
+import json
 import logging
+import os
 from logging.handlers import RotatingFileHandler
 from typing import override
 
@@ -45,6 +47,39 @@ class CustomFormatter(logging.Formatter):
         return formatter.format(record)
 
 
+class GcpJsonFormatter(logging.Formatter):
+    """
+    One JSON object per line, in the shape Google Cloud Logging ingests
+    natively from Cloud Run stdout: ``severity`` maps onto log levels and
+    exception tracebacks ride inside ``message`` so Error Reporting can
+    group them.
+    """
+
+    @override
+    def format(self, record):
+        """
+        Serialize the record as a single-line JSON log entry.
+        """
+        message = record.getMessage()
+        if record.exc_info:
+            message = f'{message}\n{self.formatException(record.exc_info)}'
+        entry = {
+            'severity': record.levelname,
+            'message': message,
+            'logger': record.name,
+            'source': f'{record.filename}:{record.lineno}',
+            'env': get_settings().env,
+        }
+        return json.dumps(entry)
+
+
+def running_on_cloud_run() -> bool:
+    """
+    True when executing on Google Cloud Run (which always sets K_SERVICE).
+    """
+    return bool(os.getenv('K_SERVICE'))
+
+
 # Create or retrieve a logger
 logger = logging.getLogger('aleonard_api')
 
@@ -72,13 +107,18 @@ def configure_logger():
     file_log_formatter.datefmt = '%Y-%m-%d %H:%M:%S'
 
     # Used separate formatters as color ASCII threw off the file log formatting
-    ch.setFormatter(CustomFormatter())
+    # On Cloud Run, stdout is the log pipeline: emit structured JSON instead.
+    if running_on_cloud_run():
+        ch.setFormatter(GcpJsonFormatter())
+    else:
+        ch.setFormatter(CustomFormatter())
     logger.addHandler(ch)
 
     logger.debug('API env set to: %s', settings.env)
 
-    # File + Loki handlers are noise in CI; only attach them when deployed/local.
-    if settings.is_ci:
+    # File + Loki handlers are noise in CI, and on Cloud Run the container
+    # filesystem is ephemeral and Cloud Logging already has everything.
+    if settings.is_ci or running_on_cloud_run():
         return
 
     # Mode 'a' appends to the log file across restarts.
