@@ -426,6 +426,7 @@ class VideoGameSummary(BaseModel):
 class GameSearchResult(BaseModel):
     igdb: Optional[int] = None
     title: str
+    slug: Optional[str] = None
     year: Optional[str] = None
     platforms: Optional[str] = None
     poster_url: Optional[str] = None
