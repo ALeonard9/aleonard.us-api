@@ -37,10 +37,11 @@ def test_create_book_unauthenticated(test_client: TestClient):
     assert response.status_code == 401
 
 
-def test_create_book_requires_admin(test_client: TestClient):
+def test_create_book_allowed_for_any_user(test_client: TestClient):
+    """Regular users add to the shared catalog via the add-from-search flow."""
     headers = {'Authorization': f"Bearer {test_client.first_user.token}"}
     response = test_client.post('/v1/books', headers=headers, json={'title': 'Dune'})
-    assert response.status_code == 403
+    assert response.status_code == 201
 
 
 def test_create_duplicate_isbn_rejected(test_client: TestClient):

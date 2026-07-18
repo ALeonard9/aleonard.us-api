@@ -37,10 +37,11 @@ def test_create_game_unauthenticated(test_client: TestClient):
     assert response.status_code == 401
 
 
-def test_create_game_requires_admin(test_client: TestClient):
+def test_create_game_allowed_for_any_user(test_client: TestClient):
+    """Regular users add to the shared catalog via the add-from-search flow."""
     headers = {'Authorization': f"Bearer {test_client.first_user.token}"}
     response = test_client.post('/v1/games', headers=headers, json={'title': 'Zelda'})
-    assert response.status_code == 403
+    assert response.status_code == 201
 
 
 def test_create_duplicate_igdb_rejected(test_client: TestClient):

@@ -67,8 +67,10 @@ def search_tv_shows_endpoint(
 def create_tv_show(
     request: TVShowCreate,
     db: Session = Depends(get_db),
-    current_user: list = Depends(require_admin),
+    current_user: list = Depends(get_current_user),
 ):
+    # Any signed-in user may add to the shared catalog (the add-from-search
+    # flow); editing and deleting catalog entries stay admin-only.
     del current_user
     if request.tvmaze:
         existing = db.query(DbTVShow).filter(DbTVShow.tvmaze == request.tvmaze).first()
