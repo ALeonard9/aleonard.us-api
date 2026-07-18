@@ -604,3 +604,63 @@ def test_watch_status_complete_when_ended(test_client: TestClient):
 
     (item,) = _my_shows(test_client)
     assert item['watch_status'] == 'complete'
+
+
+def test_removing_ranked_show_closes_the_gap(test_client: TestClient):
+    """Removing #1 shifts every show below it up one slot."""
+    headers = {'Authorization': f"Bearer {test_client.first_user.token}"}
+    ids = []
+    for i, title in enumerate(['First', 'Second', 'Third'], start=1):
+        show_id = _make_show(test_client, title=title)
+        ids.append(show_id)
+        test_client.post(
+            f"/v1/users/me/tv-shows/{show_id}",
+            headers=headers,
+            json={'on_rankings': True},
+        )
+        test_client.put(
+            f"/v1/users/me/tv-shows/{show_id}/rank",
+            headers=headers,
+            json={'position': i},
+        )
+
+    # Remove #1 the way the rankings board does: leave the ranked list.
+    resp = test_client.put(
+        f"/v1/users/me/tv-shows/{ids[0]}", headers=headers, json={'on_rankings': False}
+    )
+    assert resp.status_code == 200
+
+    remaining = {
+        item['tv_show']['title']: item['rank']
+        for item in _my_shows(test_client)
+        if item['on_rankings']
+    }
+    assert remaining == {'Second': 1, 'Third': 2}
+
+
+def test_deleting_ranked_tracker_closes_the_gap(test_client: TestClient):
+    headers = {'Authorization': f"Bearer {test_client.first_user.token}"}
+    ids = []
+    for i, title in enumerate(['First', 'Second', 'Third'], start=1):
+        show_id = _make_show(test_client, title=title)
+        ids.append(show_id)
+        test_client.post(
+            f"/v1/users/me/tv-shows/{show_id}",
+            headers=headers,
+            json={'on_rankings': True},
+        )
+        test_client.put(
+            f"/v1/users/me/tv-shows/{show_id}/rank",
+            headers=headers,
+            json={'position': i},
+        )
+
+    resp = test_client.delete(f"/v1/users/me/tv-shows/{ids[1]}", headers=headers)
+    assert resp.status_code == 204
+
+    remaining = {
+        item['tv_show']['title']: item['rank']
+        for item in _my_shows(test_client)
+        if item['on_rankings']
+    }
+    assert remaining == {'First': 1, 'Third': 2}

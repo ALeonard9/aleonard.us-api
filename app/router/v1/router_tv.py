@@ -288,6 +288,18 @@ def _placed_count(db: Session, user_pk: int) -> int:
     )
 
 
+def _close_rank_gap(db: Session, user_pk: int, vacated_rank) -> None:
+    """After a ranked item leaves the list, shift everything below it up."""
+    if vacated_rank is None:
+        return
+    db.query(DbUserTVShow).filter(
+        DbUserTVShow.user_id == user_pk,
+        DbUserTVShow.on_rankings.is_(True),
+        DbUserTVShow.rank.isnot(None),
+        DbUserTVShow.rank > vacated_rank,
+    ).update({DbUserTVShow.rank: DbUserTVShow.rank - 1}, synchronize_session=False)
+
+
 def _watch_status(aired: int, watched: int, show_status: Optional[str]) -> str:
     """The per-show badge the legacy site showed next to each series."""
     if aired == 0 or watched == 0:
@@ -587,6 +599,7 @@ def update_user_tv_show(
             status_code=status.HTTP_404_NOT_FOUND, detail='TV Show not marked'
         )
 
+    old_rank = tracker.rank
     was_on_rankings = tracker.on_rankings
     for key, value in request.model_dump(exclude_unset=True).items():
         setattr(tracker, key, value)
@@ -595,6 +608,10 @@ def update_user_tv_show(
     # rank never places the show automatically; it lands in "to rank" instead.
     if not tracker.on_rankings or not was_on_rankings:
         tracker.rank = None
+
+    # A removed placement leaves a gap — shift everything below it up.
+    if old_rank is not None and tracker.rank is None:
+        _close_rank_gap(db, user_pk, old_rank)
 
     # If it's on neither list, drop the tracker entirely.
     if not tracker.on_watchlist and not tracker.on_rankings:
@@ -621,6 +638,7 @@ def unmark_tv_show(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail='TV Show not marked'
         )
+    _close_rank_gap(db, user_pk, tracker.rank)
     db.delete(tracker)
     db.commit()
     return None
