@@ -12,7 +12,6 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from sqlalchemy.exc import SQLAlchemyError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from .auth import authentication
@@ -171,19 +170,38 @@ async def start_server():
             created = seed_countries(db)
             db.commit()
             logger.info('Seeded countries catalog: %d created', created)
-    except SQLAlchemyError as e:
-        logger.error('Unexpected error: %s', e)
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        # Startup seeding is best-effort: a misconfigured admin seed or an
+        # unreachable database must never stop the server from listening
+        # (Cloud Run kills revisions that don't bind their port).
+        logger.error('Startup seeding skipped: %s', e)
 
     if settings.is_local:
         await generate_openapi_json()
 
-    uvicorn.run(
+    port = int(os.getenv('PORT', '8000'))
+    if settings.is_local:
+        # The reloader must own the process (it spawns worker subprocesses),
+        # so local dev keeps the sync entry point.
+        uvicorn.run(
+            'app.run:app',
+            host='0.0.0.0',
+            port=port,
+            reload=True,
+            log_level=settings.log_level.lower(),
+        )
+        return
+
+    # We're already inside asyncio.run() here — the sync uvicorn.run() would
+    # try to start a second event loop and crash (exactly what took down the
+    # first Cloud Run revision). Serve on the running loop instead.
+    config = uvicorn.Config(
         'app.run:app',
         host='0.0.0.0',
-        port=int(os.getenv('PORT', '8000')),
-        reload=settings.is_local,
+        port=port,
         log_level=settings.log_level.lower(),
     )
+    await uvicorn.Server(config).serve()
 
 
 def run():
