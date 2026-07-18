@@ -15,6 +15,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.db.database import get_db
+from app.services.rate_limit import catalog_add_cap, search_rate_limit
 from app.services.tracker_rules import enforce_single_home
 from app.db.models_sandbox import DbVideoGame, DbUserVideoGame
 from app.auth.oauth2 import get_current_user, require_admin
@@ -46,7 +47,11 @@ def get_all_games(db: Session = Depends(get_db)):
     return db.query(DbVideoGame).all()
 
 
-@router.get('/games/search', response_model=List[GameSearchResult])
+@router.get(
+    '/games/search',
+    response_model=List[GameSearchResult],
+    dependencies=[Depends(search_rate_limit)],
+)
 def search_games_endpoint(
     q: str,
     current_user: list = Depends(get_current_user),
@@ -61,7 +66,10 @@ def search_games_endpoint(
 
 
 @router.post(
-    '/games', response_model=VideoGameResponse, status_code=status.HTTP_201_CREATED
+    '/games',
+    response_model=VideoGameResponse,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(catalog_add_cap)],
 )
 def create_game(
     request: VideoGameCreate,

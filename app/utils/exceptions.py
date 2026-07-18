@@ -17,12 +17,16 @@ from app.schemas.model_schemas import OutResponseBaseModel
 async def http_exception_handler(_: Request, exc: HTTPException):
     """
     Custom handler for HTTPException.
+
+    Forwards ``exc.headers`` — auth challenges (WWW-Authenticate) and rate
+    limits (Retry-After) are meaningless without them.
     """
     return JSONResponse(
         status_code=exc.status_code,
         content=OutResponseBaseModel(
             success=False, message=exc.detail, data=[]
         ).model_dump(exclude_none=True),
+        headers=getattr(exc, 'headers', None),
     )
 
 

@@ -39,6 +39,15 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 30
     google_client_id: Optional[str] = None
 
+    # --- Abuse resistance (#148, threat model H1/H2) ---
+    # Kill switch for /v1/auth/token: prod is Google + API keys only.
+    disable_password_login: bool = False
+    # None = enforce in dev/prod, skip in local/CI; set explicitly to override.
+    rate_limits_enabled: Optional[bool] = None
+    rate_limit_auth: int = 10  # sign-in attempts per IP per 5 minutes
+    rate_limit_search: int = 60  # search-proxy calls per user per minute
+    catalog_add_daily_cap: int = 200  # catalog creations per user per day
+
     # --- Observability ---
     loki_url: Optional[str] = None
 

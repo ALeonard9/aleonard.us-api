@@ -15,6 +15,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from app.auth.oauth2 import get_current_user
 from app.schemas.schemas_sandbox import GlobalSearchResponse
+from app.services.rate_limit import search_rate_limit
 from app.services.book_search import search_books
 from app.services.game_search import search_games
 from app.services.movie_search import search_movies
@@ -51,7 +52,11 @@ def _fan_out(q: str, only: Optional[List[str]] = None) -> Dict[str, List[dict]]:
         return {name: future.result() for name, future in futures.items()}
 
 
-@router.get('/search', response_model=GlobalSearchResponse)
+@router.get(
+    '/search',
+    response_model=GlobalSearchResponse,
+    dependencies=[Depends(search_rate_limit)],
+)
 def global_search(
     q: str,
     current_user: list = Depends(get_current_user),
