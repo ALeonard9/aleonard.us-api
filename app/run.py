@@ -25,6 +25,7 @@ from .router.v1 import (
     router_activity,
     router_countries,
     router_notifications,
+    router_search,
     router_movies,
     router_games,
     router_books,
@@ -68,6 +69,7 @@ app = FastAPI(
             'description': 'Cross-domain activity log and "I\'m bored" recommendation',
         },
         {'name': 'Notifications', 'description': 'Per-user notification feed'},
+        {'name': 'Search', 'description': 'Cross-domain global search'},
     ],
     openapi_url='/openapi.json',
     servers=[
@@ -88,6 +90,7 @@ app.include_router(router_books.router)
 app.include_router(router_tv.router)
 app.include_router(router_activity.router)
 app.include_router(router_notifications.router)
+app.include_router(router_search.router)
 
 # Serve static files
 app.mount('/static', StaticFiles(directory='app/static'), name='static')

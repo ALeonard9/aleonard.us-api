@@ -146,7 +146,7 @@ def search_games(query: str) -> List[dict]:
     try:
         payload = _igdb_query(
             'games',
-            f'search "{escaped}"; fields name,first_release_date,'
+            f'search "{escaped}"; fields name,slug,first_release_date,'
             'platforms.abbreviation,cover.image_id; limit 20;',
         )
     except (requests.RequestException, ValueError) as exc:
@@ -165,6 +165,7 @@ def search_games(query: str) -> List[dict]:
             {
                 'igdb': game.get('id'),
                 'title': game.get('name'),
+                'slug': game.get('slug'),
                 'year': str(release.year) if release else None,
                 'platforms': _names(game, 'platforms', 'abbreviation'),
                 'poster_url': _cover(game),

@@ -35,6 +35,7 @@ from app.schemas.schemas_sandbox import (
     UserTVShowCreate,
     UserTVShowResponse,
     UserTVShowUpdate,
+    UserTVShowWithStatus,
 )
 from app.services.tv_search import (
     apply_detail_to_show,
@@ -287,13 +288,85 @@ def _placed_count(db: Session, user_pk: int) -> int:
     )
 
 
-@router.get('/users/me/tv-shows', response_model=List[UserTVShowResponse])
+def _close_rank_gap(db: Session, user_pk: int, vacated_rank) -> None:
+    """After a ranked item leaves the list, shift everything below it up."""
+    if vacated_rank is None:
+        return
+    db.query(DbUserTVShow).filter(
+        DbUserTVShow.user_id == user_pk,
+        DbUserTVShow.on_rankings.is_(True),
+        DbUserTVShow.rank.isnot(None),
+        DbUserTVShow.rank > vacated_rank,
+    ).update({DbUserTVShow.rank: DbUserTVShow.rank - 1}, synchronize_session=False)
+
+
+def _watch_status(aired: int, watched: int, show_status: Optional[str]) -> str:
+    """The per-show badge the legacy site showed next to each series."""
+    if aired == 0 or watched == 0:
+        return 'not_started'
+    if watched < aired:
+        return 'behind'
+    return 'complete' if show_status == 'Ended' else 'up_to_date'
+
+
+@router.get('/users/me/tv-shows', response_model=List[UserTVShowWithStatus])
 def get_user_tv_shows(
     db: Session = Depends(get_db), current_user: list = Depends(get_current_user)
 ):
-    return (
-        db.query(DbUserTVShow).filter(DbUserTVShow.user_id == current_user[0].pk).all()
-    )
+    user_pk = current_user[0].pk
+    trackers = db.query(DbUserTVShow).filter(DbUserTVShow.user_id == user_pk).all()
+    show_pks = [t.tv_show_id for t in trackers]
+    # airdate is stored tz-naive (see tv_search._to_date), so compare naive.
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+
+    aired: dict = {}
+    watched: dict = {}
+    if show_pks:
+        aired = dict(
+            db.query(
+                DbTVEpisode.tv_show_id,
+                func.count(),  # pylint: disable=not-callable
+            )
+            .filter(
+                DbTVEpisode.tv_show_id.in_(show_pks),
+                DbTVEpisode.airdate.isnot(None),
+                DbTVEpisode.airdate <= now,
+            )
+            .group_by(DbTVEpisode.tv_show_id)
+            .all()
+        )
+        watched = dict(
+            db.query(
+                DbTVEpisode.tv_show_id,
+                func.count(),  # pylint: disable=not-callable
+            )
+            .join(DbUserTVEpisode, DbUserTVEpisode.episode_id == DbTVEpisode.pk)
+            .filter(
+                DbTVEpisode.tv_show_id.in_(show_pks),
+                DbTVEpisode.airdate.isnot(None),
+                DbTVEpisode.airdate <= now,
+                DbUserTVEpisode.user_id == user_pk,
+                DbUserTVEpisode.watched == 1,
+            )
+            .group_by(DbTVEpisode.tv_show_id)
+            .all()
+        )
+
+    results = []
+    for tracker in trackers:
+        aired_count = aired.get(tracker.tv_show_id, 0)
+        watched_count = watched.get(tracker.tv_show_id, 0)
+        results.append(
+            UserTVShowWithStatus(
+                **UserTVShowResponse.model_validate(tracker).model_dump(),
+                watch_status=_watch_status(
+                    aired_count, watched_count, tracker.tv_show.status
+                ),
+                aired_count=aired_count,
+                watched_count=watched_count,
+            )
+        )
+    return results
 
 
 @router.get('/users/me/schedule', response_model=ScheduleResponse)
@@ -526,6 +599,7 @@ def update_user_tv_show(
             status_code=status.HTTP_404_NOT_FOUND, detail='TV Show not marked'
         )
 
+    old_rank = tracker.rank
     was_on_rankings = tracker.on_rankings
     for key, value in request.model_dump(exclude_unset=True).items():
         setattr(tracker, key, value)
@@ -534,6 +608,10 @@ def update_user_tv_show(
     # rank never places the show automatically; it lands in "to rank" instead.
     if not tracker.on_rankings or not was_on_rankings:
         tracker.rank = None
+
+    # A removed placement leaves a gap — shift everything below it up.
+    if old_rank is not None and tracker.rank is None:
+        _close_rank_gap(db, user_pk, old_rank)
 
     # If it's on neither list, drop the tracker entirely.
     if not tracker.on_watchlist and not tracker.on_rankings:
@@ -560,6 +638,7 @@ def unmark_tv_show(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail='TV Show not marked'
         )
+    _close_rank_gap(db, user_pk, tracker.rank)
     db.delete(tracker)
     db.commit()
     return None
