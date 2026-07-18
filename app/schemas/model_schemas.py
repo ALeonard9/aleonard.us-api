@@ -97,3 +97,30 @@ class OutApiKeyCreated(OutApiKey):
     """
 
     key: str
+
+
+class InVisibilityUpdate(BaseModel):
+    """
+    Request body for visibility settings. Only sent fields change; a null
+    handle clears it (allowed only while everything is private).
+    """
+
+    handle: Optional[str] = None
+    public_movies: Optional[bool] = None
+    public_tv: Optional[bool] = None
+    public_books: Optional[bool] = None
+    public_games: Optional[bool] = None
+
+
+class OutVisibility(BaseModel):
+    """
+    The caller's visibility settings. NULL flags read as private.
+    """
+
+    handle: Optional[str] = None
+    public_movies: Optional[bool] = False
+    public_tv: Optional[bool] = False
+    public_books: Optional[bool] = False
+    public_games: Optional[bool] = False
+
+    model_config = ConfigDict(from_attributes=True)

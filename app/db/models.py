@@ -5,7 +5,7 @@ This module defines the database models.
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 
 from app.db.database import Base
@@ -40,6 +40,15 @@ class DbUser(DBBaseModel):
     user_group = Column(String, default='user')
     password = Column(String)
 
+    # --- Visibility (#143): everything is private by default. A public
+    # profile needs a handle (druthers.io/u/<handle>) plus at least one
+    # category switched on; only ranked lists are ever exposed.
+    handle = Column(String(length=30), unique=True, index=True, nullable=True)
+    public_movies = Column(Boolean, nullable=True, default=False)
+    public_tv = Column(Boolean, nullable=True, default=False)
+    public_books = Column(Boolean, nullable=True, default=False)
+    public_games = Column(Boolean, nullable=True, default=False)
+
 
 class DbApiKey(DBBaseModel):
     """
@@ -58,7 +67,6 @@ class DbApiKey(DBBaseModel):
     last_used_at = Column(DateTime, nullable=True)
 
     user = relationship('DbUser', backref='api_keys')
-
 
 # Import sandbox models to ensure they are registered with the Base metadata
 # pylint: disable=cyclic-import, wrong-import-position, unused-import

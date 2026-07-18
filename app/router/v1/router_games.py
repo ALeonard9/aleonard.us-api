@@ -15,6 +15,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.db.database import get_db
+from app.services.tracker_rules import enforce_single_home
 from app.db.models_sandbox import DbVideoGame, DbUserVideoGame
 from app.auth.oauth2 import get_current_user, require_admin
 from app.schemas.schemas_sandbox import (
@@ -217,6 +218,7 @@ def reorder_rankings(
         if tracker:
             tracker.rank = position
             tracker.on_rankings = True
+            tracker.on_watchlist = False
     db.commit()
     return (
         db.query(DbUserVideoGame)
@@ -267,6 +269,7 @@ def set_game_rank(
 
     old_rank = tracker.rank
     tracker.on_rankings = True
+    tracker.on_watchlist = False
     # Remove from its current slot first so the shift math excludes it.
     tracker.rank = None
     db.flush()
@@ -316,6 +319,7 @@ def mark_game(
 
     if tracker is None:
         was_on_rankings = False
+        old_rank = None
         tracker = DbUserVideoGame(
             user_id=user_pk,
             game_id=game.pk,
@@ -327,6 +331,7 @@ def mark_game(
         db.add(tracker)
     else:
         was_on_rankings = tracker.on_rankings
+        old_rank = tracker.rank
         for key in ('on_watchlist', 'on_rankings', 'notes', 'is_100_percent'):
             if key in data:
                 setattr(tracker, key, data[key])
@@ -334,8 +339,11 @@ def mark_game(
     # A game only holds a rank while it's on the ranked list AND was already
     # placed. Entering Rankings (or leaving it) resets to unplaced so it lands
     # in the "to rank" bucket rather than at a stale/leftover position.
+    enforce_single_home(tracker, data)
     if not tracker.on_rankings or not was_on_rankings:
         tracker.rank = None
+    if old_rank is not None and tracker.rank is None:
+        _close_rank_gap(db, user_pk, old_rank)
     db.commit()
     db.refresh(tracker)
     return tracker
@@ -359,8 +367,10 @@ def update_user_game(
 
     old_rank = tracker.rank
     was_on_rankings = tracker.on_rankings
-    for key, value in request.model_dump(exclude_unset=True).items():
+    data = request.model_dump(exclude_unset=True)
+    for key, value in data.items():
         setattr(tracker, key, value)
+    enforce_single_home(tracker, data)
 
     # Entering Rankings (or leaving it) resets to unplaced so a stale/leftover
     # rank never places the game automatically; it lands in "to rank" instead.

@@ -100,48 +100,38 @@ def test_set_movie_rank_inserts_and_shifts(test_client: TestClient):
     assert order == [(1, ids[0]), (2, new_id), (3, ids[1]), (4, ids[2])]
 
 
-def test_lists_are_independent(test_client: TestClient):
+def test_lists_are_exclusive(test_client: TestClient):
+    """One-home rule (#145): joining Rankings leaves the Watchlist."""
     movie_id = _make_movie(test_client)
-    user_headers = {'Authorization': f"Bearer {test_client.first_user.token}"}
+    headers = {'Authorization': f"Bearer {test_client.first_user.token}"}
 
     # Add to watchlist only.
     r = test_client.post(
         f"/v1/users/me/movies/{movie_id}",
-        headers=user_headers,
+        headers=headers,
         json={'on_watchlist': True},
     )
     assert r.json()['on_watchlist'] is True
     assert r.json()['on_rankings'] is False
-    assert r.json()['rank'] is None
 
-    # Also add to rankings (idempotent merge) -> now on both.
+    # Promote to rankings -> leaves the watchlist (unplaced until positioned).
     r = test_client.post(
         f"/v1/users/me/movies/{movie_id}",
-        headers=user_headers,
+        headers=headers,
         json={'on_rankings': True},
     )
-    assert r.json()['on_watchlist'] is True
     assert r.json()['on_rankings'] is True
-    assert r.json()['rank'] is None  # unplaced until positioned
-
-    # Remove from rankings -> still on watchlist, rank cleared.
-    r = test_client.put(
-        f"/v1/users/me/movies/{movie_id}",
-        headers=user_headers,
-        json={'on_rankings': False},
-    )
-    assert r.json()['on_watchlist'] is True
-    assert r.json()['on_rankings'] is False
+    assert r.json()['on_watchlist'] is False
     assert r.json()['rank'] is None
 
-    # Remove from watchlist too -> tracker deleted, gone from the list.
+    # Leave rankings -> on neither list, so the tracker is dropped entirely.
     test_client.put(
         f"/v1/users/me/movies/{movie_id}",
-        headers=user_headers,
-        json={'on_watchlist': False},
+        headers=headers,
+        json={'on_rankings': False},
     )
-    listing = test_client.get('/v1/users/me/movies', headers=user_headers).json()
-    assert all(m['movie']['id'] != movie_id for m in listing)
+    listing = test_client.get('/v1/users/me/movies', headers=headers).json()
+    assert all(t['movie']['id'] != movie_id for t in listing)
 
 
 def test_reentering_rankings_starts_unplaced(test_client: TestClient):
