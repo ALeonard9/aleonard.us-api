@@ -2,6 +2,7 @@
 This module creates access tokens and verifys tokens.
 """
 
+import hashlib
 import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Optional
@@ -48,6 +49,39 @@ SECRET_KEY = _resolve_secret_key()
 ALGORITHM = 'HS256'
 ACCESS_TOKEN_EXPIRE_MINUTES = settings.access_token_expire_minutes
 
+# API keys ride the same Authorization: Bearer header as JWTs; the prefix is
+# how we tell them apart (and lets secret scanners recognize leaked keys).
+API_KEY_PREFIX = 'drk_'
+
+
+def generate_api_key() -> str:
+    """Mint a new API key secret (returned to the user exactly once)."""
+    return f'{API_KEY_PREFIX}{secrets.token_hex(24)}'
+
+
+def hash_api_key(key: str) -> str:
+    """SHA-256 of the full key — the only form ever stored."""
+    return hashlib.sha256(key.encode()).hexdigest()
+
+
+def _user_from_api_key(token: str, db: Session, credentials_exception):
+    """
+    Resolve a ``drk_`` bearer token to its owner, or raise.
+
+    Returns the same one-element-list shape as the JWT path so routes can't
+    tell the difference.
+    """
+    # Local import: models imports nothing from here, but keeping it out of
+    # module scope avoids widening the auth module's import surface.
+    from app.db.models import DbApiKey  # pylint: disable=import-outside-toplevel
+
+    row = db.query(DbApiKey).filter(DbApiKey.key_hash == hash_api_key(token)).first()
+    if row is None:
+        raise credentials_exception
+    row.last_used_at = datetime.now(timezone.utc)
+    db.commit()
+    return [row.user]
+
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     """
@@ -74,6 +108,8 @@ def get_current_user(
         detail='Could not validate credentials',
         headers={'WWW-Authenticate': 'Bearer'},
     )
+    if token.startswith(API_KEY_PREFIX):
+        return _user_from_api_key(token, db, credentials_exception)
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         uuid: str = payload.get('sub')

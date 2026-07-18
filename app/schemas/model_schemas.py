@@ -5,7 +5,7 @@ This module defines the Pydantic models (schemas) for the API.
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 # User data provided as input
@@ -67,3 +67,33 @@ class OutResponseUserModel(OutResponseBaseModel):
         arbitrary_types_allowed=True,
         from_attributes=True,
     )
+
+
+class InApiKeyCreate(BaseModel):
+    """
+    Request body for minting an API key.
+    """
+
+    name: str = Field(min_length=1, max_length=60)
+
+
+class OutApiKey(BaseModel):
+    """
+    An API key as shown in listings — never includes the secret.
+    """
+
+    id: str
+    name: str
+    prefix: str
+    created_at: datetime
+    last_used_at: Optional[datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class OutApiKeyCreated(OutApiKey):
+    """
+    Creation response: the one and only time the plaintext key appears.
+    """
+
+    key: str

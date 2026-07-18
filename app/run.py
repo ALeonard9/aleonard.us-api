@@ -24,6 +24,7 @@ from .log.logging_config import logger
 from .router.v1 import (
     user,
     router_activity,
+    router_api_keys,
     router_countries,
     router_notifications,
     router_search,
@@ -92,6 +93,7 @@ app.include_router(router_tv.router)
 app.include_router(router_activity.router)
 app.include_router(router_notifications.router)
 app.include_router(router_search.router)
+app.include_router(router_api_keys.router)
 
 # Serve static files
 app.mount('/static', StaticFiles(directory='app/static'), name='static')
