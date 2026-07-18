@@ -34,6 +34,7 @@ from app.services.game_search import (
     get_game_detail,
     search_games as igdb_search_games,
 )
+from app.services.search_correction import correct_query
 
 router = APIRouter(prefix='/v1', tags=['Video Games'])
 
@@ -50,7 +51,12 @@ def search_games_endpoint(
     current_user: list = Depends(get_current_user),
 ):
     del current_user  # any authenticated user may search
-    return igdb_search_games(q)
+    results = igdb_search_games(q)
+    if not results:
+        corrected = correct_query(q)
+        if corrected:
+            results = igdb_search_games(corrected)
+    return results
 
 
 @router.post(

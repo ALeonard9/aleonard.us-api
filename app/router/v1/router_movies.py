@@ -28,6 +28,7 @@ from app.services.movie_search import (
     get_movie_detail,
     search_movies as omdb_search_movies,
 )
+from app.services.search_correction import correct_query
 
 router = APIRouter(prefix='/v1', tags=['Movies'])
 
@@ -44,7 +45,12 @@ def search_movies_endpoint(
     current_user: list = Depends(get_current_user),
 ):
     del current_user  # any authenticated user may search
-    return omdb_search_movies(q)
+    results = omdb_search_movies(q)
+    if not results:
+        corrected = correct_query(q)
+        if corrected:
+            results = omdb_search_movies(corrected)
+    return results
 
 
 @router.post(
