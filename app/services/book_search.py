@@ -11,6 +11,7 @@ description (from the work record), page count, rating, and cover image.
 requires an API key for every request.)
 """
 
+import re
 from typing import List, Optional
 
 import requests
@@ -120,9 +121,14 @@ def apply_detail_to_book(book, detail: dict) -> None:
         setattr(book, key, value)
 
 
+# Open Library work keys look like "/works/OL45883W". Anything else from the
+# search response is discarded before it can reach a URL (SSRF hardening).
+_WORK_KEY_RE = re.compile(r'^/works/OL\d+W$')
+
+
 def _work_description(work_key: Optional[str]) -> Optional[str]:
     """Fetch the work record for its description (best effort)."""
-    if not work_key:
+    if not work_key or not _WORK_KEY_RE.match(work_key):
         return None
     try:
         response = requests.get(
