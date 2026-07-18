@@ -324,6 +324,35 @@ class UserTVEpisodeResponse(UserTVEpisodeBase):
     model_config = ConfigDict(from_attributes=True)
 
 
+class ScheduleEpisodeItem(BaseModel):
+    """One unwatched episode of a tracked (non-frozen) show, for the Schedule view."""
+
+    show_id: str
+    show_title: str
+    episode_id: str
+    episode_title: str
+    season: Optional[int] = None
+    season_number: Optional[int] = None
+    airdate: Optional[datetime] = None
+
+
+class ScheduleFrozenShow(BaseModel):
+    show_id: str
+    show_title: str
+
+
+class ScheduleResponse(BaseModel):
+    """
+    Mirrors the legacy schedule page: what's airing in the +/- window around
+    today (``upcoming``), everything overdue and unwatched (``catch_up``),
+    and shows the user has paused tracking on (``frozen_shows``).
+    """
+
+    upcoming: List[ScheduleEpisodeItem]
+    catch_up: List[ScheduleEpisodeItem]
+    frozen_shows: List[ScheduleFrozenShow]
+
+
 # --- Video Games ---
 class VideoGameBase(BaseModel):
     title: str
@@ -513,3 +542,57 @@ class BookRankingReorder(BaseModel):
     """Ordered list of book (catalog) ids defining the new ranking order."""
 
     book_ids: List[str]
+
+
+# --- Notifications ---
+class NotificationResponse(BaseModel):
+    id: str
+    type: str
+    title: str
+    body: Optional[str] = None
+    category: Optional[str] = None
+    entity_id: Optional[str] = None
+    read: bool
+    created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+
+class UnreadCountResponse(BaseModel):
+    unread: int
+
+
+# --- Activity & Recommendations ---
+class ActivityItem(BaseModel):
+    """
+    One inferred user action, unified across all five tracker domains. Most
+    trackers only carry their latest touch (created_at/updated_at) rather
+    than a full history, so one tracker row = one entry here, dated by its
+    last update and with its action inferred from current list state.
+    TV episodes are the exception (a real per-watch row exists), so each
+    watched episode appears individually rather than being collapsed into
+    its show's row.
+    """
+
+    category: str  # movie | tv_show | tv_episode | game | book | country
+    action: str  # watchlist_added | ranked | marked_done | watched_episode
+    title: str
+    subtitle: Optional[str] = None
+    entity_id: str  # catalog id to link to (the show id, for episodes)
+    poster_url: Optional[str] = None
+    rank: Optional[int] = None
+    occurred_at: datetime
+
+
+class BoredItem(BaseModel):
+    """One candidate pulled from a to-be-consumed (watchlist/bucket) list."""
+
+    category: str  # movie | tv_show | game | book | country
+    title: str
+    subtitle: Optional[str] = None
+    entity_id: str
+    poster_url: Optional[str] = None
+
+
+class BoredResponse(BaseModel):
+    pick: BoredItem
+    pool_size: int

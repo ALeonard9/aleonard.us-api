@@ -7,7 +7,8 @@ proxy, lazy enrichment on detail view, and per-user trackers with independent
 Watchlist/Rankings lists plus episode-level watched marks.
 """
 
-from typing import List
+from datetime import datetime, timedelta, timezone
+from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import func
@@ -18,6 +19,9 @@ from app.db.models_sandbox import DbTVShow, DbUserTVShow, DbTVEpisode, DbUserTVE
 from app.auth.oauth2 import get_current_user, require_admin
 from app.schemas.schemas_sandbox import (
     RankPlacement,
+    ScheduleEpisodeItem,
+    ScheduleFrozenShow,
+    ScheduleResponse,
     TVEpisodeCreate,
     TVEpisodeResponse,
     TVEpisodeUpdate,
@@ -284,6 +288,87 @@ def get_user_tv_shows(
     )
 
 
+@router.get('/users/me/schedule', response_model=ScheduleResponse)
+def get_schedule(  # pylint: disable=too-many-locals
+    db: Session = Depends(get_db),
+    current_user: list = Depends(get_current_user),
+    window_days: int = 5,
+):
+    """
+    What to watch: unwatched episodes airing within +/- ``window_days`` of
+    today, everything overdue and unwatched (catch-up), and shows the user
+    has frozen (paused tracking on, so they're excluded from both).
+    """
+    user_pk = current_user[0].pk
+    # airdate is stored tz-naive (see tv_search._to_date), so compare naive too.
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    window_start = now - timedelta(days=window_days)
+    window_end = now + timedelta(days=window_days)
+
+    trackers = (
+        db.query(DbUserTVShow)
+        .filter(
+            DbUserTVShow.user_id == user_pk,
+            (DbUserTVShow.on_watchlist.is_(True))
+            | (DbUserTVShow.on_rankings.is_(True)),
+        )
+        .all()
+    )
+    frozen_shows = [
+        ScheduleFrozenShow(show_id=t.tv_show.id, show_title=t.tv_show.title)
+        for t in trackers
+        if t.freeze
+    ]
+    active_show_pks = [t.tv_show_id for t in trackers if not t.freeze]
+
+    upcoming: List[ScheduleEpisodeItem] = []
+    catch_up: List[ScheduleEpisodeItem] = []
+    if active_show_pks:
+        watched_episode_pks = {
+            row.episode_id
+            for row in db.query(DbUserTVEpisode.episode_id).filter(
+                DbUserTVEpisode.user_id == user_pk, DbUserTVEpisode.watched == 1
+            )
+        }
+        shows_by_pk = {
+            s.pk: s for s in db.query(DbTVShow).filter(DbTVShow.pk.in_(active_show_pks))
+        }
+        episodes = (
+            db.query(DbTVEpisode)
+            .filter(
+                DbTVEpisode.tv_show_id.in_(active_show_pks),
+                DbTVEpisode.airdate.isnot(None),
+            )
+            .all()
+        )
+        for ep in episodes:
+            if ep.pk in watched_episode_pks:
+                continue
+            show = shows_by_pk.get(ep.tv_show_id)
+            if show is None:
+                continue
+            item = ScheduleEpisodeItem(
+                show_id=show.id,
+                show_title=show.title,
+                episode_id=ep.id,
+                episode_title=ep.title,
+                season=ep.season,
+                season_number=ep.season_number,
+                airdate=ep.airdate,
+            )
+            if window_start <= ep.airdate <= window_end:
+                upcoming.append(item)
+            if ep.airdate <= now:
+                catch_up.append(item)
+
+        upcoming.sort(key=lambda i: (i.airdate, i.show_title, i.season_number or 0))
+        catch_up.sort(key=lambda i: (i.show_title, i.season or 0, i.season_number or 0))
+
+    return ScheduleResponse(
+        upcoming=upcoming, catch_up=catch_up, frozen_shows=frozen_shows
+    )
+
+
 @router.put(
     '/users/me/tv-shows/rankings/order', response_model=List[UserTVShowResponse]
 )
@@ -525,6 +610,60 @@ def mark_episode_watched(
     db.commit()
     db.refresh(tracker)
     return tracker
+
+
+@router.post(
+    '/users/me/tv-shows/{show_id}/episodes/watch-all',
+    response_model=List[UserTVEpisodeResponse],
+)
+def mark_all_episodes_watched(
+    show_id: str,
+    season: Optional[int] = None,
+    db: Session = Depends(get_db),
+    current_user: list = Depends(get_current_user),
+):
+    """
+    Mark every episode of a show watched (idempotent), or with ``season``
+    just that one season's episodes.
+    """
+    user_pk = current_user[0].pk
+    show = _get_show(db, show_id)
+
+    episode_query = db.query(DbTVEpisode).filter(DbTVEpisode.tv_show_id == show.pk)
+    if season is not None:
+        episode_query = episode_query.filter(DbTVEpisode.season == season)
+    episodes = episode_query.all()
+    if not episodes:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail='No episodes match that show/season',
+        )
+
+    episode_pks = [e.pk for e in episodes]
+    existing_by_episode = {
+        tracker.episode_id: tracker
+        for tracker in db.query(DbUserTVEpisode).filter(
+            DbUserTVEpisode.user_id == user_pk,
+            DbUserTVEpisode.episode_id.in_(episode_pks),
+        )
+    }
+    for ep in episodes:
+        tracker = existing_by_episode.get(ep.pk)
+        if tracker is None:
+            db.add(DbUserTVEpisode(user_id=user_pk, episode_id=ep.pk, watched=1))
+        else:
+            tracker.watched = 1
+    db.commit()
+
+    return (
+        db.query(DbUserTVEpisode)
+        .join(DbTVEpisode, DbUserTVEpisode.episode_id == DbTVEpisode.pk)
+        .filter(
+            DbUserTVEpisode.user_id == user_pk,
+            DbUserTVEpisode.episode_id.in_(episode_pks),
+        )
+        .all()
+    )
 
 
 @router.delete(
