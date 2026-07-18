@@ -542,3 +542,65 @@ def test_user_episode_marks_are_per_user(test_client: TestClient):
         f"/v1/users/me/tv-shows/{show_id}/episodes", headers=second
     )
     assert listing.json() == []
+
+
+# --- Watch status badges ---
+def _track(test_client: TestClient, show_id: str) -> None:
+    headers = {'Authorization': f"Bearer {test_client.first_user.token}"}
+    test_client.post(
+        f"/v1/users/me/tv-shows/{show_id}", headers=headers, json={'on_watchlist': True}
+    )
+
+
+def _my_shows(test_client: TestClient):
+    headers = {'Authorization': f"Bearer {test_client.first_user.token}"}
+    return test_client.get('/v1/users/me/tv-shows', headers=headers).json()
+
+
+def test_watch_status_not_started(test_client: TestClient):
+    show_id = _make_show(test_client)
+    _make_episode(test_client, show_id, airdate=_iso(-30))
+    _track(test_client, show_id)
+
+    (item,) = _my_shows(test_client)
+    assert item['watch_status'] == 'not_started'
+    assert item['aired_count'] == 1
+    assert item['watched_count'] == 0
+
+
+def test_watch_status_behind(test_client: TestClient):
+    show_id = _make_show(test_client)
+    first = _make_episode(test_client, show_id, title='E1', airdate=_iso(-30))
+    _make_episode(test_client, show_id, title='E2', number=2, airdate=_iso(-7))
+    _track(test_client, show_id)
+    headers = {'Authorization': f"Bearer {test_client.first_user.token}"}
+    test_client.post(f"/v1/users/me/episodes/{first}", headers=headers)
+
+    (item,) = _my_shows(test_client)
+    assert item['watch_status'] == 'behind'
+    assert item['aired_count'] == 2
+    assert item['watched_count'] == 1
+
+
+def test_watch_status_up_to_date_ignores_unaired(test_client: TestClient):
+    show_id = _make_show(test_client)
+    aired = _make_episode(test_client, show_id, title='E1', airdate=_iso(-7))
+    _make_episode(test_client, show_id, title='E2', number=2, airdate=_iso(30))
+    _track(test_client, show_id)
+    headers = {'Authorization': f"Bearer {test_client.first_user.token}"}
+    test_client.post(f"/v1/users/me/episodes/{aired}", headers=headers)
+
+    (item,) = _my_shows(test_client)
+    assert item['watch_status'] == 'up_to_date'
+    assert item['aired_count'] == 1
+
+
+def test_watch_status_complete_when_ended(test_client: TestClient):
+    show_id = _make_show(test_client, status='Ended')
+    episode = _make_episode(test_client, show_id, airdate=_iso(-30))
+    _track(test_client, show_id)
+    headers = {'Authorization': f"Bearer {test_client.first_user.token}"}
+    test_client.post(f"/v1/users/me/episodes/{episode}", headers=headers)
+
+    (item,) = _my_shows(test_client)
+    assert item['watch_status'] == 'complete'

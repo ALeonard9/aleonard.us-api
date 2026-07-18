@@ -35,6 +35,7 @@ from app.schemas.schemas_sandbox import (
     UserTVShowCreate,
     UserTVShowResponse,
     UserTVShowUpdate,
+    UserTVShowWithStatus,
 )
 from app.services.tv_search import (
     apply_detail_to_show,
@@ -287,13 +288,73 @@ def _placed_count(db: Session, user_pk: int) -> int:
     )
 
 
-@router.get('/users/me/tv-shows', response_model=List[UserTVShowResponse])
+def _watch_status(aired: int, watched: int, show_status: Optional[str]) -> str:
+    """The per-show badge the legacy site showed next to each series."""
+    if aired == 0 or watched == 0:
+        return 'not_started'
+    if watched < aired:
+        return 'behind'
+    return 'complete' if show_status == 'Ended' else 'up_to_date'
+
+
+@router.get('/users/me/tv-shows', response_model=List[UserTVShowWithStatus])
 def get_user_tv_shows(
     db: Session = Depends(get_db), current_user: list = Depends(get_current_user)
 ):
-    return (
-        db.query(DbUserTVShow).filter(DbUserTVShow.user_id == current_user[0].pk).all()
-    )
+    user_pk = current_user[0].pk
+    trackers = db.query(DbUserTVShow).filter(DbUserTVShow.user_id == user_pk).all()
+    show_pks = [t.tv_show_id for t in trackers]
+    # airdate is stored tz-naive (see tv_search._to_date), so compare naive.
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+
+    aired: dict = {}
+    watched: dict = {}
+    if show_pks:
+        aired = dict(
+            db.query(
+                DbTVEpisode.tv_show_id,
+                func.count(),  # pylint: disable=not-callable
+            )
+            .filter(
+                DbTVEpisode.tv_show_id.in_(show_pks),
+                DbTVEpisode.airdate.isnot(None),
+                DbTVEpisode.airdate <= now,
+            )
+            .group_by(DbTVEpisode.tv_show_id)
+            .all()
+        )
+        watched = dict(
+            db.query(
+                DbTVEpisode.tv_show_id,
+                func.count(),  # pylint: disable=not-callable
+            )
+            .join(DbUserTVEpisode, DbUserTVEpisode.episode_id == DbTVEpisode.pk)
+            .filter(
+                DbTVEpisode.tv_show_id.in_(show_pks),
+                DbTVEpisode.airdate.isnot(None),
+                DbTVEpisode.airdate <= now,
+                DbUserTVEpisode.user_id == user_pk,
+                DbUserTVEpisode.watched == 1,
+            )
+            .group_by(DbTVEpisode.tv_show_id)
+            .all()
+        )
+
+    results = []
+    for tracker in trackers:
+        aired_count = aired.get(tracker.tv_show_id, 0)
+        watched_count = watched.get(tracker.tv_show_id, 0)
+        results.append(
+            UserTVShowWithStatus(
+                **UserTVShowResponse.model_validate(tracker).model_dump(),
+                watch_status=_watch_status(
+                    aired_count, watched_count, tracker.tv_show.status
+                ),
+                aired_count=aired_count,
+                watched_count=watched_count,
+            )
+        )
+    return results
 
 
 @router.get('/users/me/schedule', response_model=ScheduleResponse)

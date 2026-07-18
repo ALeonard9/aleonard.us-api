@@ -277,6 +277,18 @@ class UserTVShowResponse(UserTVShowBase):
     model_config = ConfigDict(from_attributes=True)
 
 
+class UserTVShowWithStatus(UserTVShowResponse):
+    """
+    Tracker plus the per-user watch status the legacy site badged:
+    not_started / behind / up_to_date / complete (all aired watched and the
+    show has ended). Counts cover episodes that have already aired.
+    """
+
+    watch_status: str = 'not_started'
+    aired_count: int = 0
+    watched_count: int = 0
+
+
 class TVRankingReorder(BaseModel):
     """Ordered list of show (catalog) ids defining the new ranking order."""
 
@@ -542,6 +554,19 @@ class BookRankingReorder(BaseModel):
     """Ordered list of book (catalog) ids defining the new ranking order."""
 
     book_ids: List[str]
+
+
+# --- Global Search ---
+class GlobalSearchResponse(BaseModel):
+    """One query fanned out across every domain's search provider."""
+
+    query: str
+    # Set when the results came from a spell-corrected retry of the query.
+    corrected: Optional[str] = None
+    movies: List[MovieSearchResult]
+    tv_shows: List[TVShowSearchResult]
+    games: List[GameSearchResult]
+    books: List[BookSearchResult]
 
 
 # --- Notifications ---
