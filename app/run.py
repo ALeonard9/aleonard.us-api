@@ -30,6 +30,7 @@ from .router.v1 import (
     router_import,
     router_notifications,
     router_search,
+    router_visibility,
     router_movies,
     router_games,
     router_books,
@@ -98,6 +99,7 @@ app.include_router(router_search.router)
 app.include_router(router_api_keys.router)
 app.include_router(router_export.router)
 app.include_router(router_import.router)
+app.include_router(router_visibility.router)
 
 # Serve static files
 app.mount('/static', StaticFiles(directory='app/static'), name='static')
