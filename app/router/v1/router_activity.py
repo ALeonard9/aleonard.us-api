@@ -60,7 +60,11 @@ def _movie_activity(db: Session, user_pk: int) -> List[ActivityItem]:
                 entity_id=t.movie.id,
                 poster_url=t.movie.poster_url,
                 rank=t.rank if action == 'ranked' else None,
-                occurred_at=t.updated_at,
+                occurred_at=(
+                    (t.ranked_at or t.updated_at)
+                    if action == 'ranked'
+                    else t.updated_at
+                ),
             )
         )
     return items
@@ -91,7 +95,11 @@ def _tv_show_activity(db: Session, user_pk: int) -> List[ActivityItem]:
                 entity_id=t.tv_show.id,
                 poster_url=t.tv_show.poster_url,
                 rank=t.rank if action == 'ranked' else None,
-                occurred_at=t.updated_at,
+                occurred_at=(
+                    (t.ranked_at or t.updated_at)
+                    if action == 'ranked'
+                    else t.updated_at
+                ),
             )
         )
     return items
@@ -152,7 +160,11 @@ def _game_activity(db: Session, user_pk: int) -> List[ActivityItem]:
                 entity_id=t.game.id,
                 poster_url=t.game.poster_url,
                 rank=t.rank if action == 'ranked' else None,
-                occurred_at=t.updated_at,
+                occurred_at=(
+                    (t.ranked_at or t.updated_at)
+                    if action == 'ranked'
+                    else t.updated_at
+                ),
             )
         )
     return items
@@ -183,7 +195,11 @@ def _book_activity(db: Session, user_pk: int) -> List[ActivityItem]:
                 entity_id=t.book.id,
                 poster_url=t.book.poster_url,
                 rank=t.rank if action == 'ranked' else None,
-                occurred_at=t.updated_at,
+                occurred_at=(
+                    (t.ranked_at or t.updated_at)
+                    if action == 'ranked'
+                    else t.updated_at
+                ),
             )
         )
     return items

@@ -68,6 +68,9 @@ class DbUserCountry(DBBaseModel):
     on_watchlist = Column(Boolean, nullable=False, default=False)
     on_rankings = Column(Boolean, nullable=False, default=False)
     rank = Column(Integer, nullable=True)
+    # When the current rank was assigned — drives Activity, so notes edits
+    # and other tracker updates never re-date a ranking (#141).
+    ranked_at = Column(DateTime, nullable=True)
     completed = Column(Integer, nullable=True)
     notes = Column(Text, nullable=True)
     first_visited = Column(DateTime, nullable=True)
@@ -109,6 +112,9 @@ class DbUserMovie(DBBaseModel):
     on_watchlist = Column(Boolean, nullable=False, default=False)
     on_rankings = Column(Boolean, nullable=False, default=False)
     rank = Column(Integer, nullable=True)
+    # When the current rank was assigned — drives Activity, so notes edits
+    # and other tracker updates never re-date a ranking (#141).
+    ranked_at = Column(DateTime, nullable=True)
     completed = Column(Integer, nullable=True)
     notes = Column(Text, nullable=True)
 
@@ -149,6 +155,9 @@ class DbUserTVShow(DBBaseModel):
     on_watchlist = Column(Boolean, nullable=False, default=False)
     on_rankings = Column(Boolean, nullable=False, default=False)
     rank = Column(Integer, nullable=True)
+    # When the current rank was assigned — drives Activity, so notes edits
+    # and other tracker updates never re-date a ranking (#141).
+    ranked_at = Column(DateTime, nullable=True)
     notes = Column(Text, nullable=True)
     status = Column(String(254), nullable=True)
     freeze = Column(Integer, default=0)
@@ -216,6 +225,9 @@ class DbUserVideoGame(DBBaseModel):
     on_watchlist = Column(Boolean, nullable=False, default=False)
     on_rankings = Column(Boolean, nullable=False, default=False)
     rank = Column(Integer, nullable=True)
+    # When the current rank was assigned — drives Activity, so notes edits
+    # and other tracker updates never re-date a ranking (#141).
+    ranked_at = Column(DateTime, nullable=True)
     completed = Column(Integer, nullable=True)
     notes = Column(Text, nullable=True)
     is_100_percent = Column(Boolean, default=False)
@@ -255,6 +267,9 @@ class DbUserBook(DBBaseModel):
     on_watchlist = Column(Boolean, nullable=False, default=False)
     on_rankings = Column(Boolean, nullable=False, default=False)
     rank = Column(Integer, nullable=True)
+    # When the current rank was assigned — drives Activity, so notes edits
+    # and other tracker updates never re-date a ranking (#141).
+    ranked_at = Column(DateTime, nullable=True)
     completed = Column(Integer, nullable=True)
     notes = Column(Text, nullable=True)
 

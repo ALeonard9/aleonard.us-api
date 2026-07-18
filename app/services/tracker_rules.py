@@ -7,6 +7,13 @@ one removes it from the others. "To-be-ranked" and "Ranked" are both
 ``on_rankings``; the difference is whether ``rank`` is set.
 """
 
+from datetime import datetime, timezone
+
+
+def utc_now() -> datetime:
+    """Naive-free timestamp for rank assignments (#141)."""
+    return datetime.now(timezone.utc)
+
 
 def enforce_single_home(tracker, requested: dict) -> None:
     """
