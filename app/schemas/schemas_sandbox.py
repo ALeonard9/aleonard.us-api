@@ -4,7 +4,7 @@ This module contains Pydantic schemas for Sandbox entities.
 
 # pylint: disable=missing-class-docstring
 
-from datetime import datetime
+from datetime import date, datetime
 from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict
@@ -151,6 +151,7 @@ class UserMovieBase(BaseModel):
     rank: Optional[int] = None
     completed: Optional[int] = None
     notes: Optional[str] = None
+    completed_at: Optional[date] = None
 
 
 class UserMovieCreate(UserMovieBase):
@@ -257,6 +258,7 @@ class UserTVShowBase(BaseModel):
     on_rankings: Optional[bool] = None
     rank: Optional[int] = None
     notes: Optional[str] = None
+    completed_at: Optional[date] = None
     status: Optional[str] = None
     freeze: Optional[int] = None
 
@@ -438,6 +440,7 @@ class UserVideoGameBase(BaseModel):
     rank: Optional[int] = None
     completed: Optional[int] = None
     notes: Optional[str] = None
+    completed_at: Optional[date] = None
     is_100_percent: Optional[bool] = None
 
 
@@ -533,6 +536,7 @@ class UserBookBase(BaseModel):
     rank: Optional[int] = None
     completed: Optional[int] = None
     notes: Optional[str] = None
+    completed_at: Optional[date] = None
 
 
 class UserBookCreate(UserBookBase):
