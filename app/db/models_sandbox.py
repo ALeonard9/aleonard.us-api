@@ -9,6 +9,7 @@ from sqlalchemy import (
     Integer,
     String,
     Float,
+    Date,
     DateTime,
     ForeignKey,
     Text,
@@ -117,6 +118,9 @@ class DbUserMovie(DBBaseModel):
     ranked_at = Column(DateTime, nullable=True)
     completed = Column(Integer, nullable=True)
     notes = Column(Text, nullable=True)
+    # When the user finished it (#159): defaults to the day it entered
+    # Rankings, editable on the detail page.
+    completed_at = Column(Date, nullable=True)
 
     movie = relationship('DbMovie', back_populates='user_movies')
     user = relationship('DbUser', backref='user_movies')
@@ -159,6 +163,9 @@ class DbUserTVShow(DBBaseModel):
     # and other tracker updates never re-date a ranking (#141).
     ranked_at = Column(DateTime, nullable=True)
     notes = Column(Text, nullable=True)
+    # When the user finished it (#159): defaults to the day it entered
+    # Rankings, editable on the detail page.
+    completed_at = Column(Date, nullable=True)
     status = Column(String(254), nullable=True)
     freeze = Column(Integer, default=0)
 
@@ -230,6 +237,9 @@ class DbUserVideoGame(DBBaseModel):
     ranked_at = Column(DateTime, nullable=True)
     completed = Column(Integer, nullable=True)
     notes = Column(Text, nullable=True)
+    # When the user finished it (#159): defaults to the day it entered
+    # Rankings, editable on the detail page.
+    completed_at = Column(Date, nullable=True)
     is_100_percent = Column(Boolean, default=False)
 
     game = relationship('DbVideoGame', back_populates='user_games')
@@ -272,6 +282,9 @@ class DbUserBook(DBBaseModel):
     ranked_at = Column(DateTime, nullable=True)
     completed = Column(Integer, nullable=True)
     notes = Column(Text, nullable=True)
+    # When the user finished it (#159): defaults to the day it entered
+    # Rankings, editable on the detail page.
+    completed_at = Column(Date, nullable=True)
 
     book = relationship('DbBook', back_populates='user_books')
     user = relationship('DbUser', backref='user_books')

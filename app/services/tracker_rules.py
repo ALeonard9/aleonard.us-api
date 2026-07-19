@@ -31,3 +31,13 @@ def enforce_single_home(tracker, requested: dict) -> None:
         tracker.on_rankings = False
     else:
         tracker.on_watchlist = False
+
+
+def default_completed_at(tracker, was_on_rankings: bool) -> None:
+    """
+    Completed-date rule: entering Rankings means "I finished this", so stamp
+    today unless a date is already set (imported history or an explicit value
+    in the same request always wins). Editable later on the detail page.
+    """
+    if tracker.on_rankings and not was_on_rankings and tracker.completed_at is None:
+        tracker.completed_at = utc_now().date()
