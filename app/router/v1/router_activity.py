@@ -33,6 +33,20 @@ router = APIRouter(prefix='/v1', tags=['Activity'])
 MAX_FEED = 200
 
 
+def _tracker_occurred_at(tracker, action):
+    """
+    The semantic timestamp for a tracker's feed entry. updated_at is a
+    technical "row was touched" column — it is only ever a last-resort
+    fallback here, never the meaning (#141 follow-up, 2026-07-19).
+    """
+    if action == 'ranked':
+        return tracker.ranked_at or tracker.updated_at
+    if action == 'marked_done':
+        return getattr(tracker, 'completed_at', None) or tracker.updated_at
+    # watchlist_added: when the row was created is when it was added.
+    return tracker.created_at or tracker.updated_at
+
+
 # --- Activity Log ---
 def _movie_activity(db: Session, user_pk: int) -> List[ActivityItem]:
     trackers = (
@@ -59,11 +73,7 @@ def _movie_activity(db: Session, user_pk: int) -> List[ActivityItem]:
                 entity_id=t.movie.id,
                 poster_url=t.movie.poster_url,
                 rank=t.rank if action == 'ranked' else None,
-                occurred_at=(
-                    (t.ranked_at or t.updated_at)
-                    if action == 'ranked'
-                    else t.updated_at
-                ),
+                occurred_at=_tracker_occurred_at(t, action),
             )
         )
     return items
@@ -94,11 +104,7 @@ def _tv_show_activity(db: Session, user_pk: int) -> List[ActivityItem]:
                 entity_id=t.tv_show.id,
                 poster_url=t.tv_show.poster_url,
                 rank=t.rank if action == 'ranked' else None,
-                occurred_at=(
-                    (t.ranked_at or t.updated_at)
-                    if action == 'ranked'
-                    else t.updated_at
-                ),
+                occurred_at=_tracker_occurred_at(t, action),
             )
         )
     return items
@@ -165,11 +171,7 @@ def _game_activity(db: Session, user_pk: int) -> List[ActivityItem]:
                 entity_id=t.game.id,
                 poster_url=t.game.poster_url,
                 rank=t.rank if action == 'ranked' else None,
-                occurred_at=(
-                    (t.ranked_at or t.updated_at)
-                    if action == 'ranked'
-                    else t.updated_at
-                ),
+                occurred_at=_tracker_occurred_at(t, action),
             )
         )
     return items
@@ -200,11 +202,7 @@ def _book_activity(db: Session, user_pk: int) -> List[ActivityItem]:
                 entity_id=t.book.id,
                 poster_url=t.book.poster_url,
                 rank=t.rank if action == 'ranked' else None,
-                occurred_at=(
-                    (t.ranked_at or t.updated_at)
-                    if action == 'ranked'
-                    else t.updated_at
-                ),
+                occurred_at=_tracker_occurred_at(t, action),
             )
         )
     return items

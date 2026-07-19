@@ -88,3 +88,30 @@ def test_leaving_rankings_clears_the_stamp(test_client: TestClient):
     feed = test_client.get('/v1/users/me/activity', headers=_auth(test_client)).json()
     entry = next(a for a in feed if a['title'] == 'Heat')
     assert entry['action'] == 'watchlist_added'
+
+
+def test_watchlist_entry_pinned_to_created_at(test_client: TestClient):
+    """
+    updated_at is technical, not semantic (#141 follow-up): editing notes on
+    a watchlist item must not re-date its 'watchlist_added' feed entry.
+    """
+    admin = {'Authorization': f'Bearer {test_client.admin_user.token}'}
+    movie_id = test_client.post(
+        '/v1/movies', headers=admin, json={'title': 'Sneakers', 'imdb': 'tt0105435'}
+    ).json()['id']
+    test_client.post(
+        f'/v1/users/me/movies/{movie_id}',
+        headers=_auth(test_client),
+        json={'on_watchlist': True},
+    )
+    feed = test_client.get('/v1/users/me/activity', headers=_auth(test_client)).json()
+    before = next(a for a in feed if a['title'] == 'Sneakers')['occurred_at']
+
+    test_client.put(
+        f'/v1/users/me/movies/{movie_id}',
+        headers=_auth(test_client),
+        json={'notes': 'note edit must not re-date the add'},
+    )
+    feed = test_client.get('/v1/users/me/activity', headers=_auth(test_client)).json()
+    after = next(a for a in feed if a['title'] == 'Sneakers')['occurred_at']
+    assert after == before
