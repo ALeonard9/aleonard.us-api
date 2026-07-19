@@ -12,7 +12,7 @@ from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.db.database import get_db
 from app.services.rate_limit import catalog_add_cap, search_rate_limit
@@ -203,6 +203,7 @@ def get_user_games(
 ):
     return (
         db.query(DbUserVideoGame)
+        .options(joinedload(DbUserVideoGame.game))
         .filter(DbUserVideoGame.user_id == current_user[0].pk)
         .all()
     )

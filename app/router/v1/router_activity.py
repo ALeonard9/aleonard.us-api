@@ -11,34 +11,32 @@ import random
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.db.database import get_db
 from app.db.models_sandbox import (
-    DbBook,
-    DbCountry,
-    DbMovie,
     DbTVEpisode,
-    DbTVShow,
     DbUserBook,
     DbUserCountry,
     DbUserMovie,
     DbUserTVEpisode,
     DbUserTVShow,
     DbUserVideoGame,
-    DbVideoGame,
 )
 from app.auth.oauth2 import get_current_user
 from app.schemas.schemas_sandbox import ActivityItem, BoredItem, BoredResponse
 
 router = APIRouter(prefix='/v1', tags=['Activity'])
 
+# Hard ceiling on the returned feed; also bounds per-domain SQL fetches.
+MAX_FEED = 200
+
 
 # --- Activity Log ---
 def _movie_activity(db: Session, user_pk: int) -> List[ActivityItem]:
     trackers = (
         db.query(DbUserMovie)
-        .join(DbMovie, DbUserMovie.movie_id == DbMovie.pk)
+        .options(joinedload(DbUserMovie.movie))
         .filter(DbUserMovie.user_id == user_pk)
         .all()
     )
@@ -73,7 +71,7 @@ def _movie_activity(db: Session, user_pk: int) -> List[ActivityItem]:
 def _tv_show_activity(db: Session, user_pk: int) -> List[ActivityItem]:
     trackers = (
         db.query(DbUserTVShow)
-        .join(DbTVShow, DbUserTVShow.tv_show_id == DbTVShow.pk)
+        .options(joinedload(DbUserTVShow.tv_show))
         .filter(DbUserTVShow.user_id == user_pk)
         .all()
     )
@@ -108,9 +106,13 @@ def _tv_show_activity(db: Session, user_pk: int) -> List[ActivityItem]:
 def _episode_activity(db: Session, user_pk: int) -> List[ActivityItem]:
     rows = (
         db.query(DbUserTVEpisode)
-        .join(DbTVEpisode, DbUserTVEpisode.episode_id == DbTVEpisode.pk)
-        .join(DbTVShow, DbTVEpisode.tv_show_id == DbTVShow.pk)
+        .options(joinedload(DbUserTVEpisode.episode).joinedload(DbTVEpisode.tv_show))
         .filter(DbUserTVEpisode.user_id == user_pk, DbUserTVEpisode.watched == 1)
+        # Episode marks dwarf every other domain (tens of thousands once a
+        # library is imported) and occurred_at is updated_at here, so only the
+        # newest MAX_FEED can survive the merged sort — bound it in SQL.
+        .order_by(DbUserTVEpisode.updated_at.desc())
+        .limit(MAX_FEED)
         .all()
     )
     items = []
@@ -137,7 +139,7 @@ def _episode_activity(db: Session, user_pk: int) -> List[ActivityItem]:
 def _game_activity(db: Session, user_pk: int) -> List[ActivityItem]:
     trackers = (
         db.query(DbUserVideoGame)
-        .join(DbVideoGame, DbUserVideoGame.game_id == DbVideoGame.pk)
+        .options(joinedload(DbUserVideoGame.game))
         .filter(DbUserVideoGame.user_id == user_pk)
         .all()
     )
@@ -173,7 +175,7 @@ def _game_activity(db: Session, user_pk: int) -> List[ActivityItem]:
 def _book_activity(db: Session, user_pk: int) -> List[ActivityItem]:
     trackers = (
         db.query(DbUserBook)
-        .join(DbBook, DbUserBook.book_id == DbBook.pk)
+        .options(joinedload(DbUserBook.book))
         .filter(DbUserBook.user_id == user_pk)
         .all()
     )
@@ -208,7 +210,7 @@ def _book_activity(db: Session, user_pk: int) -> List[ActivityItem]:
 def _country_activity(db: Session, user_pk: int) -> List[ActivityItem]:
     trackers = (
         db.query(DbUserCountry)
-        .join(DbCountry, DbUserCountry.country_id == DbCountry.pk)
+        .options(joinedload(DbUserCountry.country))
         .filter(DbUserCountry.user_id == user_pk)
         .all()
     )
@@ -256,14 +258,14 @@ def get_activity(
     if category:
         items = [i for i in items if i.category == category]
     items.sort(key=lambda i: i.occurred_at, reverse=True)
-    return items[: max(1, min(limit, 200))]
+    return items[: max(1, min(limit, MAX_FEED))]
 
 
 # --- "I'm bored" recommendation ---
 def _movie_pool(db: Session, user_pk: int) -> List[BoredItem]:
     trackers = (
         db.query(DbUserMovie)
-        .join(DbMovie, DbUserMovie.movie_id == DbMovie.pk)
+        .options(joinedload(DbUserMovie.movie))
         .filter(DbUserMovie.user_id == user_pk, DbUserMovie.on_watchlist.is_(True))
         .all()
     )
@@ -281,7 +283,7 @@ def _movie_pool(db: Session, user_pk: int) -> List[BoredItem]:
 def _tv_show_pool(db: Session, user_pk: int) -> List[BoredItem]:
     trackers = (
         db.query(DbUserTVShow)
-        .join(DbTVShow, DbUserTVShow.tv_show_id == DbTVShow.pk)
+        .options(joinedload(DbUserTVShow.tv_show))
         .filter(DbUserTVShow.user_id == user_pk, DbUserTVShow.on_watchlist.is_(True))
         .all()
     )
@@ -299,7 +301,7 @@ def _tv_show_pool(db: Session, user_pk: int) -> List[BoredItem]:
 def _game_pool(db: Session, user_pk: int) -> List[BoredItem]:
     trackers = (
         db.query(DbUserVideoGame)
-        .join(DbVideoGame, DbUserVideoGame.game_id == DbVideoGame.pk)
+        .options(joinedload(DbUserVideoGame.game))
         .filter(
             DbUserVideoGame.user_id == user_pk, DbUserVideoGame.on_watchlist.is_(True)
         )
@@ -319,7 +321,7 @@ def _game_pool(db: Session, user_pk: int) -> List[BoredItem]:
 def _book_pool(db: Session, user_pk: int) -> List[BoredItem]:
     trackers = (
         db.query(DbUserBook)
-        .join(DbBook, DbUserBook.book_id == DbBook.pk)
+        .options(joinedload(DbUserBook.book))
         .filter(DbUserBook.user_id == user_pk, DbUserBook.on_watchlist.is_(True))
         .all()
     )
@@ -338,7 +340,7 @@ def _book_pool(db: Session, user_pk: int) -> List[BoredItem]:
 def _country_pool(db: Session, user_pk: int) -> List[BoredItem]:
     trackers = (
         db.query(DbUserCountry)
-        .join(DbCountry, DbUserCountry.country_id == DbCountry.pk)
+        .options(joinedload(DbUserCountry.country))
         .filter(DbUserCountry.user_id == user_pk, DbUserCountry.on_watchlist.is_(True))
         .all()
     )
