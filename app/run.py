@@ -114,7 +114,7 @@ def index():
     """
     Index endpoint that returns a welcome message.
     """
-    return OutResponseBaseModel(message="Welcome to Adam's API folks!")
+    return OutResponseBaseModel(message='druthers.io API — your favorites, ranked.')
 
 
 @app.get('/favicon.ico', include_in_schema=False)
