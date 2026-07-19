@@ -11,6 +11,7 @@ import random
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
 from app.db.database import get_db
@@ -111,7 +112,9 @@ def _episode_activity(db: Session, user_pk: int) -> List[ActivityItem]:
         # Episode marks dwarf every other domain (tens of thousands once a
         # library is imported) and occurred_at is updated_at here, so only the
         # newest MAX_FEED can survive the merged sort — bound it in SQL.
-        .order_by(DbUserTVEpisode.updated_at.desc())
+        .order_by(
+            func.coalesce(DbUserTVEpisode.watched_at, DbUserTVEpisode.updated_at).desc()
+        )
         .limit(MAX_FEED)
         .all()
     )
@@ -130,7 +133,7 @@ def _episode_activity(db: Session, user_pk: int) -> List[ActivityItem]:
                 subtitle=f'{label} - {ep.title}' if label else ep.title,
                 entity_id=show.id,
                 poster_url=show.poster_url,
-                occurred_at=row.updated_at,
+                occurred_at=row.watched_at or row.updated_at,
             )
         )
     return items
