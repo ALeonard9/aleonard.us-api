@@ -12,7 +12,7 @@ from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.db.database import get_db
 from app.services.rate_limit import catalog_add_cap, search_rate_limit
@@ -323,7 +323,12 @@ def get_user_tv_shows(
     db: Session = Depends(get_db), current_user: list = Depends(get_current_user)
 ):
     user_pk = current_user[0].pk
-    trackers = db.query(DbUserTVShow).filter(DbUserTVShow.user_id == user_pk).all()
+    trackers = (
+        db.query(DbUserTVShow)
+        .options(joinedload(DbUserTVShow.tv_show))
+        .filter(DbUserTVShow.user_id == user_pk)
+        .all()
+    )
     show_pks = [t.tv_show_id for t in trackers]
     # airdate is stored tz-naive (see tv_search._to_date), so compare naive.
     now = datetime.now(timezone.utc).replace(tzinfo=None)
@@ -397,6 +402,7 @@ def get_schedule(  # pylint: disable=too-many-locals
 
     trackers = (
         db.query(DbUserTVShow)
+        .options(joinedload(DbUserTVShow.tv_show))
         .filter(
             DbUserTVShow.user_id == user_pk,
             (DbUserTVShow.on_watchlist.is_(True))

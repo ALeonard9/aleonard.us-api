@@ -7,7 +7,7 @@ from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.db.database import get_db
 from app.services.rate_limit import catalog_add_cap, search_rate_limit
@@ -197,7 +197,12 @@ def _close_rank_gap(db: Session, user_pk: int, vacated_rank) -> None:
 def get_user_movies(
     db: Session = Depends(get_db), current_user: list = Depends(get_current_user)
 ):
-    return db.query(DbUserMovie).filter(DbUserMovie.user_id == current_user[0].pk).all()
+    return (
+        db.query(DbUserMovie)
+        .options(joinedload(DbUserMovie.movie))
+        .filter(DbUserMovie.user_id == current_user[0].pk)
+        .all()
+    )
 
 
 @router.get('/users/me/movies/{movie_id}', response_model=UserMovieResponse)
