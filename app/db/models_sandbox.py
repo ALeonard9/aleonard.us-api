@@ -195,6 +195,9 @@ class DbUserTVEpisode(DBBaseModel):
     user_id = Column(Integer, ForeignKey('users.pk'), nullable=False)
 
     watched = Column(Integer, default=0)
+    # When the episode was actually watched (#160): stamped on mark, restored
+    # from orion's g_first for pre-cutover history. Activity orders by this.
+    watched_at = Column(DateTime, nullable=True)
 
     episode = relationship('DbTVEpisode', back_populates='user_episodes')
     user = relationship('DbUser', backref='user_tv_episodes')

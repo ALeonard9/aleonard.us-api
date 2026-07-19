@@ -728,10 +728,14 @@ def mark_episode_watched(
         .first()
     )
     if tracker is None:
-        tracker = DbUserTVEpisode(user_id=user_pk, episode_id=episode.pk, watched=1)
+        tracker = DbUserTVEpisode(
+            user_id=user_pk, episode_id=episode.pk, watched=1, watched_at=utc_now()
+        )
         db.add(tracker)
     else:
         tracker.watched = 1
+        if tracker.watched_at is None:
+            tracker.watched_at = utc_now()
     db.commit()
     db.refresh(tracker)
     return tracker
@@ -775,9 +779,18 @@ def mark_all_episodes_watched(
     for ep in episodes:
         tracker = existing_by_episode.get(ep.pk)
         if tracker is None:
-            db.add(DbUserTVEpisode(user_id=user_pk, episode_id=ep.pk, watched=1))
+            db.add(
+                DbUserTVEpisode(
+                    user_id=user_pk,
+                    episode_id=ep.pk,
+                    watched=1,
+                    watched_at=utc_now(),
+                )
+            )
         else:
             tracker.watched = 1
+            if tracker.watched_at is None:
+                tracker.watched_at = utc_now()
     db.commit()
 
     return (
