@@ -143,6 +143,9 @@ class MovieSearchResult(BaseModel):
     year: Optional[str] = None
     poster_url: Optional[str] = None
     type: Optional[str] = None
+    on_watchlist: bool = False
+    on_rankings: bool = False
+    rank: Optional[int] = None
 
 
 class UserMovieBase(BaseModel):
@@ -251,6 +254,9 @@ class TVShowSearchResult(BaseModel):
     status: Optional[str] = None
     network: Optional[str] = None
     poster_url: Optional[str] = None
+    on_watchlist: bool = False
+    on_rankings: bool = False
+    rank: Optional[int] = None
 
 
 class UserTVShowBase(BaseModel):
@@ -433,6 +439,9 @@ class GameSearchResult(BaseModel):
     year: Optional[str] = None
     platforms: Optional[str] = None
     poster_url: Optional[str] = None
+    on_watchlist: bool = False
+    on_rankings: bool = False
+    rank: Optional[int] = None
 
 
 class UserVideoGameBase(BaseModel):
@@ -529,6 +538,9 @@ class BookSearchResult(BaseModel):
     authors: Optional[str] = None
     year: Optional[str] = None
     poster_url: Optional[str] = None
+    on_watchlist: bool = False
+    on_rankings: bool = False
+    rank: Optional[int] = None
 
 
 class UserBookBase(BaseModel):

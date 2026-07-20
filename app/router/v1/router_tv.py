@@ -50,6 +50,7 @@ from app.services.tv_search import (
     sync_episodes,
 )
 from app.services.search_correction import correct_query
+from app.services.tracked_status import attach_tracked_status
 
 router = APIRouter(prefix='/v1', tags=['TV'])
 
@@ -67,15 +68,15 @@ def get_all_tv_shows(db: Session = Depends(get_db)):
 )
 def search_tv_shows_endpoint(
     q: str,
+    db: Session = Depends(get_db),
     current_user: list = Depends(get_current_user),
 ):
-    del current_user  # any authenticated user may search
     results = tvmaze_search_shows(q)
     if not results:
         corrected = correct_query(q)
         if corrected:
             results = tvmaze_search_shows(corrected)
-    return results
+    return attach_tracked_status(db, current_user[0].pk, results, 'tv_shows')
 
 
 @router.post(

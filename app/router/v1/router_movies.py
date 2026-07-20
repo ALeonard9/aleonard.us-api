@@ -35,6 +35,7 @@ from app.services.movie_search import (
     search_movies as omdb_search_movies,
 )
 from app.services.search_correction import correct_query
+from app.services.tracked_status import attach_tracked_status
 
 router = APIRouter(prefix='/v1', tags=['Movies'])
 
@@ -52,15 +53,15 @@ def get_all_movies(db: Session = Depends(get_db)):
 )
 def search_movies_endpoint(
     q: str,
+    db: Session = Depends(get_db),
     current_user: list = Depends(get_current_user),
 ):
-    del current_user  # any authenticated user may search
     results = omdb_search_movies(q)
     if not results:
         corrected = correct_query(q)
         if corrected:
             results = omdb_search_movies(corrected)
-    return results
+    return attach_tracked_status(db, current_user[0].pk, results, 'movies')
 
 
 @router.post(
