@@ -48,12 +48,15 @@ settings = get_settings()
 
 # Create FastAPI app
 app = FastAPI(
-    title='aleonard.us API ' + settings.env,
-    description='This is the API for aleonard.us',
+    title='druthers.io API ' + settings.env,
+    description=(
+        'API for druthers.io — track and rank the movies, TV, books, and '
+        'games you actually care about.'
+    ),
     version='0.0.1',
     contact={
         'name': 'Adam',
-        'url': 'https://www.aleonard.us',
+        'url': 'https://www.druthers.io',
         'email': 'aleonard9@hotmail.com',
     },
     openapi_tags=[

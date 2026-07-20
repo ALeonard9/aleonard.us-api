@@ -1,11 +1,11 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "aleonard.us API github",
-    "description": "This is the API for aleonard.us",
+    "title": "druthers.io API local",
+    "description": "API for druthers.io \u2014 track and rank the movies, TV, books, and games you actually care about.",
     "contact": {
       "name": "Adam",
-      "url": "https://www.aleonard.us/",
+      "url": "https://www.druthers.io/",
       "email": "aleonard9@hotmail.com"
     },
     "license": {
@@ -3213,7 +3213,7 @@
               "application/json": {
                 "schema": {
                   "items": {
-                    "$ref": "#/components/schemas/UserTVShowResponse"
+                    "$ref": "#/components/schemas/UserTVShowWithStatus"
                   },
                   "type": "array",
                   "title": "Response Get User Tv Shows V1 Users Me Tv Shows Get"
@@ -3227,6 +3227,55 @@
             "OAuth2PasswordBearer": []
           }
         ]
+      }
+    },
+    "/v1/users/me/schedule": {
+      "get": {
+        "tags": [
+          "TV"
+        ],
+        "summary": "Get Schedule",
+        "description": "What to watch: unwatched episodes airing within +/- ``window_days`` of\ntoday, everything overdue and unwatched (catch-up), and shows the user\nhas frozen (paused tracking on, so they're excluded from both).",
+        "operationId": "get_schedule_v1_users_me_schedule_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "window_days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 5,
+              "title": "Window Days"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduleResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/v1/users/me/tv-shows/rankings/order": {
@@ -3674,6 +3723,750 @@
         }
       }
     },
+    "/v1/users/me/tv-shows/{show_id}/episodes/watch-all": {
+      "post": {
+        "tags": [
+          "TV"
+        ],
+        "summary": "Mark All Episodes Watched",
+        "description": "Mark every episode of a show watched (idempotent), or with ``season``\njust that one season's episodes.",
+        "operationId": "mark_all_episodes_watched_v1_users_me_tv_shows__show_id__episodes_watch_all_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "show_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Show Id"
+            }
+          },
+          {
+            "name": "season",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Season"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UserTVEpisodeResponse"
+                  },
+                  "title": "Response Mark All Episodes Watched V1 Users Me Tv Shows  Show Id  Episodes Watch All Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/users/me/activity": {
+      "get": {
+        "tags": [
+          "Activity"
+        ],
+        "summary": "Get Activity",
+        "description": "Cross-domain \"what have I been up to\" feed, newest first.",
+        "operationId": "get_activity_v1_users_me_activity_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Category"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ActivityItem"
+                  },
+                  "title": "Response Get Activity V1 Users Me Activity Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/users/me/bored": {
+      "get": {
+        "tags": [
+          "Activity"
+        ],
+        "summary": "Get Bored Pick",
+        "description": "Randomly pick one item off the user's watchlists/bucket lists, across\nevery domain. ``exclude`` (comma-separated entity ids) lets the client\nre-roll without repeating the item(s) it's already shown.",
+        "operationId": "get_bored_pick_v1_users_me_bored_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "exclude",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Exclude"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoredResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/users/me/notifications": {
+      "get": {
+        "tags": [
+          "Notifications"
+        ],
+        "summary": "Get Notifications",
+        "operationId": "get_notifications_v1_users_me_notifications_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "unread_only",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Unread Only"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/NotificationResponse"
+                  },
+                  "title": "Response Get Notifications V1 Users Me Notifications Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/users/me/notifications/unread-count": {
+      "get": {
+        "tags": [
+          "Notifications"
+        ],
+        "summary": "Get Unread Count",
+        "operationId": "get_unread_count_v1_users_me_notifications_unread_count_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnreadCountResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/users/me/notifications/read-all": {
+      "put": {
+        "tags": [
+          "Notifications"
+        ],
+        "summary": "Mark All Read",
+        "operationId": "mark_all_read_v1_users_me_notifications_read_all_put",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnreadCountResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/users/me/notifications/{notification_id}/read": {
+      "put": {
+        "tags": [
+          "Notifications"
+        ],
+        "summary": "Mark Read",
+        "operationId": "mark_read_v1_users_me_notifications__notification_id__read_put",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "notification_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Notification Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/search": {
+      "get": {
+        "tags": [
+          "Search"
+        ],
+        "summary": "Global Search",
+        "operationId": "global_search_v1_search_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Q"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GlobalSearchResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/users/me/api-keys": {
+      "get": {
+        "tags": [
+          "API keys"
+        ],
+        "summary": "List Api Keys",
+        "operationId": "list_api_keys_v1_users_me_api_keys_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/OutApiKey"
+                  },
+                  "type": "array",
+                  "title": "Response List Api Keys V1 Users Me Api Keys Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "API keys"
+        ],
+        "summary": "Create Api Key",
+        "description": "Mint a new key. The plaintext secret is in this response and nowhere\nelse \u2014 it is never stored or shown again.",
+        "operationId": "create_api_key_v1_users_me_api_keys_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InApiKeyCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OutApiKeyCreated"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/users/me/api-keys/{key_id}": {
+      "delete": {
+        "tags": [
+          "API keys"
+        ],
+        "summary": "Revoke Api Key",
+        "description": "Revocation is deletion \u2014 the hash is gone, the key can never auth again.",
+        "operationId": "revoke_api_key_v1_users_me_api_keys__key_id__delete",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "key_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Key Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/users/me/export": {
+      "get": {
+        "tags": [
+          "Export"
+        ],
+        "summary": "Export Json",
+        "description": "Full-fidelity JSON export of every domain, using the same schemas the\nAPI serves \u2014 anything the UI can show is in here.",
+        "operationId": "export_json_v1_users_me_export_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/users/me/export/{domain}.csv": {
+      "get": {
+        "tags": [
+          "Export"
+        ],
+        "summary": "Export Csv",
+        "description": "Spreadsheet-friendly CSV for one domain:\n``movies`` | ``tv-shows`` | ``tv-episodes`` | ``books`` | ``games``.",
+        "operationId": "export_csv_v1_users_me_export__domain__csv_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "domain",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Domain"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/users/me/import/goodreads": {
+      "post": {
+        "tags": [
+          "Import"
+        ],
+        "summary": "Import Goodreads",
+        "description": "Upload the standard Goodreads library export CSV. Idempotent \u2014 re-running\nthe same file updates rather than duplicates. Returns counts plus any\nskipped rows with reasons (nothing is dropped silently).",
+        "operationId": "import_goodreads_v1_users_me_import_goodreads_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_import_goodreads_v1_users_me_import_goodreads_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/users/me/visibility": {
+      "get": {
+        "tags": [
+          "Visibility"
+        ],
+        "summary": "Get Visibility",
+        "operationId": "get_visibility_v1_users_me_visibility_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OutVisibility"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "Visibility"
+        ],
+        "summary": "Update Visibility",
+        "description": "Update the handle and/or per-category public flags. Opening any category\nto the public requires a handle (that's the profile URL).",
+        "operationId": "update_visibility_v1_users_me_visibility_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InVisibilityUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OutVisibility"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/public/{handle}": {
+      "get": {
+        "tags": [
+          "Visibility"
+        ],
+        "summary": "Public Profile",
+        "description": "Read-only public profile: ranked lists of the categories the owner has\nopted in, best first. Fully private profiles (and unknown handles) 404\nidentically, so the endpoint never confirms a private account exists.",
+        "operationId": "public_profile_v1_public__handle__get",
+        "parameters": [
+          {
+            "name": "handle",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Handle"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/": {
       "get": {
         "tags": [
@@ -3699,6 +4492,74 @@
   },
   "components": {
     "schemas": {
+      "ActivityItem": {
+        "properties": {
+          "category": {
+            "type": "string",
+            "title": "Category"
+          },
+          "action": {
+            "type": "string",
+            "title": "Action"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "subtitle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subtitle"
+          },
+          "entity_id": {
+            "type": "string",
+            "title": "Entity Id"
+          },
+          "poster_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Poster Url"
+          },
+          "rank": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rank"
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Occurred At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "category",
+          "action",
+          "title",
+          "entity_id",
+          "occurred_at"
+        ],
+        "title": "ActivityItem",
+        "description": "One inferred user action, unified across all five tracker domains. Most\ntrackers only carry their latest touch (created_at/updated_at) rather\nthan a full history, so one tracker row = one entry here, dated by its\nlast update and with its action inferred from current list state.\nTV episodes are the exception (a real per-watch row exists), so each\nwatched episode appears individually rather than being collapsed into\nits show's row."
+      },
       "Body_get_token_v1_auth_token_post": {
         "properties": {
           "grant_type": {
@@ -3757,6 +4618,20 @@
           "password"
         ],
         "title": "Body_get_token_v1_auth_token_post"
+      },
+      "Body_import_goodreads_v1_users_me_import_goodreads_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_import_goodreads_v1_users_me_import_goodreads_post"
       },
       "BookCreate": {
         "properties": {
@@ -4329,6 +5204,69 @@
         "type": "object",
         "title": "BookUpdate"
       },
+      "BoredItem": {
+        "properties": {
+          "category": {
+            "type": "string",
+            "title": "Category"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "subtitle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subtitle"
+          },
+          "entity_id": {
+            "type": "string",
+            "title": "Entity Id"
+          },
+          "poster_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Poster Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "category",
+          "title",
+          "entity_id"
+        ],
+        "title": "BoredItem",
+        "description": "One candidate pulled from a to-be-consumed (watchlist/bucket) list."
+      },
+      "BoredResponse": {
+        "properties": {
+          "pick": {
+            "$ref": "#/components/schemas/BoredItem"
+          },
+          "pool_size": {
+            "type": "integer",
+            "title": "Pool Size"
+          }
+        },
+        "type": "object",
+        "required": [
+          "pick",
+          "pool_size"
+        ],
+        "title": "BoredResponse"
+      },
       "CountryCreate": {
         "properties": {
           "title": {
@@ -4659,6 +5597,17 @@
             "type": "string",
             "title": "Title"
           },
+          "slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slug"
+          },
           "year": {
             "anyOf": [
               {
@@ -4699,6 +5648,63 @@
         ],
         "title": "GameSearchResult"
       },
+      "GlobalSearchResponse": {
+        "properties": {
+          "query": {
+            "type": "string",
+            "title": "Query"
+          },
+          "corrected": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Corrected"
+          },
+          "movies": {
+            "items": {
+              "$ref": "#/components/schemas/MovieSearchResult"
+            },
+            "type": "array",
+            "title": "Movies"
+          },
+          "tv_shows": {
+            "items": {
+              "$ref": "#/components/schemas/TVShowSearchResult"
+            },
+            "type": "array",
+            "title": "Tv Shows"
+          },
+          "games": {
+            "items": {
+              "$ref": "#/components/schemas/GameSearchResult"
+            },
+            "type": "array",
+            "title": "Games"
+          },
+          "books": {
+            "items": {
+              "$ref": "#/components/schemas/BookSearchResult"
+            },
+            "type": "array",
+            "title": "Books"
+          }
+        },
+        "type": "object",
+        "required": [
+          "query",
+          "movies",
+          "tv_shows",
+          "games",
+          "books"
+        ],
+        "title": "GlobalSearchResponse",
+        "description": "One query fanned out across every domain's search provider."
+      },
       "GoogleAuthRequest": {
         "properties": {
           "credential": {
@@ -4726,6 +5732,22 @@
         "type": "object",
         "title": "HTTPValidationError"
       },
+      "InApiKeyCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 60,
+            "minLength": 1,
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "InApiKeyCreate",
+        "description": "Request body for minting an API key."
+      },
       "InUserBase": {
         "properties": {
           "display_name": {
@@ -4749,6 +5771,68 @@
         ],
         "title": "InUserBase",
         "description": "Schema for user input data."
+      },
+      "InVisibilityUpdate": {
+        "properties": {
+          "handle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Handle"
+          },
+          "public_movies": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Public Movies"
+          },
+          "public_tv": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Public Tv"
+          },
+          "public_books": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Public Books"
+          },
+          "public_games": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Public Games"
+          }
+        },
+        "type": "object",
+        "title": "InVisibilityUpdate",
+        "description": "Request body for visibility settings. Only sent fields change; a null\nhandle clears it (allowed only while everything is private)."
       },
       "MovieCreate": {
         "properties": {
@@ -5372,6 +6456,162 @@
         "type": "object",
         "title": "MovieUpdate"
       },
+      "NotificationResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "body": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Body"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "entity_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entity Id"
+          },
+          "read": {
+            "type": "boolean",
+            "title": "Read"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "type",
+          "title",
+          "read",
+          "created_at"
+        ],
+        "title": "NotificationResponse"
+      },
+      "OutApiKey": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "prefix": {
+            "type": "string",
+            "title": "Prefix"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "last_used_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Used At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "prefix",
+          "created_at"
+        ],
+        "title": "OutApiKey",
+        "description": "An API key as shown in listings \u2014 never includes the secret."
+      },
+      "OutApiKeyCreated": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "prefix": {
+            "type": "string",
+            "title": "Prefix"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "last_used_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Used At"
+          },
+          "key": {
+            "type": "string",
+            "title": "Key"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "prefix",
+          "created_at",
+          "key"
+        ],
+        "title": "OutApiKeyCreated",
+        "description": "Creation response: the one and only time the plaintext key appears."
+      },
       "OutResponseBaseModel": {
         "properties": {
           "success": {
@@ -5485,6 +6725,72 @@
         "title": "OutUserDisplay",
         "description": "Schema for displaying user data."
       },
+      "OutVisibility": {
+        "properties": {
+          "handle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Handle"
+          },
+          "public_movies": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Public Movies",
+            "default": false
+          },
+          "public_tv": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Public Tv",
+            "default": false
+          },
+          "public_books": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Public Books",
+            "default": false
+          },
+          "public_games": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Public Games",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "OutVisibility",
+        "description": "The caller's visibility settings. NULL flags read as private."
+      },
       "RankPlacement": {
         "properties": {
           "position": {
@@ -5515,6 +6821,120 @@
         ],
         "title": "RankingReorder",
         "description": "Ordered list of movie (catalog) ids defining the new ranking order."
+      },
+      "ScheduleEpisodeItem": {
+        "properties": {
+          "show_id": {
+            "type": "string",
+            "title": "Show Id"
+          },
+          "show_title": {
+            "type": "string",
+            "title": "Show Title"
+          },
+          "episode_id": {
+            "type": "string",
+            "title": "Episode Id"
+          },
+          "episode_title": {
+            "type": "string",
+            "title": "Episode Title"
+          },
+          "season": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Season"
+          },
+          "season_number": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Season Number"
+          },
+          "airdate": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Airdate"
+          }
+        },
+        "type": "object",
+        "required": [
+          "show_id",
+          "show_title",
+          "episode_id",
+          "episode_title"
+        ],
+        "title": "ScheduleEpisodeItem",
+        "description": "One unwatched episode of a tracked (non-frozen) show, for the Schedule view."
+      },
+      "ScheduleFrozenShow": {
+        "properties": {
+          "show_id": {
+            "type": "string",
+            "title": "Show Id"
+          },
+          "show_title": {
+            "type": "string",
+            "title": "Show Title"
+          }
+        },
+        "type": "object",
+        "required": [
+          "show_id",
+          "show_title"
+        ],
+        "title": "ScheduleFrozenShow"
+      },
+      "ScheduleResponse": {
+        "properties": {
+          "upcoming": {
+            "items": {
+              "$ref": "#/components/schemas/ScheduleEpisodeItem"
+            },
+            "type": "array",
+            "title": "Upcoming"
+          },
+          "catch_up": {
+            "items": {
+              "$ref": "#/components/schemas/ScheduleEpisodeItem"
+            },
+            "type": "array",
+            "title": "Catch Up"
+          },
+          "frozen_shows": {
+            "items": {
+              "$ref": "#/components/schemas/ScheduleFrozenShow"
+            },
+            "type": "array",
+            "title": "Frozen Shows"
+          }
+        },
+        "type": "object",
+        "required": [
+          "upcoming",
+          "catch_up",
+          "frozen_shows"
+        ],
+        "title": "ScheduleResponse",
+        "description": "Mirrors the legacy schedule page: what's airing in the +/- window around\ntoday (``upcoming``), everything overdue and unwatched (``catch_up``),\nand shows the user has paused tracking on (``frozen_shows``)."
       },
       "TVEpisodeCreate": {
         "properties": {
@@ -6389,6 +7809,19 @@
         "type": "object",
         "title": "TVShowUpdate"
       },
+      "UnreadCountResponse": {
+        "properties": {
+          "unread": {
+            "type": "integer",
+            "title": "Unread"
+          }
+        },
+        "type": "object",
+        "required": [
+          "unread"
+        ],
+        "title": "UnreadCountResponse"
+      },
       "UserBookCreate": {
         "properties": {
           "on_watchlist": {
@@ -6445,6 +7878,18 @@
               }
             ],
             "title": "Notes"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
           }
         },
         "type": "object",
@@ -6506,6 +7951,18 @@
               }
             ],
             "title": "Notes"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
           },
           "id": {
             "type": "string",
@@ -6590,6 +8047,18 @@
               }
             ],
             "title": "Notes"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
           }
         },
         "type": "object",
@@ -6893,6 +8362,18 @@
               }
             ],
             "title": "Notes"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
           }
         },
         "type": "object",
@@ -6954,6 +8435,18 @@
               }
             ],
             "title": "Notes"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
           },
           "id": {
             "type": "string",
@@ -7038,6 +8531,18 @@
               }
             ],
             "title": "Notes"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
           }
         },
         "type": "object",
@@ -7056,6 +8561,18 @@
             ],
             "title": "Watched",
             "default": 0
+          },
+          "watched_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Watched At"
           },
           "id": {
             "type": "string",
@@ -7130,6 +8647,18 @@
             ],
             "title": "Notes"
           },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
           "status": {
             "anyOf": [
               {
@@ -7201,6 +8730,18 @@
               }
             ],
             "title": "Notes"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
           },
           "status": {
             "anyOf": [
@@ -7297,6 +8838,18 @@
             ],
             "title": "Notes"
           },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
           "status": {
             "anyOf": [
               {
@@ -7322,6 +8875,129 @@
         },
         "type": "object",
         "title": "UserTVShowUpdate"
+      },
+      "UserTVShowWithStatus": {
+        "properties": {
+          "on_watchlist": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "On Watchlist"
+          },
+          "on_rankings": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "On Rankings"
+          },
+          "rank": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rank"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "freeze": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Freeze"
+          },
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "tv_show": {
+            "$ref": "#/components/schemas/TVShowSummary"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "watch_status": {
+            "type": "string",
+            "title": "Watch Status",
+            "default": "not_started"
+          },
+          "aired_count": {
+            "type": "integer",
+            "title": "Aired Count",
+            "default": 0
+          },
+          "watched_count": {
+            "type": "integer",
+            "title": "Watched Count",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "tv_show",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "UserTVShowWithStatus",
+        "description": "Tracker plus the per-user watch status the legacy site badged:\nnot_started / behind / up_to_date / complete (all aired watched and the\nshow has ended). Counts cover episodes that have already aired."
       },
       "UserVideoGameCreate": {
         "properties": {
@@ -7379,6 +9055,18 @@
               }
             ],
             "title": "Notes"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
           },
           "is_100_percent": {
             "anyOf": [
@@ -7451,6 +9139,18 @@
               }
             ],
             "title": "Notes"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
           },
           "is_100_percent": {
             "anyOf": [
@@ -7546,6 +9246,18 @@
               }
             ],
             "title": "Notes"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
           },
           "is_100_percent": {
             "anyOf": [
@@ -8183,6 +9895,18 @@
     {
       "name": "Countries",
       "description": "Country catalog and per-user tracker"
+    },
+    {
+      "name": "Activity",
+      "description": "Cross-domain activity log and \"I'm bored\" recommendation"
+    },
+    {
+      "name": "Notifications",
+      "description": "Per-user notification feed"
+    },
+    {
+      "name": "Search",
+      "description": "Cross-domain global search"
     }
   ]
 }
