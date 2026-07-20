@@ -424,26 +424,35 @@ def get_schedule(  # pylint: disable=too-many-locals
     upcoming: List[ScheduleEpisodeItem] = []
     catch_up: List[ScheduleEpisodeItem] = []
     if active_show_pks:
-        watched_episode_pks = {
-            row.episode_id
-            for row in db.query(DbUserTVEpisode.episode_id).filter(
-                DbUserTVEpisode.user_id == user_pk, DbUserTVEpisode.watched == 1
-            )
-        }
         shows_by_pk = {
             s.pk: s for s in db.query(DbTVShow).filter(DbTVShow.pk.in_(active_show_pks))
         }
+        # catch_up only needs airdate <= now; upcoming only needs <= window_end
+        # (>= window_start is checked in Python below). window_end >= now
+        # always, so bounding the fetch to airdate <= window_end covers both.
+        # The unwatched anti-join is pushed into SQL too, instead of loading
+        # every episode of every active show and filtering in Python — row
+        # count no longer scales with the full episode catalog.
+        watched_exists = (
+            db.query(DbUserTVEpisode.pk)
+            .filter(
+                DbUserTVEpisode.episode_id == DbTVEpisode.pk,
+                DbUserTVEpisode.user_id == user_pk,
+                DbUserTVEpisode.watched == 1,
+            )
+            .exists()
+        )
         episodes = (
             db.query(DbTVEpisode)
             .filter(
                 DbTVEpisode.tv_show_id.in_(active_show_pks),
                 DbTVEpisode.airdate.isnot(None),
+                DbTVEpisode.airdate <= window_end,
+                ~watched_exists,
             )
             .all()
         )
         for ep in episodes:
-            if ep.pk in watched_episode_pks:
-                continue
             show = shows_by_pk.get(ep.tv_show_id)
             if show is None:
                 continue

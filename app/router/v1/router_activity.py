@@ -11,7 +11,7 @@ import random
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import func
+from sqlalchemy import case, func
 from sqlalchemy.orm import Session, joinedload
 
 from app.db.database import get_db
@@ -47,13 +47,42 @@ def _tracker_occurred_at(tracker, action):
     return tracker.created_at or tracker.updated_at
 
 
+def _bounded_tracker_rows(db: Session, model, user_pk: int, *loader_options):
+    """
+    Rows on watchlist or rankings, newest-by-_tracker_occurred_at first,
+    bounded to MAX_FEED in SQL — mirrors _tracker_occurred_at's branching so
+    the SQL order matches the Python-computed occurred_at exactly. Movies/TV
+    shows/games/books share these column names (on_rankings, rank, ranked_at,
+    completed_at, created_at, updated_at).
+    """
+    occurred_at = case(
+        (
+            (model.on_rankings.is_(True)) & (model.rank.isnot(None)),
+            func.coalesce(model.ranked_at, model.updated_at),
+        ),
+        (
+            model.on_rankings.is_(True),
+            func.coalesce(model.completed_at, model.updated_at),
+        ),
+        else_=func.coalesce(model.created_at, model.updated_at),
+    )
+    return (
+        db.query(model)
+        .options(*loader_options)
+        .filter(
+            model.user_id == user_pk,
+            (model.on_rankings.is_(True)) | (model.on_watchlist.is_(True)),
+        )
+        .order_by(occurred_at.desc())
+        .limit(MAX_FEED)
+        .all()
+    )
+
+
 # --- Activity Log ---
 def _movie_activity(db: Session, user_pk: int) -> List[ActivityItem]:
-    trackers = (
-        db.query(DbUserMovie)
-        .options(joinedload(DbUserMovie.movie))
-        .filter(DbUserMovie.user_id == user_pk)
-        .all()
+    trackers = _bounded_tracker_rows(
+        db, DbUserMovie, user_pk, joinedload(DbUserMovie.movie)
     )
     items = []
     for t in trackers:
@@ -80,11 +109,8 @@ def _movie_activity(db: Session, user_pk: int) -> List[ActivityItem]:
 
 
 def _tv_show_activity(db: Session, user_pk: int) -> List[ActivityItem]:
-    trackers = (
-        db.query(DbUserTVShow)
-        .options(joinedload(DbUserTVShow.tv_show))
-        .filter(DbUserTVShow.user_id == user_pk)
-        .all()
+    trackers = _bounded_tracker_rows(
+        db, DbUserTVShow, user_pk, joinedload(DbUserTVShow.tv_show)
     )
     items = []
     for t in trackers:
@@ -146,11 +172,8 @@ def _episode_activity(db: Session, user_pk: int) -> List[ActivityItem]:
 
 
 def _game_activity(db: Session, user_pk: int) -> List[ActivityItem]:
-    trackers = (
-        db.query(DbUserVideoGame)
-        .options(joinedload(DbUserVideoGame.game))
-        .filter(DbUserVideoGame.user_id == user_pk)
-        .all()
+    trackers = _bounded_tracker_rows(
+        db, DbUserVideoGame, user_pk, joinedload(DbUserVideoGame.game)
     )
     items = []
     for t in trackers:
@@ -178,11 +201,8 @@ def _game_activity(db: Session, user_pk: int) -> List[ActivityItem]:
 
 
 def _book_activity(db: Session, user_pk: int) -> List[ActivityItem]:
-    trackers = (
-        db.query(DbUserBook)
-        .options(joinedload(DbUserBook.book))
-        .filter(DbUserBook.user_id == user_pk)
-        .all()
+    trackers = _bounded_tracker_rows(
+        db, DbUserBook, user_pk, joinedload(DbUserBook.book)
     )
     items = []
     for t in trackers:
@@ -209,10 +229,20 @@ def _book_activity(db: Session, user_pk: int) -> List[ActivityItem]:
 
 
 def _country_activity(db: Session, user_pk: int) -> List[ActivityItem]:
+    # Countries don't use _tracker_occurred_at (occurred_at is always
+    # first_visited/updated_at here, regardless of action) — bound separately.
     trackers = (
         db.query(DbUserCountry)
         .options(joinedload(DbUserCountry.country))
-        .filter(DbUserCountry.user_id == user_pk)
+        .filter(
+            DbUserCountry.user_id == user_pk,
+            (DbUserCountry.on_rankings.is_(True))
+            | (DbUserCountry.on_watchlist.is_(True)),
+        )
+        .order_by(
+            func.coalesce(DbUserCountry.first_visited, DbUserCountry.updated_at).desc()
+        )
+        .limit(MAX_FEED)
         .all()
     )
     items = []
