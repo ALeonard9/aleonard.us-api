@@ -33,7 +33,7 @@ def _resolve_secret_key() -> str:
     # openssl rand -hex 32 to generate a new secret key
     if settings.jwt_secret_key:
         return settings.jwt_secret_key
-    if settings.env in ('dev', 'prod', 'gs'):
+    if settings.env in ('dev', 'qa', 'prod', 'gs'):
         raise RuntimeError(
             f'JWT_SECRET_KEY must be set in the {settings.env} environment'
         )
