@@ -36,7 +36,7 @@ def _enforced() -> bool:
     settings = get_settings()
     if settings.rate_limits_enabled is not None:
         return settings.rate_limits_enabled
-    return settings.env in ('dev', 'prod')
+    return settings.env in ('dev', 'qa', 'prod')
 
 
 def client_ip(request: Request) -> str:

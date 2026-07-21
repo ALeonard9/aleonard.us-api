@@ -3,9 +3,9 @@ Test the completed-date rule (#159): defaults to the day an item enters
 Rankings, explicit values win, editable and clearable afterwards.
 """
 
-from datetime import date
-
 from fastapi.testclient import TestClient
+
+from app.services.tracker_rules import utc_now
 
 
 def _auth(test_client: TestClient) -> dict:
@@ -30,7 +30,7 @@ def test_entering_rankings_stamps_today(test_client: TestClient):
         headers=_auth(test_client),
         json={'on_rankings': True},
     ).json()
-    assert body['completed_at'] == date.today().isoformat()
+    assert body['completed_at'] == utc_now().date().isoformat()
 
 
 def test_watchlist_does_not_stamp(test_client: TestClient):
@@ -123,7 +123,7 @@ def test_rank_endpoint_one_hop_stamps(test_client: TestClient):
         headers=_auth(test_client),
         json={'position': 1},
     ).json()
-    assert body['completed_at'] == date.today().isoformat()
+    assert body['completed_at'] == utc_now().date().isoformat()
 
 
 def test_other_domains_share_the_rule(test_client: TestClient):
@@ -145,4 +145,4 @@ def test_other_domains_share_the_rule(test_client: TestClient):
             headers=_auth(test_client),
             json={'on_rankings': True},
         ).json()
-        assert body['completed_at'] == date.today().isoformat(), noun
+        assert body['completed_at'] == utc_now().date().isoformat(), noun
