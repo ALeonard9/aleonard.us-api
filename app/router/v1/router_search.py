@@ -12,14 +12,17 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Callable, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
 
 from app.auth.oauth2 import get_current_user
+from app.db.database import get_db
 from app.schemas.schemas_sandbox import GlobalSearchResponse
 from app.services.rate_limit import search_rate_limit
 from app.services.book_search import search_books
 from app.services.game_search import search_games
 from app.services.movie_search import search_movies
 from app.services.search_correction import correct_query
+from app.services.tracked_status import attach_tracked_status
 from app.services.tv_search import search_tv_shows
 
 router = APIRouter(prefix='/v1', tags=['Search'])
@@ -59,9 +62,9 @@ def _fan_out(q: str, only: Optional[List[str]] = None) -> Dict[str, List[dict]]:
 )
 def global_search(
     q: str,
+    db: Session = Depends(get_db),
     current_user: list = Depends(get_current_user),
 ):
-    del current_user  # any authenticated user may search
     results = _fan_out(q)
     corrected = None
     # Some providers fuzzy-match and some don't, so retry only the domains
@@ -74,4 +77,7 @@ def global_search(
             if any(retried.values()):
                 corrected = respelled
                 results.update(retried)
+    user_pk = current_user[0].pk
+    for domain, hits in results.items():
+        attach_tracked_status(db, user_pk, hits, domain)
     return GlobalSearchResponse(query=q, corrected=corrected, **results)

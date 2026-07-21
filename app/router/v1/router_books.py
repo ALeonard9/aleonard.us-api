@@ -40,6 +40,7 @@ from app.services.book_search import (
     search_books as openlibrary_search_books,
 )
 from app.services.search_correction import correct_query
+from app.services.tracked_status import attach_tracked_status
 
 router = APIRouter(prefix='/v1', tags=['Books'])
 
@@ -57,15 +58,15 @@ def get_all_books(db: Session = Depends(get_db)):
 )
 def search_books_endpoint(
     q: str,
+    db: Session = Depends(get_db),
     current_user: list = Depends(get_current_user),
 ):
-    del current_user  # any authenticated user may search
     results = openlibrary_search_books(q)
     if not results:
         corrected = correct_query(q)
         if corrected:
             results = openlibrary_search_books(corrected)
-    return results
+    return attach_tracked_status(db, current_user[0].pk, results, 'books')
 
 
 @router.post(

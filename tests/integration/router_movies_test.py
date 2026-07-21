@@ -331,3 +331,43 @@ def test_search_no_retry_when_spelling_correct(mock_search, test_client: TestCli
     assert response.status_code == 200
     assert response.json() == []
     assert mock_search.call_count == 1
+
+
+@patch('app.router.v1.router_movies.omdb_search_movies')
+def test_search_badges_already_ranked_result(mock_search, test_client: TestClient):
+    """web#31: a search hit matching a movie the user has ranked carries
+    on_rankings + rank; an untracked hit in the same response stays false/None."""
+    admin_headers = {'Authorization': f"Bearer {test_client.admin_user.token}"}
+    create_resp = test_client.post(
+        '/v1/movies',
+        headers=admin_headers,
+        json={'title': 'Inception', 'imdb': 'tt1375666'},
+    )
+    movie_id = create_resp.json()['id']
+
+    user_headers = {'Authorization': f"Bearer {test_client.first_user.token}"}
+    mark_resp = test_client.post(
+        f"/v1/users/me/movies/{movie_id}",
+        headers=user_headers,
+        json={'on_rankings': True},
+    )
+    assert mark_resp.status_code == 201
+    rank_resp = test_client.put(
+        f"/v1/users/me/movies/{movie_id}/rank",
+        headers=user_headers,
+        json={'position': 1},
+    )
+    assert rank_resp.status_code == 200
+
+    mock_search.return_value = [
+        {'imdb': 'tt1375666', 'title': 'Inception', 'year': '2010'},
+        {'imdb': 'tt0107290', 'title': 'Jurassic Park', 'year': '1993'},
+    ]
+    response = test_client.get('/v1/movies/search?q=inception', headers=user_headers)
+    assert response.status_code == 200
+    data = {r['imdb']: r for r in response.json()}
+    assert data['tt1375666']['on_rankings'] is True
+    assert data['tt1375666']['rank'] == 1
+    assert data['tt0107290']['on_rankings'] is False
+    assert data['tt0107290']['on_watchlist'] is False
+    assert data['tt0107290']['rank'] is None
