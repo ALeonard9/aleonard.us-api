@@ -86,3 +86,26 @@ def test_only_the_named_user_is_rebased(test_client):
 
     assert _ranks(session, first.pk) == [1, 2]
     assert _ranks(session, second.pk) == [0, 1]
+
+
+def test_reports_every_shelf_and_the_target_database(test_client, capsys):
+    """A bare '0 rows' can't be diagnosed — the run must say where it looked."""
+    session = test_client.test_db_session
+    user = test_client.first_user
+    _rank_movies(session, user.pk, [0, 1])
+
+    run_backfill(session, email=user.email, dry_run=True)
+    out = capsys.readouterr().out
+
+    assert 'ENV=' in out and 'DB=' in out
+    assert user.email in out
+    # Every shelf is accounted for, moved or not.
+    for category in ('movies', 'tv', 'books', 'games'):
+        assert category in out
+    assert 'lowest_rank=0 -> re-basing' in out
+    assert 'lowest_rank=None -> no change' in out
+
+
+def test_missing_user_says_so(test_client, capsys):
+    assert run_backfill(test_client.test_db_session, email='nobody@example.com') == 0
+    assert 'No user with email' in capsys.readouterr().err
