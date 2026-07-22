@@ -16,6 +16,11 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.db.database import get_db
 from app.services.rate_limit import catalog_add_cap, search_rate_limit
+from app.services.tracker_query import (
+    apply_list_params,
+    guard_truncation,
+    list_params,
+)
 from app.services.tracker_rules import (
     default_completed_at,
     enforce_single_home,
@@ -325,14 +330,18 @@ def _watch_status(aired: int, watched: int, show_status: Optional[str]) -> str:
 
 @router.get('/users/me/tv-shows', response_model=List[UserTVShowWithStatus])
 def get_user_tv_shows(
-    db: Session = Depends(get_db), current_user: list = Depends(get_current_user)
+    db: Session = Depends(get_db),
+    current_user: list = Depends(get_current_user),
+    params: dict = Depends(list_params),
 ):
     user_pk = current_user[0].pk
-    trackers = (
+    query = (
         db.query(DbUserTVShow)
         .options(joinedload(DbUserTVShow.tv_show))
         .filter(DbUserTVShow.user_id == user_pk)
-        .all()
+    )
+    trackers = guard_truncation(
+        apply_list_params(query, DbUserTVShow, params).all(), params, 'TV'
     )
     show_pks = [t.tv_show_id for t in trackers]
     # airdate is stored tz-naive (see tv_search._to_date), so compare naive.

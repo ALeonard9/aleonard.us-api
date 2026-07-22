@@ -1164,27 +1164,102 @@
         ],
         "summary": "Get User Movies",
         "operationId": "get_user_movies_v1_users_me_movies_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "on_rankings",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only ranked entries (true) or only unranked (false)",
+              "title": "On Rankings"
+            },
+            "description": "Only ranked entries (true) or only unranked (false)"
+          },
+          {
+            "name": "on_watchlist",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only queued entries (true) or only unqueued (false)",
+              "title": "On Watchlist"
+            },
+            "description": "Only queued entries (true) or only unqueued (false)"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 5000,
+              "minimum": 1,
+              "description": "Maximum entries to return",
+              "default": 5000,
+              "title": "Limit"
+            },
+            "description": "Maximum entries to return"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Entries to skip",
+              "default": 0,
+              "title": "Offset"
+            },
+            "description": "Entries to skip"
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
+                  "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/UserMovieResponse"
                   },
-                  "type": "array",
                   "title": "Response Get User Movies V1 Users Me Movies Get"
                 }
               }
             }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
           }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ]
+        }
       }
     },
     "/v1/users/me/movies/{movie_id}": {
@@ -1762,27 +1837,102 @@
         ],
         "summary": "Get User Games",
         "operationId": "get_user_games_v1_users_me_games_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "on_rankings",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only ranked entries (true) or only unranked (false)",
+              "title": "On Rankings"
+            },
+            "description": "Only ranked entries (true) or only unranked (false)"
+          },
+          {
+            "name": "on_watchlist",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only queued entries (true) or only unqueued (false)",
+              "title": "On Watchlist"
+            },
+            "description": "Only queued entries (true) or only unqueued (false)"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 5000,
+              "minimum": 1,
+              "description": "Maximum entries to return",
+              "default": 5000,
+              "title": "Limit"
+            },
+            "description": "Maximum entries to return"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Entries to skip",
+              "default": 0,
+              "title": "Offset"
+            },
+            "description": "Entries to skip"
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
+                  "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/UserVideoGameResponse"
                   },
-                  "type": "array",
                   "title": "Response Get User Games V1 Users Me Games Get"
                 }
               }
             }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
           }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ]
+        }
       }
     },
     "/v1/users/me/games/rankings/order": {
@@ -2360,27 +2510,102 @@
         ],
         "summary": "Get User Books",
         "operationId": "get_user_books_v1_users_me_books_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "on_rankings",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only ranked entries (true) or only unranked (false)",
+              "title": "On Rankings"
+            },
+            "description": "Only ranked entries (true) or only unranked (false)"
+          },
+          {
+            "name": "on_watchlist",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only queued entries (true) or only unqueued (false)",
+              "title": "On Watchlist"
+            },
+            "description": "Only queued entries (true) or only unqueued (false)"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 5000,
+              "minimum": 1,
+              "description": "Maximum entries to return",
+              "default": 5000,
+              "title": "Limit"
+            },
+            "description": "Maximum entries to return"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Entries to skip",
+              "default": 0,
+              "title": "Offset"
+            },
+            "description": "Entries to skip"
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
+                  "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/UserBookResponse"
                   },
-                  "type": "array",
                   "title": "Response Get User Books V1 Users Me Books Get"
                 }
               }
             }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
           }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ]
+        }
       }
     },
     "/v1/users/me/books/rankings/order": {
@@ -3206,27 +3431,102 @@
         ],
         "summary": "Get User Tv Shows",
         "operationId": "get_user_tv_shows_v1_users_me_tv_shows_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "on_rankings",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only ranked entries (true) or only unranked (false)",
+              "title": "On Rankings"
+            },
+            "description": "Only ranked entries (true) or only unranked (false)"
+          },
+          {
+            "name": "on_watchlist",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only queued entries (true) or only unqueued (false)",
+              "title": "On Watchlist"
+            },
+            "description": "Only queued entries (true) or only unqueued (false)"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 5000,
+              "minimum": 1,
+              "description": "Maximum entries to return",
+              "default": 5000,
+              "title": "Limit"
+            },
+            "description": "Maximum entries to return"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Entries to skip",
+              "default": 0,
+              "title": "Offset"
+            },
+            "description": "Entries to skip"
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
+                  "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/UserTVShowWithStatus"
                   },
-                  "type": "array",
                   "title": "Response Get User Tv Shows V1 Users Me Tv Shows Get"
                 }
               }
             }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
           }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ]
+        }
       }
     },
     "/v1/users/me/schedule": {
@@ -4467,6 +4767,59 @@
         }
       }
     },
+    "/v1/users/me/summary": {
+      "get": {
+        "tags": [
+          "Summary"
+        ],
+        "summary": "Get Summary",
+        "description": "Per-shelf Top 5 plus ranked/queued counts for the signed-in user.\n\nReplaces the home page's four full-collection fetches; row count is\nindependent of library size.",
+        "operationId": "get_summary_v1_users_me_summary_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "top",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 5,
+              "minimum": 1,
+              "description": "Entries per shelf",
+              "default": 5,
+              "title": "Top"
+            },
+            "description": "Entries per shelf"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OutSummary"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/": {
       "get": {
         "tags": [
@@ -4962,6 +5315,27 @@
               }
             ],
             "title": "Poster Url"
+          },
+          "on_watchlist": {
+            "type": "boolean",
+            "title": "On Watchlist",
+            "default": false
+          },
+          "on_rankings": {
+            "type": "boolean",
+            "title": "On Rankings",
+            "default": false
+          },
+          "rank": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rank"
           }
         },
         "type": "object",
@@ -5640,6 +6014,27 @@
               }
             ],
             "title": "Poster Url"
+          },
+          "on_watchlist": {
+            "type": "boolean",
+            "title": "On Watchlist",
+            "default": false
+          },
+          "on_rankings": {
+            "type": "boolean",
+            "title": "On Rankings",
+            "default": false
+          },
+          "rank": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rank"
           }
         },
         "type": "object",
@@ -6173,6 +6568,27 @@
               }
             ],
             "title": "Type"
+          },
+          "on_watchlist": {
+            "type": "boolean",
+            "title": "On Watchlist",
+            "default": false
+          },
+          "on_rankings": {
+            "type": "boolean",
+            "title": "On Rankings",
+            "default": false
+          },
+          "rank": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rank"
           }
         },
         "type": "object",
@@ -6682,6 +7098,143 @@
         ],
         "title": "OutResponseUserModel",
         "description": "Response format for user data."
+      },
+      "OutSummary": {
+        "properties": {
+          "handle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Handle"
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          },
+          "profile_public": {
+            "type": "boolean",
+            "title": "Profile Public",
+            "default": false
+          },
+          "shelves": {
+            "items": {
+              "$ref": "#/components/schemas/OutSummaryShelf"
+            },
+            "type": "array",
+            "title": "Shelves"
+          },
+          "total_ranked": {
+            "type": "integer",
+            "title": "Total Ranked"
+          }
+        },
+        "type": "object",
+        "required": [
+          "shelves",
+          "total_ranked"
+        ],
+        "title": "OutSummary",
+        "description": "Everything the home page renders, in one bounded response \u2014 see\napp/services/summary.py for why this endpoint exists."
+      },
+      "OutSummaryEntry": {
+        "properties": {
+          "rank": {
+            "type": "integer",
+            "title": "Rank"
+          },
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Year"
+          },
+          "poster_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Poster Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "rank",
+          "id",
+          "title"
+        ],
+        "title": "OutSummaryEntry",
+        "description": "One ranked entry on a shelf's Top 5."
+      },
+      "OutSummaryShelf": {
+        "properties": {
+          "category": {
+            "type": "string",
+            "title": "Category"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "ranked_count": {
+            "type": "integer",
+            "title": "Ranked Count"
+          },
+          "queued_count": {
+            "type": "integer",
+            "title": "Queued Count"
+          },
+          "public": {
+            "type": "boolean",
+            "title": "Public"
+          },
+          "top": {
+            "items": {
+              "$ref": "#/components/schemas/OutSummaryEntry"
+            },
+            "type": "array",
+            "title": "Top"
+          }
+        },
+        "type": "object",
+        "required": [
+          "category",
+          "label",
+          "ranked_count",
+          "queued_count",
+          "public",
+          "top"
+        ],
+        "title": "OutSummaryShelf",
+        "description": "One domain's headline numbers plus its best-ranked entries."
       },
       "OutUserDisplay": {
         "properties": {
@@ -7533,6 +8086,27 @@
               }
             ],
             "title": "Poster Url"
+          },
+          "on_watchlist": {
+            "type": "boolean",
+            "title": "On Watchlist",
+            "default": false
+          },
+          "on_rankings": {
+            "type": "boolean",
+            "title": "On Rankings",
+            "default": false
+          },
+          "rank": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rank"
           }
         },
         "type": "object",
@@ -9907,6 +10481,10 @@
     {
       "name": "Search",
       "description": "Cross-domain global search"
+    },
+    {
+      "name": "Summary",
+      "description": "Home summary \u2014 per-shelf Top 5 and counts"
     }
   ]
 }

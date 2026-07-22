@@ -10,22 +10,14 @@ notes, no watchlist, no watch state, no activity.
 import re
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.auth.oauth2 import get_current_user
 from app.db.database import get_db
 from app.db.models import DbUser
-from app.db.models_sandbox import (
-    DbBook,
-    DbMovie,
-    DbTVShow,
-    DbUserBook,
-    DbUserMovie,
-    DbUserTVShow,
-    DbUserVideoGame,
-    DbVideoGame,
-)
 from app.schemas.model_schemas import InVisibilityUpdate, OutVisibility
+from app.services.shelves import SHELVES
 
 router = APIRouter(prefix='/v1', tags=['Visibility'])
 
@@ -44,13 +36,10 @@ RESERVED_HANDLES = {
     'www',
 }
 
-# (flag attribute, label, tracker model, catalog model, join column)
-_SHELVES = (
-    ('public_movies', 'Movies', DbUserMovie, DbMovie, 'movie_id'),
-    ('public_tv', 'TV', DbUserTVShow, DbTVShow, 'tv_show_id'),
-    ('public_books', 'Books', DbUserBook, DbBook, 'book_id'),
-    ('public_games', 'Video Games', DbUserVideoGame, DbVideoGame, 'game_id'),
-)
+# Ranked entries served per shelf on a public profile. The profile is the
+# shareable surface (every share-card click lands here), so it gets a bound
+# rather than the full ranked list it used to return.
+PROFILE_SHELF_LIMIT = 25
 
 
 @router.get('/users/me/visibility', response_model=OutVisibility)
@@ -97,11 +86,14 @@ def update_visibility(
                 )
         user.handle = handle
 
-    for flag, _, _, _, _ in _SHELVES:
+    for shelf in SHELVES:
+        flag = shelf.visibility_flag
         if flag in data and data[flag] is not None:
             setattr(user, flag, bool(data[flag]))
 
-    if not user.handle and any(getattr(user, flag) for flag, *_ in _SHELVES):
+    if not user.handle and any(
+        getattr(user, shelf.visibility_flag) for shelf in SHELVES
+    ):
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail='Pick a handle before making a category public — it '
@@ -128,32 +120,46 @@ def public_profile(handle: str, db: Session = Depends(get_db)):
         raise not_found
 
     shelves = []
-    for flag, label, tracker_model, catalog_model, join_col in _SHELVES:
-        if not getattr(user, flag):
+    for shelf in SHELVES:
+        if not getattr(user, shelf.visibility_flag):
             continue
+        tracker_model, catalog_model = shelf.tracker_model, shelf.catalog_model
+        ranked = (
+            tracker_model.user_id == user.pk,
+            tracker_model.on_rankings.is_(True),
+            tracker_model.rank.isnot(None),
+        )
+        # ranked_count is the shelf total, so it comes from COUNT rather than
+        # len(rows) now that rows are capped at PROFILE_SHELF_LIMIT.
+        ranked_count = (
+            db.query(func.count())  # pylint: disable=not-callable
+            .select_from(tracker_model)
+            .filter(*ranked)
+            .scalar()
+        )
         rows = (
-            db.query(tracker_model, catalog_model)
-            .join(catalog_model, getattr(tracker_model, join_col) == catalog_model.pk)
-            .filter(
-                tracker_model.user_id == user.pk,
-                tracker_model.on_rankings.is_(True),
-                tracker_model.rank.isnot(None),
+            db.query(tracker_model.rank, catalog_model)
+            .join(
+                catalog_model,
+                getattr(tracker_model, shelf.join_col) == catalog_model.pk,
             )
+            .filter(*ranked)
             .order_by(tracker_model.rank)
+            .limit(PROFILE_SHELF_LIMIT)
             .all()
         )
         shelves.append(
             {
-                'category': label,
-                'ranked_count': len(rows),
+                'category': shelf.label,
+                'ranked_count': ranked_count,
                 'items': [
                     {
-                        'rank': tracker.rank,
+                        'rank': rank,
                         'title': item.title,
                         'year': item.year,
                         'poster_url': item.poster_url,
                     }
-                    for tracker, item in rows
+                    for rank, item in rows
                 ],
             }
         )

@@ -253,7 +253,16 @@ def run_import(dry_run: bool = False) -> Report:
                         'movie_id': movie_map.get(r['movies_id']),
                     },
                     {
-                        'rank': r['rank'],
+                        # Legacy movie ranks are 0-based, like TV's below; the
+                        # API contract is 1-based (reorder_rankings enumerates
+                        # from 1). Only ranked (completed) rows are re-based,
+                        # matching backfill_rank_base's scope for the rows
+                        # already in prod.
+                        'rank': (
+                            r['rank'] + 1
+                            if r['completed'] == 1 and r['rank'] is not None
+                            else r['rank']
+                        ),
                         'completed': r['completed'],
                         'notes': r['notes'],
                         # Derive the two lists here too (not only in the alembic
