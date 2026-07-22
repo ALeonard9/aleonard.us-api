@@ -196,9 +196,17 @@ def get_show_episodes(tvmaze_id: Optional[int]) -> List[dict]:
 
 def sync_episodes(db, show) -> int:
     """
-    Upsert the TVMaze episode list for ``show`` into the catalog, keyed on
-    the episode's tvmaze id. Returns the number of episodes created.
-    Existing episodes get their title/season/airdate refreshed.
+    Upsert the TVMaze episode list for ``show`` into the catalog. Returns the
+    number of episodes created; existing episodes get their title/season/
+    airdate refreshed.
+
+    Episodes are matched on their TVMaze id first, then on their slot in the
+    show — ``(season, season_number)``. The slot fallback matters because
+    TVMaze reassigns episode ids (#169): keying on the id alone, a reassigned
+    episode missed the lookup and was inserted as a *second* row for the same
+    slot. Watch history lives on the original row's ``episode_id``, so the
+    episode silently reverted to unwatched. Matching the slot updates the id
+    on the row that already exists, and the history stays attached.
     """
     # Imported locally to avoid a service->models import at module load in
     # callers that only need search.
@@ -210,15 +218,24 @@ def sync_episodes(db, show) -> int:
     if not episodes:
         return 0
 
-    existing = {
-        ep.tvmaze: ep
-        for ep in db.query(DbTVEpisode).filter(DbTVEpisode.tv_show_id == show.pk)
-        if ep.tvmaze
-    }
+    rows = db.query(DbTVEpisode).filter(DbTVEpisode.tv_show_id == show.pk).all()
+    by_tvmaze = {ep.tvmaze: ep for ep in rows if ep.tvmaze}
+    # Ambiguous slots (an existing duplicate pair) are left out: reconciling
+    # those is audit_watch_gaps' job, and guessing here could pick the orphan.
+    by_slot = {}
+    for ep in rows:
+        slot = (ep.season, ep.season_number)
+        if slot in by_slot:
+            by_slot[slot] = None
+        else:
+            by_slot[slot] = ep
+
     created = 0
     for data in episodes:
-        current = existing.get(data['tvmaze'])
-        if current:
+        current = by_tvmaze.get(data['tvmaze'])
+        if current is None:
+            current = by_slot.get((data.get('season'), data.get('season_number')))
+        if current is not None:
             for key, value in data.items():
                 if value is not None:
                     setattr(current, key, value)
