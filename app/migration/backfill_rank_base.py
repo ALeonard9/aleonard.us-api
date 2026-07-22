@@ -28,25 +28,58 @@ import sys
 
 from sqlalchemy import func
 
-from app.db.database import SessionLocal
+from app.config import get_settings
+from app.db.database import SQLALCHEMY_DATABASE_URL, SessionLocal
 from app.db.models import DbUser
 from app.services.shelves import SHELVES
+
+
+def target_description() -> str:
+    """The database this run will touch, with any password masked."""
+    url = SQLALCHEMY_DATABASE_URL
+    if '@' in url:
+        head, tail = url.split('@', 1)
+        url = f'{head.rsplit(":", 1)[0]}:***@{tail}'
+    return f'ENV={get_settings().env}  DB={url}'
+
+
+def _ranked_filter(tracker, user_pk):
+    """The rows a re-base considers: on the rankings list with a position."""
+    return (
+        tracker.user_id == user_pk,
+        tracker.on_rankings.is_(True),
+        tracker.rank.isnot(None),
+    )
+
+
+def shelf_stats(db, shelf, user_pk):
+    """``(lowest_rank, ranked_row_count)`` for one user's shelf."""
+    return (
+        db.query(
+            func.min(shelf.tracker_model.rank),
+            func.count(),  # pylint: disable=not-callable
+        )
+        .select_from(shelf.tracker_model)
+        .filter(*_ranked_filter(shelf.tracker_model, user_pk))
+        .one()
+    )
 
 
 def _shift_shelf(db, shelf, user) -> int:
     """Shift one user's ranks on one shelf up by 1. Returns rows changed."""
     tracker = shelf.tracker_model
-    ranked = (
-        tracker.user_id == user.pk,
-        tracker.on_rankings.is_(True),
-        tracker.rank.isnot(None),
+    lowest, count = shelf_stats(db, shelf, user.pk)
+    # Report every shelf, not just the ones that move — a bare "0 rows" can't
+    # distinguish "already 1-based" from "wrong database" or "no data here".
+    print(
+        f'  {shelf.category:7} ranked={count:5} lowest_rank={lowest} '
+        f'{"-> re-basing" if lowest == 0 else "-> no change"}'
     )
-    lowest = db.query(func.min(tracker.rank)).filter(*ranked).scalar()
     if lowest != 0:
         return 0
     return (
         db.query(tracker)
-        .filter(*ranked)
+        .filter(*_ranked_filter(tracker, user.pk))
         .update({tracker.rank: tracker.rank + 1}, synchronize_session=False)
     )
 
@@ -59,22 +92,21 @@ def run_backfill(db, email: str = None, dry_run: bool = False) -> int:
     the whole transaction, so it can't discard anything the caller had
     pending.
     """
+    print(target_description())
     users = db.query(DbUser)
     if email:
         users = users.filter(DbUser.email == email)
     users = users.all()
     if email and not users:
-        print(f'No user with email {email}', file=sys.stderr)
+        print(f'No user with email {email} on this database', file=sys.stderr)
         return 0
 
     changed = 0
     savepoint = db.begin_nested()
     for user in users:
+        print(f'{user.email} (pk={user.pk}):')
         for shelf in SHELVES:
-            rows = _shift_shelf(db, shelf, user)
-            if rows:
-                changed += rows
-                print(f'{user.email}: {shelf.category} re-based 0 -> 1 ({rows} rows)')
+            changed += _shift_shelf(db, shelf, user)
 
     if dry_run:
         savepoint.rollback()
