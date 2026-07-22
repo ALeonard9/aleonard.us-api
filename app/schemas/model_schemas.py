@@ -124,3 +124,37 @@ class OutVisibility(BaseModel):
     public_games: Optional[bool] = False
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class OutSummaryEntry(BaseModel):
+    """One ranked entry on a shelf's Top 5."""
+
+    rank: int
+    id: str
+    title: str
+    year: Optional[int] = None
+    poster_url: Optional[str] = None
+
+
+class OutSummaryShelf(BaseModel):
+    """One domain's headline numbers plus its best-ranked entries."""
+
+    category: str
+    label: str
+    ranked_count: int
+    queued_count: int
+    public: bool
+    top: list[OutSummaryEntry]
+
+
+class OutSummary(BaseModel):
+    """
+    Everything the home page renders, in one bounded response — see
+    app/services/summary.py for why this endpoint exists.
+    """
+
+    handle: Optional[str] = None
+    display_name: Optional[str] = None
+    profile_public: bool = False
+    shelves: list[OutSummaryShelf]
+    total_ranked: int

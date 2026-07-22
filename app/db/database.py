@@ -21,7 +21,13 @@ else:
     # pool_pre_ping recycles dead connections so the app survives a DB restart
     # instead of erroring until the pool is exhausted.
     engine = create_engine(
-        SQLALCHEMY_DATABASE_URL, pool_pre_ping=True, pool_recycle=1800
+        SQLALCHEMY_DATABASE_URL,
+        pool_pre_ping=True,
+        pool_recycle=1800,
+        pool_size=settings.db_pool_size,
+        max_overflow=settings.db_max_overflow,
+        # Fail fast rather than hanging a request behind an exhausted pool.
+        pool_timeout=settings.db_pool_timeout,
     )
 SessionLocal = sessionmaker(
     autocommit=False, autoflush=False, bind=engine

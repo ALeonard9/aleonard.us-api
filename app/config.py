@@ -33,6 +33,12 @@ class Settings(BaseSettings):
     postgres_host: Optional[str] = None
     postgres_connection_port: str = '5432'
     postgres_db: str = 'phoenix'
+    # SQLAlchemy's default pool is 5 + 10 overflow. One page render fans out
+    # several concurrent API calls, so the default silently serialises the
+    # tail of a render behind the pool. Sized here instead of implied.
+    db_pool_size: int = 10
+    db_max_overflow: int = 10
+    db_pool_timeout: int = 10
 
     # --- Auth ---
     jwt_secret_key: Optional[str] = None

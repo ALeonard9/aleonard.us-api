@@ -5,6 +5,7 @@ This module contains the main application setup and routing.
 import asyncio
 import json
 import os
+import time
 
 import uvicorn
 from fastapi import FastAPI
@@ -29,6 +30,7 @@ from .router.v1 import (
     router_import,
     router_notifications,
     router_search,
+    router_summary,
     router_visibility,
     router_movies,
     router_games,
@@ -77,6 +79,10 @@ app = FastAPI(
         },
         {'name': 'Notifications', 'description': 'Per-user notification feed'},
         {'name': 'Search', 'description': 'Cross-domain global search'},
+        {
+            'name': 'Summary',
+            'description': 'Home summary — per-shelf Top 5 and counts',
+        },
     ],
     openapi_url='/openapi.json',
     servers=[
@@ -87,6 +93,36 @@ app = FastAPI(
         'url': 'https://www.gnu.org/licenses/gpl-3.0.html',
     },
 )
+
+
+@app.middleware('http')
+async def log_request_latency(request, call_next):
+    """
+    Emit a duration for every request so slow pages can be diagnosed from
+    Loki instead of inferred from the code. Uses the route template (not the
+    raw path) so per-endpoint latency aggregates cleanly.
+    """
+    started = time.perf_counter()
+    response = await call_next(request)
+    elapsed_ms = (time.perf_counter() - started) * 1000
+    route = request.scope.get('route')
+    logger.info(
+        'request %s %s -> %s in %.1fms',
+        request.method,
+        getattr(route, 'path', request.url.path),
+        response.status_code,
+        elapsed_ms,
+        extra={
+            'http_method': request.method,
+            'http_route': getattr(route, 'path', request.url.path),
+            'http_status': response.status_code,
+            'duration_ms': round(elapsed_ms, 1),
+        },
+    )
+    # Lets the browser's network panel attribute the time without a log dive.
+    response.headers['Server-Timing'] = f'app;dur={elapsed_ms:.1f}'
+    return response
+
 
 app.include_router(authentication.router, prefix='/v1/auth')
 app.include_router(user.router, prefix='/v1/users')
@@ -102,6 +138,7 @@ app.include_router(router_api_keys.router)
 app.include_router(router_export.router)
 app.include_router(router_import.router)
 app.include_router(router_visibility.router)
+app.include_router(router_summary.router)
 
 # Serve static files
 app.mount('/static', StaticFiles(directory='app/static'), name='static')
