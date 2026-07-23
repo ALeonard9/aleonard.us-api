@@ -13,7 +13,7 @@ services:
       - local_network
   api-prod:
     container_name: ${LZ}_phoenix_api_${ENV}
-    image: ghcr.io/aleonard9/aleonard.us-api:latest
+    image: ghcr.io/aleonard9/druthers-api:latest
     restart: unless-stopped
     env_file:
       - env/${ENV}.env

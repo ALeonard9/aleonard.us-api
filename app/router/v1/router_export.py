@@ -33,7 +33,7 @@ from app.schemas.schemas_sandbox import (
 router = APIRouter(prefix='/v1/users/me/export', tags=['Export'])
 
 # Data-source licenses ride along so exports stay attributable
-# (see aleonard.us-web docs/DATA-SOURCES.md).
+# (see druthers-web docs/DATA-SOURCES.md).
 LICENSES = {
     'movies': 'Movie data from the OMDb API, CC BY-NC 4.0',
     'tv': 'TV data from TVmaze, CC BY-SA 4.0',

@@ -81,7 +81,7 @@ tasks:
   gh:
     desc: "Open project repository in GitHub"
     cmds:
-      - open https://github.com/aleonard9/aleonard.us-api
+      - open https://github.com/aleonard9/druthers-api
     silent: true
 
   test:
@@ -118,12 +118,12 @@ tasks:
           EXTRA_ARG=""
         fi
         # Build the image with the appropriate platform argument
-        docker build $EXTRA_ARG -t ghcr.io/aleonard9/aleonard.us-api:test .
+        docker build $EXTRA_ARG -t ghcr.io/aleonard9/druthers-api:test .
         # Run Snyk container test (no need to pass EXTRA_ARG here)
-        snyk container test ghcr.io/aleonard9/aleonard.us-api:test \
+        snyk container test ghcr.io/aleonard9/druthers-api:test \
           --file=Dockerfile \
           --severity-threshold=high
-        docker rmi ghcr.io/aleonard9/aleonard.us-api:test
+        docker rmi ghcr.io/aleonard9/druthers-api:test
   lz:
     desc: "Echos current landing zone"
     platforms: [darwin]
