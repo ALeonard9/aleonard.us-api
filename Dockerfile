@@ -37,5 +37,10 @@ COPY --chown=adam:adam . .
 # Make port 8000 available
 EXPOSE 8000
 
+# Liveness probe: the API answers on GET / at PORT (default 8000). Uses the
+# stdlib (no curl/wget needed). Resolves Trivy DS-0026 (no HEALTHCHECK).
+HEALTHCHECK --interval=30s --timeout=3s --start-period=20s --retries=3 \
+  CMD python -c "import os,urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:'+os.getenv('PORT','8000')+'/',timeout=2).status==200 else 1)"
+
 # Run app.py when the container launches
 CMD ["sh", "-c", "python -m app.main"]
