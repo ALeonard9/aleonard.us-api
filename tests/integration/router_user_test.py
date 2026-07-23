@@ -3,9 +3,12 @@ Tests the user API calls
 """
 
 from typing import Callable
+from unittest.mock import patch
 
 from faker import Faker
 from fastapi.testclient import TestClient
+
+from app.config import Settings
 
 fake = Faker()
 
@@ -35,6 +38,32 @@ def test_api_create_user(
     assert response_data['data'][0]['display_name'] == test_user_data.display_name
     assert response_data['data'][0]['user_group'] == 'user'
     test_assert_timestamps(response_data['data'][0])
+
+
+@patch('app.router.v1.user.get_settings')
+def test_api_create_user_disabled_returns_clear_message(
+    mock_settings,
+    test_client: TestClient,
+    test_user_data_generator: Callable[..., list],
+):
+    """
+    #183: with DISABLE_SIGNUP set, self-registration is rejected with a
+    clear invite-only message instead of silently creating the account.
+    """
+    mock_settings.return_value = Settings(disable_signup=True)
+    user_data_list = test_user_data_generator(num_users=1)
+    test_user_data = user_data_list[0]
+    user_data = {
+        'display_name': test_user_data.display_name,
+        'email': test_user_data.email,
+        'password': test_user_data.password,
+    }
+    response = test_client.post('/v1/users/', json=user_data)
+
+    assert response.status_code == 403
+    response_data = response.json()
+    assert response_data['success'] is False
+    assert 'invite-only' in response_data['message'].lower()
 
 
 def test_api_user_get_user(

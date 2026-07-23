@@ -45,6 +45,85 @@ def test_google_login_rejects_invalid_token(
     assert response.status_code == 401
 
 
+@patch('app.auth.authentication.get_settings')
+@patch('app.auth.authentication.google_id_token.verify_oauth2_token')
+def test_google_login_allows_allowlisted_email(
+    mock_verify, mock_settings, test_client: TestClient
+):
+    """An allowlisted email signs in normally (new-account creation)."""
+    email = f'{fake.user_name()}@gmail.com'
+    mock_settings.return_value = Settings(
+        google_client_id='client-123', env='github', oauth_allowlist=email.upper()
+    )
+    mock_verify.return_value = {
+        'email': email,
+        'email_verified': True,
+        'name': 'Allowed User',
+    }
+    response = test_client.post(
+        '/v1/auth/google', json={'credential': 'fake-google-id-token'}
+    )
+    assert response.status_code == 200
+    assert response.json()['email'] == email
+
+
+@patch('app.auth.authentication.get_settings')
+@patch('app.auth.authentication.google_id_token.verify_oauth2_token')
+def test_google_login_rejects_non_allowlisted_email(
+    mock_verify, mock_settings, test_client: TestClient
+):
+    """
+    #183: when OAUTH_ALLOWLIST is configured, a valid-but-unlisted Google
+    account is rejected with a clear invite-only message rather than being
+    silently signed up — this is the "restrict login / disable new-member
+    signup" gate.
+    """
+    email = f'{fake.user_name()}@gmail.com'
+    mock_settings.return_value = Settings(
+        google_client_id='client-123',
+        env='github',
+        oauth_allowlist='someone-else@example.com',
+    )
+    mock_verify.return_value = {
+        'email': email,
+        'email_verified': True,
+        'name': 'Uninvited User',
+    }
+    response = test_client.post(
+        '/v1/auth/google', json={'credential': 'fake-google-id-token'}
+    )
+    assert response.status_code == 403
+    detail = response.json()['message']
+    assert 'invite-only' in detail.lower()
+
+
+@patch('app.auth.authentication.get_settings')
+@patch('app.auth.authentication.google_id_token.verify_oauth2_token')
+def test_google_login_allowlist_also_blocks_existing_unlisted_account(
+    mock_verify, mock_settings, test_client: TestClient
+):
+    """
+    The allowlist gates sign-in outright, not just first-time registration —
+    an account that already exists in the DB but has since fallen off the
+    allowlist is rejected too.
+    """
+    email = test_client.first_user.email
+    mock_settings.return_value = Settings(
+        google_client_id='client-123',
+        env='github',
+        oauth_allowlist='someone-else@example.com',
+    )
+    mock_verify.return_value = {
+        'email': email,
+        'email_verified': True,
+        'name': 'Existing But Unlisted',
+    }
+    response = test_client.post(
+        '/v1/auth/google', json={'credential': 'fake-google-id-token'}
+    )
+    assert response.status_code == 403
+
+
 def test_api_user_get_token(
     test_client: TestClient,
 ):
