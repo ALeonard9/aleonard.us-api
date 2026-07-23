@@ -50,9 +50,68 @@ def _network_name(show: dict) -> Optional[str]:
     return network.get('name')
 
 
+def _normalize_show(show: dict) -> dict:
+    """Map a raw TVMaze show object to the shape callers expect."""
+    premiered = show.get('premiered') or ''
+    return {
+        'tvmaze': show.get('id'),
+        'imdb': (show.get('externals') or {}).get('imdb'),
+        'title': show.get('name'),
+        'year': premiered[:4] or None,
+        'status': show.get('status'),
+        'network': _network_name(show),
+        'poster_url': _poster(show),
+    }
+
+
+# Bare-digit query -> IMDb-style ``tt1234567`` is unambiguous, but a run of
+# plain digits is not: it could be a TheTVDB id or a numeric show title
+# ("1923", "24", "9-1-1" minus the dashes). TheTVDB ids for anything catalogued
+# in roughly the last decade run 5+ digits, so we only treat a 5+ digit query
+# as an id lookup; shorter numeric queries fall through to a normal title
+# search. This is a heuristic, not a guarantee -- see #210.
+_IMDB_ID_RE = re.compile(r'tt\d+', re.IGNORECASE)
+_MIN_THETVDB_ID_DIGITS = 5
+
+
+def _lookup_show(params: dict) -> List[dict]:
+    """
+    Resolve a single show via TVMaze's ``/lookup/shows`` endpoint (exact
+    match by external id). Returns ``[]`` when TVMaze has no match (404)
+    rather than treating that as an error; raises 502 on other upstream
+    failures.
+    """
+    try:
+        response = requests.get(
+            f'{TVMAZE_URL}/lookup/shows',
+            params=params,
+            timeout=REQUEST_TIMEOUT,
+        )
+        if response.status_code == 404:
+            return []
+        response.raise_for_status()
+        payload = response.json()
+    except (requests.RequestException, ValueError) as exc:
+        logger.error('TVMaze lookup failed for %r: %s', params, exc)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail='Upstream TV search failed',
+        ) from exc
+
+    if not payload:
+        return []
+    return [_normalize_show(payload)]
+
+
 def search_tv_shows(query: str) -> List[dict]:
     """
     Search TVMaze for shows matching ``query``.
+
+    A query shaped like an IMDb id (``tt`` + digits) or a run of 5+ digits
+    (treated as a TheTVDB id) resolves directly via TVMaze's
+    ``/lookup/shows`` endpoint instead of a title search; an id-shaped query
+    that doesn't resolve returns ``[]`` rather than raising. Ordinary title
+    queries are unaffected.
 
     Returns a list of normalized dicts (``tvmaze``, ``imdb``, ``title``,
     ``year``, ``status``, ``network``, ``poster_url``). Raises 400 on an
@@ -64,6 +123,12 @@ def search_tv_shows(query: str) -> List[dict]:
             status_code=status.HTTP_400_BAD_REQUEST,
             detail='Search query must not be empty',
         )
+
+    if _IMDB_ID_RE.fullmatch(query):
+        return _lookup_show({'imdb': query.lower()})
+
+    if query.isdigit() and len(query) >= _MIN_THETVDB_ID_DIGITS:
+        return _lookup_show({'thetvdb': query})
 
     try:
         response = requests.get(
@@ -83,18 +148,7 @@ def search_tv_shows(query: str) -> List[dict]:
     results = []
     for item in payload or []:
         show = item.get('show') or {}
-        premiered = show.get('premiered') or ''
-        results.append(
-            {
-                'tvmaze': show.get('id'),
-                'imdb': (show.get('externals') or {}).get('imdb'),
-                'title': show.get('name'),
-                'year': premiered[:4] or None,
-                'status': show.get('status'),
-                'network': _network_name(show),
-                'poster_url': _poster(show),
-            }
-        )
+        results.append(_normalize_show(show))
     return results
 
 
