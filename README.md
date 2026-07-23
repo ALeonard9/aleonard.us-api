@@ -1,180 +1,92 @@
-[![Pylint](https://github.com/ALeonard9/druthers-api/actions/workflows/lint.yaml/badge.svg?branch=main)](https://github.com/ALeonard9/druthers-api/actions/workflows/lint.yaml)
-[![Pytest](https://github.com/ALeonard9/druthers-api/actions/workflows/test.yaml/badge.svg?branch=main)](https://github.com/ALeonard9/druthers-api/actions/workflows/test.yaml)
-[![Snyk SCA & SAST](https://github.com/ALeonard9/druthers-api/actions/workflows/security_main.yaml/badge.svg?branch=main)](https://github.com/ALeonard9/druthers-api/actions/workflows/security_main.yaml)
+[![lint](https://github.com/ALeonard9/druthers-api/actions/workflows/lint.yaml/badge.svg?branch=main)](https://github.com/ALeonard9/druthers-api/actions/workflows/lint.yaml)
+[![tests](https://github.com/ALeonard9/druthers-api/actions/workflows/test.yaml/badge.svg?branch=main)](https://github.com/ALeonard9/druthers-api/actions/workflows/test.yaml)
+[![security](https://github.com/ALeonard9/druthers-api/actions/workflows/security.yml/badge.svg?branch=main)](https://github.com/ALeonard9/druthers-api/actions/workflows/security.yml)
 
-# aleonard.us API
+# Druthers API
 
-Personal API for [aleonard.us](https://www.aleonard.us) — a JWT-authenticated FastAPI service with role-based user management, auto-generated OpenAPI docs, and CI/CD with Snyk security scanning.
+> **[Druthers](https://druthers.io)** is social taste-sharing for the things you love —
+> **Movies, TV, Books, and Games**. Track what you've watched, played, and read;
+> share a formatted top-5; and find the overlap with a friend.
 
-## Features
+This repository is the **backend API** that powers it: a JWT-authenticated FastAPI
+service with Google sign-in, personal API keys, per-domain trackers, and clean
+auto-generated docs. It runs serverless on **Google Cloud Run** over **Neon**
+Postgres in production.
 
-- **JWT Authentication** — Login endpoint returns a bearer token for subsequent requests
-- **User CRUD** — Create, read, update, delete users with email validation and duplicate detection
-- **Role-Based Access Control** — Admins manage all users; regular users can only access their own account
-- **Auto-generated Docs** — Swagger UI at `/docs`, OpenAPI spec at `/openapi.json`
-- **Containerized** — Multi-arch Docker images, Python 3.14 on Alpine
-- **Security Pipeline** — Snyk SCA, SAST, and container scans on every PR and push
+## What it does
 
-## Tech Stack
+- **Sign in with Google** (OAuth) or a long-lived personal **API key** (`drk_…`) for tools/scripts
+- **Track four domains** — Movies, TV (with episodes), Books, and Games — each with watched/played/read status, notes, and completion dates
+- **Search & add** from external catalogs (OMDb, TMDB, Open Library, and more) behind one API
+- **Role-based access** — you manage your own library; admins manage shared catalog data
+- **Auto-generated docs** — Swagger UI at `/docs`, OpenAPI at `/openapi.json`
+- **Secure by default** — OSS security pipeline (secrets, SAST, dependencies, container) on every PR
+
+## Tech stack
 
 | Layer | Technology |
 |---|---|
 | Framework | [FastAPI](https://fastapi.tiangolo.com/) |
-| ORM | [SQLAlchemy](https://www.sqlalchemy.org/) |
+| ORM / migrations | [SQLAlchemy](https://www.sqlalchemy.org/) + [Alembic](https://alembic.sqlalchemy.org/) |
 | Validation | [Pydantic](https://docs.pydantic.dev/) |
-| Auth | JWT via [PyJWT](https://github.com/jpadilla/pyjwt) + OAuth2 |
-| Database | PostgreSQL (SQLite for local dev) |
-| Container | Docker, Alpine 3.22, Python 3.14 |
-| CI/CD | GitHub Actions, Snyk |
+| Auth | Google OAuth · JWTs · hashed `drk_` API keys |
+| Database | PostgreSQL — [Neon](https://neon.tech) in prod, local Docker Postgres for dev |
+| Runtime | Docker (Alpine, Python 3.14) on **Cloud Run** |
+| CI/CD & security | GitHub Actions · Gitleaks · Semgrep · Trivy · Dependabot |
 
-## Quick Start
-
-### Local
+## Quick start
 
 ```bash
 git clone https://github.com/ALeonard9/druthers-api.git
 cd druthers-api
-python -m venv .venv && source .venv/bin/activate
+python3.14 -m venv .venv && source .venv/bin/activate
 pip install -r requirements/dev.txt
-uvicorn app.run:app --reload
+uvicorn app.run:app --reload           # http://localhost:8000
 ```
 
-### Docker (preferred)
+Or with Docker: `docker compose -f dc-dev.yml --env-file env/dev.env up -d`.
+Open **http://localhost:8000/docs** for the interactive API explorer.
 
-```bash
-docker compose -f dc-dev.yml --env-file env/dev.env up -d
-```
+## API reference
 
-The API is available at `http://localhost:8000`. Open `http://localhost:8000/docs` for Swagger UI.
+All endpoints are prefixed with `/v1`; protected routes require `Authorization: Bearer <token>`.
 
-## Environment Variables
-
-Create a `.env` file in the project root:
-
-```plaintext
-ENV=dev
-LOG_LEVEL=INFO
-JWT_SECRET_KEY=<your-secret-key>
-
-ADMIN_DISPLAY_NAME=<admin-name>
-ADMIN_PASSWORD=<admin-password>
-ADMIN_EMAIL=<admin-email>
-
-POSTGRES_USER=functional_data_api_dev
-POSTGRES_PASSWORD=<db-password>
-POSTGRES_HOST=m3_phoenix_db_dev
-POSTGRES_DB=phoenix
-POSTGRES_PORT=5432
-POSTGRES_EXPOSED_PORT=5430
-POSTGRES_CONNECTION_PORT=5432
-
-LOKI_URL=http://loki:3100
-COMPOSE_PROJECT_NAME=phoenix_dev
-```
-
-### Notable Env Vars
-
-| Variable | Purpose |
+| Area | Example routes |
 |---|---|
-| `ENV` | `local` — drops/recreates tables on startup; `dev` — persistent DB |
-| `JWT_SECRET_KEY` | HMAC signing key for JWT tokens (min 32 bytes recommended) |
-| `ADMIN_*` | Credentials for the admin user created at startup |
-| `POSTGRES_*` | PostgreSQL connection — defaults to a local Docker Postgres |
+| **Auth** | `POST /v1/auth/token` · Google OAuth exchange · `POST /v1/users/me/api-keys` (mint a `drk_` key) |
+| **Users** | `POST /v1/users` · `GET/PUT/DELETE /v1/users/{uuid}` |
+| **Catalog** (movies · tv-shows · books · games) | `GET /v1/{domain}` · admin `POST/PUT/DELETE` |
+| **My library** | `GET /v1/users/me/{domain}` · `POST/PUT/DELETE /v1/users/me/{domain}/{id}` (mark watched/played/read, notes, dates) |
+| **TV episodes** | `…/tv-shows/{id}/episodes` · `…/users/me/episodes` |
+| **Docs** | `/docs` (Swagger) · `/redoc` · `/openapi.json` |
 
-## API Reference
-
-All endpoints prefixed with `/v1`. Protected endpoints require `Authorization: Bearer <token>`.
-
-### Authentication
-
-| Method | Path | Auth | Description |
-|---|---|---|---|
-| `POST` | `/v1/auth/token` | No | Login with email + password, returns JWT |
-
-### Users
-
-| Method | Path | Auth | Description |
-|---|---|---|---|
-| `POST` | `/v1/users` | No | Register a new user |
-| `GET` | `/v1/users` | Admin | List all users |
-| `GET` | `/v1/users/{uuid}` | User | Get own user (any) or any user (admin) |
-| `PUT` | `/v1/users/{uuid}` | User | Update own account (any) or any (admin) |
-| `DELETE` | `/v1/users/{uuid}` | User | Delete own account (any) or any (admin) |
-
-### Sandbox Data Entities
-
-| Method | Path | Auth | Description |
-|---|---|---|---|
-| `GET` | `/v1/{entity}` | No | List global entities (countries, movies, tv-shows, games, books) |
-| `POST` | `/v1/{entity}` | Admin | Create a new global entity |
-| `PUT` | `/v1/{entity}/{id}` | Admin | Update a global entity |
-| `DELETE` | `/v1/{entity}/{id}` | Admin | Delete a global entity |
-| `GET` | `/v1/users/me/{entity}` | User | List user's tracked entities |
-| `POST` | `/v1/users/me/{entity}/{id}`| User | Mark entity as tracked (visited, watched, played, etc.) |
-| `PUT` | `/v1/users/me/{entity}/{id}`| User | Update tracking details for an entity |
-| `DELETE` | `/v1/users/me/{entity}/{id}`| User | Remove entity from tracker |
-
-*(Note: TV Shows also include nested `/episodes` and `/users/me/episodes` endpoints.)*
-
-### Docs
-
-| Path | Description |
-|---|---|
-| `/docs` | Swagger UI |
-| `/redoc` | ReDoc |
-| `/openapi.json` | OpenAPI schema |
-
-## Testing
+## Development
 
 ```bash
-task test             # pytest with coverage and HTML reports
-                      # or just: pytest
+task du            # docker compose up (dev)     task dd   # down
+task test          # pytest with coverage
 ```
 
-Tests run in CI on every push and pull request.
-
-## Project Scripts
-
-This project uses a [Taskfile](https://taskfile.dev/) for common operations:
+**Pre-commit** runs fast checks on every commit (Gitleaks secret scan, Black,
+Pylint, OpenAPI/YAML/JSON validation). **Tests run at _pre-push_**, and only for
+what changed (`pytest-testmon`) — CI runs the full suite as the merge gate.
 
 ```bash
-task du               # Docker compose up (dev)
-task dd               # Docker compose down
-task dr               # Rebuild and restart containers
-task test             # Run pytest with coverage
-task sca              # Snyk SCA (dependency scan)
-task sast             # Snyk SAST (static analysis)
-task container        # Build + Snyk container scan
+pip install pre-commit && pre-commit install && pre-commit install --hook-type pre-push
 ```
 
-## Security Pipeline
+## Security
 
-GitHub Actions runs Snyk scans on every PR (labeled `scan`) and push to `main`:
-
-- **SCA** — Dependency vulnerability scan
-- **SAST** — Static code analysis
-- **Container** — Image vulnerability scan (Dockerfile + base image)
-
-Results are uploaded to GitHub Code Scanning for the main branch.
-
-## Pre-commit Hooks
-
-Pre-commit enforces code quality on every commit:
-
-- Black (formatting)
-- Pylint (linting)
-- OpenAPI spec validation
-- YAML/JSON validation
-- Trailing whitespace, EOF fixer, debug statement checks
-
-```bash
-pip install pre-commit && pre-commit install
-```
+Every pull request and push to `main` is scanned by an all–open-source pipeline —
+**Gitleaks** (secrets), **Semgrep** (SAST), and **Trivy** (dependencies, container,
+IaC) — with results in the repo's **Security** tab, plus **Dependabot** and GitHub
+**push protection**. See [`SECURITY.md`](SECURITY.md) to report a vulnerability.
 
 ## Contributing
 
-Fork the repo and submit a pull request.
+Issues and pull requests are welcome — fork, branch, and open a PR. The required
+`security` check and CI must pass before merge.
 
 ## License
 
-GNU General Public License v3.0. See [LICENSE](LICENSE).
+GNU General Public License v3.0 — see [LICENSE](LICENSE).
