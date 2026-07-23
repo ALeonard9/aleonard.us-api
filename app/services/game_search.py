@@ -24,7 +24,7 @@ from app.log.logging_config import logger
 
 TWITCH_OAUTH_URL = 'https://id.twitch.tv/oauth2/token'
 IGDB_URL = 'https://api.igdb.com/v4'
-COVER_URL = 'https://images.igdb.com/igdb/image/upload/t_cover_big'
+COVER_URL = 'https://images.igdb.com/igdb/image/upload/t_cover_big_2x'
 REQUEST_TIMEOUT = 10
 
 _DETAIL_FIELDS = (

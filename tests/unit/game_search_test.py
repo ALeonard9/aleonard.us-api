@@ -15,7 +15,7 @@ def _reset_token_cache():
 
 def test_helpers():
     assert game_search._cover({'cover': {'image_id': 'abc'}}) == (
-        'https://images.igdb.com/igdb/image/upload/t_cover_big/abc.jpg'
+        'https://images.igdb.com/igdb/image/upload/t_cover_big_2x/abc.jpg'
     )
     assert game_search._cover({}) is None
     assert game_search._release({'first_release_date': 1496275200}).year == 2017
