@@ -7,7 +7,7 @@ All environment-driven settings are read here through a single Pydantic
 """
 
 from functools import lru_cache
-from typing import List, Optional
+from typing import FrozenSet, List, Optional
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -54,6 +54,18 @@ class Settings(BaseSettings):
     rate_limit_search: int = 60  # search-proxy calls per user per minute
     catalog_add_daily_cap: int = 200  # catalog creations per user per day
 
+    # --- Invite-only access (#183) ---
+    # Kill switch for POST /v1/users: closes open password self-registration.
+    # Off by default so local/CI (and any pre-existing deployment) keep
+    # working until an operator opts in per environment.
+    disable_signup: bool = False
+    # Comma-separated email allowlist. Unset = no-op (today's open-Google
+    # behavior). Set = only these addresses may complete ANY Google sign-in
+    # (new account or existing) — everyone else gets a clear invite-only
+    # rejection. Intended for QA/pre-launch: set to just the operator's own
+    # Google account.
+    oauth_allowlist: Optional[str] = None
+
     # --- Observability ---
     loki_url: Optional[str] = None
 
@@ -99,6 +111,24 @@ class Settings(BaseSettings):
     def is_ci(self) -> bool:
         """True when running inside CI (GitHub Actions)."""
         return self.env == 'github'
+
+    @property
+    def oauth_allowlist_emails(self) -> Optional[FrozenSet[str]]:
+        """
+        Parsed, lowercased allowlist, or ``None`` when the feature is off.
+
+        ``None`` (rather than an empty set) is the "not configured" sentinel
+        so callers can distinguish "no restriction" from "restricted to
+        nobody" (an empty/blank ``OAUTH_ALLOWLIST`` is treated as unset).
+        """
+        if not self.oauth_allowlist:
+            return None
+        emails = frozenset(
+            email.strip().lower()
+            for email in self.oauth_allowlist.split(',')
+            if email.strip()
+        )
+        return emails or None
 
 
 @lru_cache

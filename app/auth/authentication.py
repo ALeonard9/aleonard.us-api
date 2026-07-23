@@ -111,6 +111,20 @@ def google_login(request: GoogleAuthRequest, db: Session = Depends(get_db)):
             detail='Google account email not verified',
         )
 
+    allowlist = settings.oauth_allowlist_emails
+    if allowlist is not None and email.lower() not in allowlist:
+        # Applies to new AND existing accounts — during invite-only phases
+        # (#183) the allowlist is the single source of truth for who may
+        # sign in, not just who may register.
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=(
+                'This app is invite-only right now. Your Google account '
+                'isn’t on the access list — contact the administrator '
+                'if you believe this is a mistake.'
+            ),
+        )
+
     user = db.query(models.DbUser).filter(models.DbUser.email == email).first()
     if user is None:
         user = models.DbUser(

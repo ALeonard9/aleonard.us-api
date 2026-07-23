@@ -57,9 +57,8 @@ app = FastAPI(
     ),
     version='0.0.1',
     contact={
-        'name': 'Adam',
+        'name': 'Druthers',
         'url': 'https://www.druthers.io',
-        'email': 'aleonard9@hotmail.com',
     },
     openapi_tags=[
         {'name': 'intro', 'description': 'Welcome message'},
@@ -86,6 +85,7 @@ app = FastAPI(
     ],
     openapi_url='/openapi.json',
     servers=[
+        {'url': 'https://api.druthers.io', 'description': 'Production server'},
         {'url': 'http://localhost:8000', 'description': 'Local server'},
     ],
     license_info={
