@@ -1,4 +1,5 @@
 fail_fast: true
+default_stages: [pre-commit]   # existing hooks run per-commit; tests run pre-push (below)
 
 repos:
 - repo: https://github.com/gitleaks/gitleaks
@@ -38,10 +39,12 @@ repos:
     language: system
     types: [python]
     args: [--ignore=.venv, --disable=too-few-public-methods]
-  - id: pytest
-    name: pytest
-    entry: ./.venv/bin/pytest tests --cov=./ --cov-report=html:.reports/coverage --cov-report=term --html=.reports/junit/test-results.html
+  # Tests run at PRE-PUSH (not per-commit) and only for what changed
+  # (testmon maps coverage -> affected tests). CI runs the full suite.
+  - id: pytest-changed
+    name: pytest (changed only, pre-push)
+    entry: ./.venv/bin/pytest --testmon -q
     language: system
-    types: [python]
+    stages: [pre-push]
     pass_filenames: false
     always_run: true
