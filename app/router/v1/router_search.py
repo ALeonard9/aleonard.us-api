@@ -84,7 +84,7 @@ def global_search(
                 for name in empty:
                     query_by_domain[name] = respelled
     # Cap to the top DEFAULT_DOMAIN_CAP per domain, best match first (see
-    # search_ranking for the exact/starts-with/contains/provider-order
+    # search_ranking for the exact-match/partial-match/popularity
     # heuristic), before the tracked-status lookup so it only does DB work
     # for the results that are actually shown.
     results = {

@@ -12,13 +12,30 @@ def test_exact_match_beats_partial_matches():
     assert ranked[0]['title'] == 'Titanic'
 
 
-def test_starts_with_beats_contains():
+def test_partial_match_popularity_beats_prefix_position():
+    # Regression test for a real search bug: an obscure IGDB entry that
+    # merely *starts with* the query used to automatically outrank the
+    # famous game everyone actually means, which only *contains* the
+    # query. Prefix position alone is not a reliable signal — within the
+    # partial-match tier, popularity decides.
+    hits = [
+        {'title': 'Zelda 64', 'popularity': 3},
+        {'title': 'The Legend of Zelda: Ocarina of Time', 'popularity': 9000},
+    ]
+    ranked = rank_and_cap('Zelda', hits)
+    assert ranked[0]['title'] == 'The Legend of Zelda: Ocarina of Time'
+
+
+def test_partial_match_without_popularity_preserves_provider_order():
+    # No popularity data (e.g. OMDB movie search doesn't return any) —
+    # prefix and contains matches are treated as equally valid partial
+    # matches, and the provider's own result order is the tiebreaker.
     hits = [
         {'title': 'The Legend of Zelda: Anniversary Edition'},
         {'title': 'Zelda II: The Adventure of Link'},
     ]
     ranked = rank_and_cap('Zelda', hits)
-    assert ranked[0]['title'] == 'Zelda II: The Adventure of Link'
+    assert [r['title'] for r in ranked] == [r['title'] for r in hits]
 
 
 def test_match_is_case_and_punctuation_insensitive():
