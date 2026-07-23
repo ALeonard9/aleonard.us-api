@@ -28,7 +28,7 @@ RUN apk update && apk add --no-cache \
 USER adam
 
 # Install Python packages as non-root user
-RUN pip install --no-cache-dir --upgrade pip && \
+RUN pip install --no-cache-dir --upgrade "pip>=26.1.2" && \
     pip install --no-cache-dir -r requirements/base.txt
 
 # Copy the rest of the application with correct ownership
