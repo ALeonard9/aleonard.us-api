@@ -1,0 +1,19 @@
+name: security
+on:
+  pull_request: { branches: [main] }
+  push:         { branches: [main] }
+  schedule:     [{ cron: "0 6 * * 1" }]   # weekly re-scan of main
+jobs:
+  scan:
+    uses: ALeonard9/.github/.github/workflows/security-reusable.yml@main
+    with:
+      stack: python
+      builds_image: true
+      block: false            # baseline non-blocking until findings are triaged
+      severity: "CRITICAL,HIGH"
+    secrets: inherit
+    permissions:
+      contents: read
+      security-events: write
+      issues: write
+      actions: read
