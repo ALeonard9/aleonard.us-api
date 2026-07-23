@@ -60,6 +60,17 @@ All endpoints are prefixed with `/v1`; protected routes require `Authorization: 
 | **TV episodes** | `…/tv-shows/{id}/episodes` · `…/users/me/episodes` |
 | **Docs** | `/docs` (Swagger) · `/redoc` · `/openapi.json` |
 
+## Customer-facing docs
+
+- **Postman collection:** [`docs/druthers-api.postman_collection.json`](docs/druthers-api.postman_collection.json)
+  — every route as a ready-to-run request, generated from `openapi.json` by
+  [`scripts/generate_postman_collection.py`](scripts/generate_postman_collection.py).
+  Import it into Postman and set the `apiToken` variable to a personal API key.
+- **MCP usage guide:** [`docs/mcp-usage.md`](docs/mcp-usage.md) — connect
+  Claude Desktop/Code to your Druthers library.
+
+Both are also linked from [druthers.io/developers](https://www.druthers.io/developers).
+
 ## Development
 
 ```bash

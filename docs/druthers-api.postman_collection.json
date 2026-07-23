@@ -1,0 +1,3286 @@
+{
+  "info": {
+    "name": "Druthers API",
+    "description": "API for druthers.io \u2014 track and rank the movies, TV, books, and games you actually care about.\n\n---\n\n**Auth:** most requests use the collection-level bearer token \u2014 set the `apiToken` variable to a personal API key (`drk_\u2026`), minted at https://www.druthers.io/settings, or a JWT from `POST /v1/auth/token`. `POST /v1/auth/token` and `POST /v1/users` are marked \"No Auth\" since you don't have a token yet when calling them.\n\n**Base URL:** the `baseUrl` variable defaults to production (`https://api.druthers.io`) \u2014 override it in a Postman environment to point at localhost (`http://localhost:8000`) or QA (`https://api-qa.druthers.io`) instead.\n\nGenerated from the checked-in OpenAPI schema by `scripts/generate_postman_collection.py` \u2014 see `docs/mcp-usage.md` for the MCP (Claude) integration instead of raw HTTP calls.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{apiToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://api.druthers.io",
+      "type": "string"
+    },
+    {
+      "key": "apiToken",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "API keys",
+      "description": "",
+      "item": [
+        {
+          "name": "Create Api Key",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/users/me/api-keys",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "me",
+                "api-keys"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"string\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Mint a new key. The plaintext secret is in this response and nowhere\nelse \u2014 it is never stored or shown again."
+          }
+        },
+        {
+          "name": "List Api Keys",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/users/me/api-keys",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "me",
+                "api-keys"
+              ]
+            },
+            "description": "List Api Keys"
+          }
+        },
+        {
+          "name": "Revoke Api Key",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/users/me/api-keys/:key_id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "me",
+                "api-keys",
+                ":key_id"
+              ],
+              "variable": [
+                {
+                  "key": "key_id",
+                  "value": "",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Revocation is deletion \u2014 the hash is gone, the key can never auth again."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Activity",
+      "description": "Cross-domain activity log and \"I'm bored\" recommendation",
+      "item": [
+        {
+          "name": "Get Activity",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/users/me/activity?category=&limit=",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "me",
+                "activity"
+              ],
+              "query": [
+                {
+                  "key": "category",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Cross-domain \"what have I been up to\" feed, newest first."
+          }
+        },
+        {
+          "name": "Get Bored Pick",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/users/me/bored?exclude=",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "me",
+                "bored"
+              ],
+              "query": [
+                {
+                  "key": "exclude",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Randomly pick one item off the user's watchlists/bucket lists, across\nevery domain. ``exclude`` (comma-separated entity ids) lets the client\nre-roll without repeating the item(s) it's already shown."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Books",
+      "description": "Book catalog and per-user tracker",
+      "item": [
+        {
+          "name": "Create Book",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/books",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "books"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"string\",\n  \"isbn\": \"string\",\n  \"googleid\": \"string\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Create Book"
+          }
+        },
+        {
+          "name": "Delete Book",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/books/:book_id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "books",
+                ":book_id"
+              ],
+              "variable": [
+                {
+                  "key": "book_id",
+                  "value": "",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Delete Book"
+          }
+        },
+        {
+          "name": "Get All Books",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/books",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "books"
+              ]
+            },
+            "description": "Get All Books"
+          }
+        },
+        {
+          "name": "Get Book",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/books/:book_id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "books",
+                ":book_id"
+              ],
+              "variable": [
+                {
+                  "key": "book_id",
+                  "value": "",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Return one book's full detail, enriching from Open Library on first view."
+          }
+        },
+        {
+          "name": "Get User Book",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/users/me/books/:book_id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "me",
+                "books",
+                ":book_id"
+              ],
+              "variable": [
+                {
+                  "key": "book_id",
+                  "value": "",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Return the current user's tracker for one book (404 if not tracked)."
+          }
+        },
+        {
+          "name": "Get User Books",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/users/me/books?on_rankings=&on_watchlist=&limit=&offset=",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "me",
+                "books"
+              ],
+              "query": [
+                {
+                  "key": "on_rankings",
+                  "value": "",
+                  "description": "Only ranked entries (true) or only unranked (false)",
+                  "disabled": true
+                },
+                {
+                  "key": "on_watchlist",
+                  "value": "",
+                  "description": "Only queued entries (true) or only unqueued (false)",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "",
+                  "description": "Maximum entries to return",
+                  "disabled": true
+                },
+                {
+                  "key": "offset",
+                  "value": "",
+                  "description": "Entries to skip",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Get User Books"
+          }
+        },
+        {
+          "name": "Mark Book",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/users/me/books/:book_id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "me",
+                "books",
+                ":book_id"
+              ],
+              "variable": [
+                {
+                  "key": "book_id",
+                  "value": "",
+                  "description": ""
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"on_watchlist\": true,\n  \"on_rankings\": true,\n  \"rank\": 0,\n  \"completed\": 0,\n  \"notes\": \"string\",\n  \"completed_at\": \"2026-01-01\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Add a book to the user's lists (idempotent \u2014 merges list membership)."
+          }
+        },
+        {
+          "name": "Reorder Rankings",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/users/me/books/rankings/order",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "me",
+                "books",
+                "rankings",
+                "order"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"book_ids\": [\n    \"string\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Persist a new ranking order (drag-and-drop). Rank = position in the list."
+          }
+        },
+        {
+          "name": "Search Books Endpoint",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/books/search?q=",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "books",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "",
+                  "description": "",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "Search Books Endpoint"
+          }
+        },
+        {
+          "name": "Set Book Rank",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/users/me/books/:book_id/rank",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "me",
+                "books",
+                ":book_id",
+                "rank"
+              ],
+              "variable": [
+                {
+                  "key": "book_id",
+                  "value": "",
+                  "description": ""
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"position\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Place a book at an exact 1-based position in the ranked list, shifting the\nbooks at and below that position down by one. Works for a not-yet-ranked\nbook (jump it in) or an already-ranked one (move it)."
+          }
+        },
+        {
+          "name": "Unmark Book",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/users/me/books/:book_id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "me",
+                "books",
+                ":book_id"
+              ],
+              "variable": [
+                {
+                  "key": "book_id",
+                  "value": "",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Unmark Book"
+          }
+        },
+        {
+          "name": "Update Book",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/books/:book_id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "books",
+                ":book_id"
+              ],
+              "variable": [
+                {
+                  "key": "book_id",
+                  "value": "",
+                  "description": ""
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"string\",\n  \"isbn\": \"string\",\n  \"googleid\": \"string\",\n  \"poster_url\": \"string\",\n  \"authors\": \"string\",\n  \"year\": 0,\n  \"genre\": \"string\",\n  \"description\": \"string\",\n  \"page_count\": 0,\n  \"rating\": 0,\n  \"language\": \"string\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Update Book"
+          }
+        },
+        {
+          "name": "Update User Book",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/users/me/books/:book_id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "me",
+                "books",
+                ":book_id"
+              ],
+              "variable": [
+                {
+                  "key": "book_id",
+                  "value": "",
+                  "description": ""
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"on_watchlist\": true,\n  \"on_rankings\": true,\n  \"rank\": 0,\n  \"completed\": 0,\n  \"notes\": \"string\",\n  \"completed_at\": \"2026-01-01\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Update list membership, rank, or notes for a tracked book."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Countries",
+      "description": "Country catalog and per-user tracker",
+      "item": [
+        {
+          "name": "Create Country",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/countries",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "countries"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"string\",\n  \"country_code\": \"string\",\n  \"region\": \"string\",\n  \"subregion\": \"string\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Create Country"
+          }
+        },
+        {
+          "name": "Delete Country",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/countries/:country_id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "countries",
+                ":country_id"
+              ],
+              "variable": [
+                {
+                  "key": "country_id",
+                  "value": "",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Delete Country"
+          }
+        },
+        {
+          "name": "Get All Countries",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/countries",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "countries"
+              ]
+            },
+            "description": "Get All Countries"
+          }
+        },
+        {
+          "name": "Get Country",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/countries/:country_id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "countries",
+                ":country_id"
+              ],
+              "variable": [
+                {
+                  "key": "country_id",
+                  "value": "",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Return one country's detail, enriching from REST Countries on first view."
+          }
+        },
+        {
+          "name": "Get User Countries",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/users/me/countries",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "me",
+                "countries"
+              ]
+            },
+            "description": "Get User Countries"
+          }
+        },
+        {
+          "name": "Get User Country",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/users/me/countries/:country_id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "me",
+                "countries",
+                ":country_id"
+              ],
+              "variable": [
+                {
+                  "key": "country_id",
+                  "value": "",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Return the current user's tracker for one country (404 if not tracked)."
+          }
+        },
+        {
+          "name": "Mark Country",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/users/me/countries/:country_id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "me",
+                "countries",
+                ":country_id"
+              ],
+              "variable": [
+                {
+                  "key": "country_id",
+                  "value": "",
+                  "description": ""
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"on_watchlist\": true,\n  \"on_rankings\": true,\n  \"rank\": 0,\n  \"completed\": 0,\n  \"notes\": \"string\",\n  \"first_visited\": \"2026-01-01T00:00:00Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Add a country to the user's lists (idempotent \u2014 merges list membership)."
+          }
+        },
+        {
+          "name": "Reorder Rankings",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/users/me/countries/rankings/order",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "me",
+                "countries",
+                "rankings",
+                "order"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"country_ids\": [\n    \"string\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Persist a new ranking order (drag-and-drop). Rank = position in the list."
+          }
+        },
+        {
+          "name": "Set Country Rank",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/users/me/countries/:country_id/rank",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "me",
+                "countries",
+                ":country_id",
+                "rank"
+              ],
+              "variable": [
+                {
+                  "key": "country_id",
+                  "value": "",
+                  "description": ""
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"position\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Place a country at an exact 1-based position in the visited ranking,\nshifting the countries at and below that position down by one."
+          }
+        },
+        {
+          "name": "Sync Countries",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/countries/sync",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "countries",
+                "sync"
+              ]
+            },
+            "description": "Seed/refresh the full world catalog from REST Countries."
+          }
+        },
+        {
+          "name": "Unmark Country",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/users/me/countries/:country_id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "me",
+                "countries",
+                ":country_id"
+              ],
+              "variable": [
+                {
+                  "key": "country_id",
+                  "value": "",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Unmark Country"
+          }
+        },
+        {
+          "name": "Update Country",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/countries/:country_id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "countries",
+                ":country_id"
+              ],
+              "variable": [
+                {
+                  "key": "country_id",
+                  "value": "",
+                  "description": ""
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"string\",\n  \"country_code\": \"string\",\n  \"region\": \"string\",\n  \"subregion\": \"string\",\n  \"capital\": \"string\",\n  \"population\": 0,\n  \"flag_emoji\": \"string\",\n  \"flag_url\": \"string\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Update Country"
+          }
+        },
+        {
+          "name": "Update User Country",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/users/me/countries/:country_id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "me",
+                "countries",
+                ":country_id"
+              ],
+              "variable": [
+                {
+                  "key": "country_id",
+                  "value": "",
+                  "description": ""
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"on_watchlist\": true,\n  \"on_rankings\": true,\n  \"rank\": 0,\n  \"completed\": 0,\n  \"notes\": \"string\",\n  \"first_visited\": \"2026-01-01T00:00:00Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Update list membership, rank, notes, or first-visited for a country."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Export",
+      "description": "",
+      "item": [
+        {
+          "name": "Export Csv",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/users/me/export/{domain}.csv",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "me",
+                "export",
+                "{domain}.csv"
+              ],
+              "variable": [
+                {
+                  "key": "domain",
+                  "value": "",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Spreadsheet-friendly CSV for one domain:\n``movies`` | ``tv-shows`` | ``tv-episodes`` | ``books`` | ``games``."
+          }
+        },
+        {
+          "name": "Export Json",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/users/me/export",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "me",
+                "export"
+              ]
+            },
+            "description": "Full-fidelity JSON export of every domain, using the same schemas the\nAPI serves \u2014 anything the UI can show is in here."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Import",
+      "description": "",
+      "item": [
+        {
+          "name": "Import Goodreads",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/users/me/import/goodreads",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "me",
+                "import",
+                "goodreads"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "value": "string",
+                  "type": "text"
+                }
+              ]
+            },
+            "description": "Upload the standard Goodreads library export CSV. Idempotent \u2014 re-running\nthe same file updates rather than duplicates. Returns counts plus any\nskipped rows with reasons (nothing is dropped silently)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Movies",
+      "description": "Movie catalog, search, and per-user tracker",
+      "item": [
+        {
+          "name": "Create Movie",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/movies",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "movies"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"string\",\n  \"imdb\": \"string\",\n  \"release_date\": \"2026-01-01T00:00:00Z\",\n  \"rating_imdb\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Create Movie"
+          }
+        },
+        {
+          "name": "Delete Movie",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/movies/:movie_id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "movies",
+                ":movie_id"
+              ],
+              "variable": [
+                {
+                  "key": "movie_id",
+                  "value": "",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Delete Movie"
+          }
+        },
+        {
+          "name": "Get All Movies",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/movies",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "movies"
+              ]
+            },
+            "description": "Get All Movies"
+          }
+        },
+        {
+          "name": "Get Movie",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/movies/:movie_id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "movies",
+                ":movie_id"
+              ],
+              "variable": [
+                {
+                  "key": "movie_id",
+                  "value": "",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Return one movie's full detail, enriching from OMDB on first view."
+          }
+        },
+        {
+          "name": "Get User Movie",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/users/me/movies/:movie_id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "me",
+                "movies",
+                ":movie_id"
+              ],
+              "variable": [
+                {
+                  "key": "movie_id",
+                  "value": "",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Return the current user's tracker for one movie (404 if not tracked)."
+          }
+        },
+        {
+          "name": "Get User Movies",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/users/me/movies?on_rankings=&on_watchlist=&limit=&offset=",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "me",
+                "movies"
+              ],
+              "query": [
+                {
+                  "key": "on_rankings",
+                  "value": "",
+                  "description": "Only ranked entries (true) or only unranked (false)",
+                  "disabled": true
+                },
+                {
+                  "key": "on_watchlist",
+                  "value": "",
+                  "description": "Only queued entries (true) or only unqueued (false)",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "",
+                  "description": "Maximum entries to return",
+                  "disabled": true
+                },
+                {
+                  "key": "offset",
+                  "value": "",
+                  "description": "Entries to skip",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Get User Movies"
+          }
+        },
+        {
+          "name": "Mark Movie",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/users/me/movies/:movie_id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "me",
+                "movies",
+                ":movie_id"
+              ],
+              "variable": [
+                {
+                  "key": "movie_id",
+                  "value": "",
+                  "description": ""
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"on_watchlist\": true,\n  \"on_rankings\": true,\n  \"rank\": 0,\n  \"completed\": 0,\n  \"notes\": \"string\",\n  \"completed_at\": \"2026-01-01\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Add a movie to the user's lists (idempotent \u2014 merges list membership)."
+          }
+        },
+        {
+          "name": "Reorder Rankings",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/users/me/movies/rankings/order",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "me",
+                "movies",
+                "rankings",
+                "order"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"movie_ids\": [\n    \"string\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Persist a new ranking order (drag-and-drop). Rank = position in the list."
+          }
+        },
+        {
+          "name": "Search Movies Endpoint",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/movies/search?q=",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "movies",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "",
+                  "description": "",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "Search Movies Endpoint"
+          }
+        },
+        {
+          "name": "Set Movie Rank",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/users/me/movies/:movie_id/rank",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "me",
+                "movies",
+                ":movie_id",
+                "rank"
+              ],
+              "variable": [
+                {
+                  "key": "movie_id",
+                  "value": "",
+                  "description": ""
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"position\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Place a movie at an exact 1-based position in the ranked list, shifting the\nmovies at and below that position down by one. Works for a not-yet-ranked\nmovie (jump it in) or an already-ranked one (move it)."
+          }
+        },
+        {
+          "name": "Unmark Movie",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/users/me/movies/:movie_id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "me",
+                "movies",
+                ":movie_id"
+              ],
+              "variable": [
+                {
+                  "key": "movie_id",
+                  "value": "",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Unmark Movie"
+          }
+        },
+        {
+          "name": "Update Movie",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/movies/:movie_id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "movies",
+                ":movie_id"
+              ],
+              "variable": [
+                {
+                  "key": "movie_id",
+                  "value": "",
+                  "description": ""
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"string\",\n  \"imdb\": \"string\",\n  \"release_date\": \"2026-01-01T00:00:00Z\",\n  \"rating_imdb\": 0,\n  \"runtime\": 0,\n  \"language\": \"string\",\n  \"rated\": \"string\",\n  \"poster_url\": \"string\",\n  \"year\": 0,\n  \"genre\": \"string\",\n  \"director\": \"string\",\n  \"actors\": \"string\",\n  \"plot\": \"string\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Update Movie"
+          }
+        },
+        {
+          "name": "Update User Movie",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/users/me/movies/:movie_id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "me",
+                "movies",
+                ":movie_id"
+              ],
+              "variable": [
+                {
+                  "key": "movie_id",
+                  "value": "",
+                  "description": ""
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"on_watchlist\": true,\n  \"on_rankings\": true,\n  \"rank\": 0,\n  \"completed\": 0,\n  \"notes\": \"string\",\n  \"completed_at\": \"2026-01-01\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Update list membership, rank, or notes for a tracked movie."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notifications",
+      "description": "Per-user notification feed",
+      "item": [
+        {
+          "name": "Get Notifications",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/users/me/notifications?unread_only=&limit=",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "me",
+                "notifications"
+              ],
+              "query": [
+                {
+                  "key": "unread_only",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Get Notifications"
+          }
+        },
+        {
+          "name": "Get Unread Count",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/users/me/notifications/unread-count",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "me",
+                "notifications",
+                "unread-count"
+              ]
+            },
+            "description": "Get Unread Count"
+          }
+        },
+        {
+          "name": "Mark All Read",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/users/me/notifications/read-all",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "me",
+                "notifications",
+                "read-all"
+              ]
+            },
+            "description": "Mark All Read"
+          }
+        },
+        {
+          "name": "Mark Read",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/users/me/notifications/:notification_id/read",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "me",
+                "notifications",
+                ":notification_id",
+                "read"
+              ],
+              "variable": [
+                {
+                  "key": "notification_id",
+                  "value": "",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Mark Read"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Search",
+      "description": "Cross-domain global search",
+      "item": [
+        {
+          "name": "Global Search",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/search?q=",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "",
+                  "description": "",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "Global Search"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Summary",
+      "description": "Home summary \u2014 per-shelf Top 5 and counts",
+      "item": [
+        {
+          "name": "Get Summary",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/users/me/summary?top=",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "me",
+                "summary"
+              ],
+              "query": [
+                {
+                  "key": "top",
+                  "value": "",
+                  "description": "Entries per shelf",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Per-shelf Top 5 plus ranked/queued counts for the signed-in user.\n\nReplaces the home page's four full-collection fetches; row count is\nindependent of library size."
+          }
+        }
+      ]
+    },
+    {
+      "name": "TV",
+      "description": "TV shows, episodes, and per-user tracker",
+      "item": [
+        {
+          "name": "Create Episode",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/tv-shows/:show_id/episodes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "tv-shows",
+                ":show_id",
+                "episodes"
+              ],
+              "variable": [
+                {
+                  "key": "show_id",
+                  "value": "",
+                  "description": ""
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"string\",\n  \"tvmaze\": 0,\n  \"airdate\": \"2026-01-01T00:00:00Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Create Episode"
+          }
+        },
+        {
+          "name": "Create Tv Show",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/tv-shows",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "tv-shows"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"string\",\n  \"imdb\": \"string\",\n  \"tvmaze\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Create Tv Show"
+          }
+        },
+        {
+          "name": "Delete Episode",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/episodes/:episode_id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "episodes",
+                ":episode_id"
+              ],
+              "variable": [
+                {
+                  "key": "episode_id",
+                  "value": "",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Delete Episode"
+          }
+        },
+        {
+          "name": "Delete Tv Show",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/tv-shows/:show_id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "tv-shows",
+                ":show_id"
+              ],
+              "variable": [
+                {
+                  "key": "show_id",
+                  "value": "",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Delete Tv Show"
+          }
+        },
+        {
+          "name": "Get All Episodes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/tv-shows/:show_id/episodes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "tv-shows",
+                ":show_id",
+                "episodes"
+              ],
+              "variable": [
+                {
+                  "key": "show_id",
+                  "value": "",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Get All Episodes"
+          }
+        },
+        {
+          "name": "Get All Tv Shows",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/tv-shows",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "tv-shows"
+              ]
+            },
+            "description": "Get All Tv Shows"
+          }
+        },
+        {
+          "name": "Get Schedule",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/users/me/schedule?window_days=",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "me",
+                "schedule"
+              ],
+              "query": [
+                {
+                  "key": "window_days",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "What to watch: unwatched episodes airing within +/- ``window_days`` of\ntoday, everything overdue and unwatched (catch-up), and shows the user\nhas frozen (paused tracking on, so they're excluded from both)."
+          }
+        },
+        {
+          "name": "Get Tv Show",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/tv-shows/:show_id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "tv-shows",
+                ":show_id"
+              ],
+              "variable": [
+                {
+                  "key": "show_id",
+                  "value": "",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Return one show's full detail, enriching from TVMaze on first view."
+          }
+        },
+        {
+          "name": "Get User Episodes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/users/me/tv-shows/:show_id/episodes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "me",
+                "tv-shows",
+                ":show_id",
+                "episodes"
+              ],
+              "variable": [
+                {
+                  "key": "show_id",
+                  "value": "",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "The current user's episode watch marks for one show."
+          }
+        },
+        {
+          "name": "Get User Tv Show",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/users/me/tv-shows/:show_id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "me",
+                "tv-shows",
+                ":show_id"
+              ],
+              "variable": [
+                {
+                  "key": "show_id",
+                  "value": "",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Return the current user's tracker for one show (404 if not tracked)."
+          }
+        },
+        {
+          "name": "Get User Tv Shows",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/users/me/tv-shows?on_rankings=&on_watchlist=&limit=&offset=",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "me",
+                "tv-shows"
+              ],
+              "query": [
+                {
+                  "key": "on_rankings",
+                  "value": "",
+                  "description": "Only ranked entries (true) or only unranked (false)",
+                  "disabled": true
+                },
+                {
+                  "key": "on_watchlist",
+                  "value": "",
+                  "description": "Only queued entries (true) or only unqueued (false)",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "",
+                  "description": "Maximum entries to return",
+                  "disabled": true
+                },
+                {
+                  "key": "offset",
+                  "value": "",
+                  "description": "Entries to skip",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Get User Tv Shows"
+          }
+        },
+        {
+          "name": "Mark All Episodes Watched",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/users/me/tv-shows/:show_id/episodes/watch-all?season=",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "me",
+                "tv-shows",
+                ":show_id",
+                "episodes",
+                "watch-all"
+              ],
+              "query": [
+                {
+                  "key": "season",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                }
+              ],
+              "variable": [
+                {
+                  "key": "show_id",
+                  "value": "",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Mark every episode of a show watched (idempotent), or with ``season``\njust that one season's episodes."
+          }
+        },
+        {
+          "name": "Mark Episode Watched",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/users/me/episodes/:episode_id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "me",
+                "episodes",
+                ":episode_id"
+              ],
+              "variable": [
+                {
+                  "key": "episode_id",
+                  "value": "",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Mark an episode watched (idempotent)."
+          }
+        },
+        {
+          "name": "Mark Tv Show",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/users/me/tv-shows/:show_id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "me",
+                "tv-shows",
+                ":show_id"
+              ],
+              "variable": [
+                {
+                  "key": "show_id",
+                  "value": "",
+                  "description": ""
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"on_watchlist\": true,\n  \"on_rankings\": true,\n  \"rank\": 0,\n  \"notes\": \"string\",\n  \"completed_at\": \"2026-01-01\",\n  \"status\": \"string\",\n  \"freeze\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Add a show to the user's lists (idempotent \u2014 merges list membership)."
+          }
+        },
+        {
+          "name": "Reorder Rankings",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/users/me/tv-shows/rankings/order",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "me",
+                "tv-shows",
+                "rankings",
+                "order"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"show_ids\": [\n    \"string\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Persist a new ranking order (drag-and-drop). Rank = position in the list."
+          }
+        },
+        {
+          "name": "Search Tv Shows Endpoint",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/tv-shows/search?q=",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "tv-shows",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "",
+                  "description": "",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "Search Tv Shows Endpoint"
+          }
+        },
+        {
+          "name": "Set Show Rank",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/users/me/tv-shows/:show_id/rank",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "me",
+                "tv-shows",
+                ":show_id",
+                "rank"
+              ],
+              "variable": [
+                {
+                  "key": "show_id",
+                  "value": "",
+                  "description": ""
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"position\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Place a show at an exact 1-based position in the ranked list, shifting the\nshows at and below that position down by one. Works for a not-yet-ranked\nshow (jump it in) or an already-ranked one (move it)."
+          }
+        },
+        {
+          "name": "Sync Show Episodes",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/tv-shows/:show_id/episodes/sync",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "tv-shows",
+                ":show_id",
+                "episodes",
+                "sync"
+              ],
+              "variable": [
+                {
+                  "key": "show_id",
+                  "value": "",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Refresh the episode list from TVMaze (for ongoing shows)."
+          }
+        },
+        {
+          "name": "Unmark Episode Watched",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/users/me/episodes/:episode_id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "me",
+                "episodes",
+                ":episode_id"
+              ],
+              "variable": [
+                {
+                  "key": "episode_id",
+                  "value": "",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Unmark Episode Watched"
+          }
+        },
+        {
+          "name": "Unmark Tv Show",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/users/me/tv-shows/:show_id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "me",
+                "tv-shows",
+                ":show_id"
+              ],
+              "variable": [
+                {
+                  "key": "show_id",
+                  "value": "",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Unmark Tv Show"
+          }
+        },
+        {
+          "name": "Update Episode",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/episodes/:episode_id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "episodes",
+                ":episode_id"
+              ],
+              "variable": [
+                {
+                  "key": "episode_id",
+                  "value": "",
+                  "description": ""
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"string\",\n  \"tvmaze\": 0,\n  \"airdate\": \"2026-01-01T00:00:00Z\",\n  \"season\": 0,\n  \"season_number\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Update Episode"
+          }
+        },
+        {
+          "name": "Update Tv Show",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/tv-shows/:show_id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "tv-shows",
+                ":show_id"
+              ],
+              "variable": [
+                {
+                  "key": "show_id",
+                  "value": "",
+                  "description": ""
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"string\",\n  \"imdb\": \"string\",\n  \"tvmaze\": 0,\n  \"status\": \"string\",\n  \"poster_url\": \"string\",\n  \"premiered\": \"2026-01-01T00:00:00Z\",\n  \"year\": 0,\n  \"genre\": \"string\",\n  \"network\": \"string\",\n  \"runtime\": 0,\n  \"language\": \"string\",\n  \"rating\": 0,\n  \"summary\": \"string\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Update Tv Show"
+          }
+        },
+        {
+          "name": "Update User Tv Show",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/users/me/tv-shows/:show_id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "me",
+                "tv-shows",
+                ":show_id"
+              ],
+              "variable": [
+                {
+                  "key": "show_id",
+                  "value": "",
+                  "description": ""
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"on_watchlist\": true,\n  \"on_rankings\": true,\n  \"rank\": 0,\n  \"notes\": \"string\",\n  \"completed_at\": \"2026-01-01\",\n  \"status\": \"string\",\n  \"freeze\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Update list membership, rank, or notes for a tracked show."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Video Games",
+      "description": "",
+      "item": [
+        {
+          "name": "Create Game",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/games",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "games"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"string\",\n  \"igdb\": 0,\n  \"poster_url\": \"string\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Create Game"
+          }
+        },
+        {
+          "name": "Delete Game",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/games/:game_id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "games",
+                ":game_id"
+              ],
+              "variable": [
+                {
+                  "key": "game_id",
+                  "value": "",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Delete Game"
+          }
+        },
+        {
+          "name": "Get All Games",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/games",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "games"
+              ]
+            },
+            "description": "Get All Games"
+          }
+        },
+        {
+          "name": "Get Game",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/games/:game_id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "games",
+                ":game_id"
+              ],
+              "variable": [
+                {
+                  "key": "game_id",
+                  "value": "",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Return one game's full detail, enriching from IGDB on first view."
+          }
+        },
+        {
+          "name": "Get User Game",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/users/me/games/:game_id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "me",
+                "games",
+                ":game_id"
+              ],
+              "variable": [
+                {
+                  "key": "game_id",
+                  "value": "",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Return the current user's tracker for one game (404 if not tracked)."
+          }
+        },
+        {
+          "name": "Get User Games",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/users/me/games?on_rankings=&on_watchlist=&limit=&offset=",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "me",
+                "games"
+              ],
+              "query": [
+                {
+                  "key": "on_rankings",
+                  "value": "",
+                  "description": "Only ranked entries (true) or only unranked (false)",
+                  "disabled": true
+                },
+                {
+                  "key": "on_watchlist",
+                  "value": "",
+                  "description": "Only queued entries (true) or only unqueued (false)",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "",
+                  "description": "Maximum entries to return",
+                  "disabled": true
+                },
+                {
+                  "key": "offset",
+                  "value": "",
+                  "description": "Entries to skip",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Get User Games"
+          }
+        },
+        {
+          "name": "Mark Game",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/users/me/games/:game_id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "me",
+                "games",
+                ":game_id"
+              ],
+              "variable": [
+                {
+                  "key": "game_id",
+                  "value": "",
+                  "description": ""
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"on_watchlist\": true,\n  \"on_rankings\": true,\n  \"rank\": 0,\n  \"completed\": 0,\n  \"notes\": \"string\",\n  \"completed_at\": \"2026-01-01\",\n  \"is_100_percent\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Add a game to the user's lists (idempotent \u2014 merges list membership)."
+          }
+        },
+        {
+          "name": "Reorder Rankings",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/users/me/games/rankings/order",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "me",
+                "games",
+                "rankings",
+                "order"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"game_ids\": [\n    \"string\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Persist a new ranking order (drag-and-drop). Rank = position in the list."
+          }
+        },
+        {
+          "name": "Search Games Endpoint",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/games/search?q=",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "games",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "",
+                  "description": "",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "Search Games Endpoint"
+          }
+        },
+        {
+          "name": "Set Game Rank",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/users/me/games/:game_id/rank",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "me",
+                "games",
+                ":game_id",
+                "rank"
+              ],
+              "variable": [
+                {
+                  "key": "game_id",
+                  "value": "",
+                  "description": ""
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"position\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Place a game at an exact 1-based position in the ranked list, shifting the\ngames at and below that position down by one. Works for a not-yet-ranked\ngame (jump it in) or an already-ranked one (move it)."
+          }
+        },
+        {
+          "name": "Unmark Game",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/users/me/games/:game_id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "me",
+                "games",
+                ":game_id"
+              ],
+              "variable": [
+                {
+                  "key": "game_id",
+                  "value": "",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Unmark Game"
+          }
+        },
+        {
+          "name": "Update Game",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/games/:game_id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "games",
+                ":game_id"
+              ],
+              "variable": [
+                {
+                  "key": "game_id",
+                  "value": "",
+                  "description": ""
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"string\",\n  \"igdb\": 0,\n  \"poster_url\": \"string\",\n  \"release_date\": \"2026-01-01T00:00:00Z\",\n  \"rating\": 0,\n  \"time_to_beat\": 0,\n  \"igdb_last_update\": \"2026-01-01T00:00:00Z\",\n  \"slug\": \"string\",\n  \"year\": 0,\n  \"genre\": \"string\",\n  \"platforms\": \"string\",\n  \"summary\": \"string\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Update Game"
+          }
+        },
+        {
+          "name": "Update User Game",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/users/me/games/:game_id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "me",
+                "games",
+                ":game_id"
+              ],
+              "variable": [
+                {
+                  "key": "game_id",
+                  "value": "",
+                  "description": ""
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"on_watchlist\": true,\n  \"on_rankings\": true,\n  \"rank\": 0,\n  \"completed\": 0,\n  \"notes\": \"string\",\n  \"completed_at\": \"2026-01-01\",\n  \"is_100_percent\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Update list membership, rank, notes, or 100% flag for a tracked game."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Visibility",
+      "description": "",
+      "item": [
+        {
+          "name": "Get Visibility",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/users/me/visibility",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "me",
+                "visibility"
+              ]
+            },
+            "description": "Get Visibility"
+          }
+        },
+        {
+          "name": "Public Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/public/:handle",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "public",
+                ":handle"
+              ],
+              "variable": [
+                {
+                  "key": "handle",
+                  "value": "",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Read-only public profile: ranked lists of the categories the owner has\nopted in, best first. Fully private profiles (and unknown handles) 404\nidentically, so the endpoint never confirms a private account exists."
+          }
+        },
+        {
+          "name": "Update Visibility",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/users/me/visibility",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "me",
+                "visibility"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"handle\": \"string\",\n  \"public_movies\": true,\n  \"public_tv\": true,\n  \"public_books\": true,\n  \"public_games\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Update the handle and/or per-category public flags. Opening any category\nto the public requires a handle (that's the profile URL)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "authentication",
+      "description": "Auth operations",
+      "item": [
+        {
+          "name": "Get Token",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/auth/token",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "auth",
+                "token"
+              ]
+            },
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "grant_type",
+                  "value": "string",
+                  "type": "text"
+                },
+                {
+                  "key": "username",
+                  "value": "string",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "string",
+                  "type": "text"
+                },
+                {
+                  "key": "scope",
+                  "value": "",
+                  "type": "text"
+                }
+              ]
+            },
+            "description": "Retrieves a JWT token if username (email) and password match\n\nArgs:\n    username: The email of the user\n    password: The password of the user\n\nReturns:\n    Access token",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Google Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/auth/google",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "auth",
+                "google"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"credential\": \"string\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Sign in with a Google Identity Services ID token.\n\nVerifies the token against the configured Google client id, then upserts the\nuser (creating one on first sign-in) and returns a JWT \u2014 the same shape as\nthe password flow.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "intro",
+      "description": "Welcome message",
+      "item": [
+        {
+          "name": "Index",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                ""
+              ]
+            },
+            "description": "Index endpoint that returns a welcome message.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "users",
+      "description": "User operations",
+      "item": [
+        {
+          "name": "Create User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "users"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"display_name\": \"string\",\n  \"email\": \"string\",\n  \"password\": \"string\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Create a new user in the database.\n\nArgs:\n    request (InUserBase): Must include email,\n    display_name (max length 16 characters), and password.\n    db (Session): The database session.\n\nReturns:\n    List: OutUserDisplay: The newly created user data.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Delete User",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/users/:uuid",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                ":uuid"
+              ],
+              "variable": [
+                {
+                  "key": "uuid",
+                  "value": "",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Delete a user by ID from the database.\nAdmins can delete any user, while users can only delete their own account.\n\nArgs:\n    uuid (str): The ID of the user.\n    db (Session): The database session.\n    current_user (dict): The current authenticated user.\n\nReturns:\n    List: OutUserDisplay: The deleted user data."
+          }
+        },
+        {
+          "name": "Get All Users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "users"
+              ]
+            },
+            "description": "Retrieve all users from the database. Must be an admin to view all users.\n\nArgs:\n    db (Session): The database session.\n\nReturns:\n    List: OutUserDisplay: A list of users."
+          }
+        },
+        {
+          "name": "Get User",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/users/:uuid",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                ":uuid"
+              ],
+              "variable": [
+                {
+                  "key": "uuid",
+                  "value": "",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Retrieve a user by ID from the database.\nAdmins can view all users, while users can only view their own account.\n\nArgs:\n    uuid (str): The ID of the user.\n    db (Session): The database session.\n\nReturns:\n    List: OutUserDisplay: The user data."
+          }
+        },
+        {
+          "name": "Update User",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/users/:uuid",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                ":uuid"
+              ],
+              "variable": [
+                {
+                  "key": "uuid",
+                  "value": "",
+                  "description": ""
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"display_name\": \"string\",\n  \"email\": \"string\",\n  \"password\": \"string\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Update a user's information in the database.\nAdmins can update any user, while users can only update their own account.\n\nArgs:\n    uuid (str): The ID of the user.\n    request (InUserBase): The updated user data.\n    db (Session): The database session.\n\nReturns:\n    List: OutUserDisplay: The updated user data."
+          }
+        }
+      ]
+    }
+  ]
+}
