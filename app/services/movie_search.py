@@ -6,6 +6,7 @@ web and MCP frontends can look up movies by title without holding the API key.
 Results are normalized into the shape the ``/v1/movies`` create endpoint expects.
 """
 
+import re
 from typing import List, Optional
 
 import requests
@@ -16,6 +17,8 @@ from app.log.logging_config import logger
 
 OMDB_URL = 'https://www.omdbapi.com/'
 REQUEST_TIMEOUT = 10
+
+_IMDB_ID_RE = re.compile(r'^tt\d+$', re.IGNORECASE)
 
 
 def search_movies(query: str) -> List[dict]:
@@ -39,6 +42,9 @@ def search_movies(query: str) -> List[dict]:
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail='Movie search is not configured (OMDB_API_KEY missing)',
         )
+
+    if _IMDB_ID_RE.match(query):
+        return _search_by_imdb_id(query, settings.omdb_api_key)
 
     try:
         response = requests.get(
@@ -78,6 +84,45 @@ def search_movies(query: str) -> List[dict]:
             }
         )
     return results
+
+
+def _search_by_imdb_id(imdb_id: str, api_key: str) -> List[dict]:
+    """
+    Resolve a query that looks like an IMDb id via OMDB's ``i=`` lookup and
+    map the result into the same search-hit shape ``search_movies`` returns
+    for title matches. Returns ``[]`` when the id doesn't resolve or the
+    upstream call fails, mirroring the "not found" behavior of title search.
+    """
+    try:
+        response = requests.get(
+            OMDB_URL,
+            params={'apikey': api_key, 'i': imdb_id},
+            timeout=REQUEST_TIMEOUT,
+        )
+        response.raise_for_status()
+    except requests.RequestException as exc:
+        logger.error('OMDB id lookup failed for %r: %s', imdb_id, exc)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail='Upstream movie search failed',
+        ) from exc
+
+    payload = response.json()
+    if payload.get('Response') == 'False':
+        return []
+
+    poster = payload.get('Poster')
+    if poster in (None, 'N/A'):
+        poster = None
+    return [
+        {
+            'imdb': payload.get('imdbID'),
+            'title': payload.get('Title'),
+            'year': payload.get('Year'),
+            'poster_url': poster,
+            'type': payload.get('Type'),
+        }
+    ]
 
 
 def _na(value):
