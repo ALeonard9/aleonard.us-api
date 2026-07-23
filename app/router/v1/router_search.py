@@ -22,6 +22,7 @@ from app.services.book_search import search_books
 from app.services.game_search import search_games
 from app.services.movie_search import search_movies
 from app.services.search_correction import correct_query
+from app.services.search_ranking import rank_and_cap
 from app.services.tracked_status import attach_tracked_status
 from app.services.tv_search import search_tv_shows
 
@@ -67,6 +68,9 @@ def global_search(
 ):
     results = _fan_out(q)
     corrected = None
+    # Track which query actually produced each domain's hits, so ranking
+    # (below) scores against the right string.
+    query_by_domain = dict.fromkeys(results, q)
     # Some providers fuzzy-match and some don't, so retry only the domains
     # that came back empty with a spell-corrected query.
     empty = [name for name, hits in results.items() if not hits]
@@ -77,6 +81,16 @@ def global_search(
             if any(retried.values()):
                 corrected = respelled
                 results.update(retried)
+                for name in empty:
+                    query_by_domain[name] = respelled
+    # Cap to the top DEFAULT_DOMAIN_CAP per domain, best match first (see
+    # search_ranking for the exact/starts-with/contains/provider-order
+    # heuristic), before the tracked-status lookup so it only does DB work
+    # for the results that are actually shown.
+    results = {
+        domain: rank_and_cap(query_by_domain[domain], hits)
+        for domain, hits in results.items()
+    }
     user_pk = current_user[0].pk
     for domain, hits in results.items():
         attach_tracked_status(db, user_pk, hits, domain)
