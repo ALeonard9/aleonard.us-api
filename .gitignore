@@ -173,3 +173,6 @@ cython_debug/
 cron/log/*
 database/backup/log/*
 database/data/*
+
+# pytest-testmon (pre-push changed-tests DB)
+.testmondata
