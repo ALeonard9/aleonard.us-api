@@ -1,7 +1,7 @@
 """
 Shared rules for per-user tracker list membership.
 
-The one-home rule (2026-07-18 product decision, aleonard.us-api#145): an item
+The one-home rule (2026-07-18 product decision, druthers-api#145): an item
 lives on exactly one list — Watchlist, To-be-ranked, or Ranked. Moving it to
 one removes it from the others. "To-be-ranked" and "Ranked" are both
 ``on_rankings``; the difference is whether ``rank`` is set.

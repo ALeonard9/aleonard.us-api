@@ -1,6 +1,6 @@
-[![Pylint](https://github.com/ALeonard9/aleonard.us-api/actions/workflows/lint.yaml/badge.svg?branch=main)](https://github.com/ALeonard9/aleonard.us-api/actions/workflows/lint.yaml)
-[![Pytest](https://github.com/ALeonard9/aleonard.us-api/actions/workflows/test.yaml/badge.svg?branch=main)](https://github.com/ALeonard9/aleonard.us-api/actions/workflows/test.yaml)
-[![Snyk SCA & SAST](https://github.com/ALeonard9/aleonard.us-api/actions/workflows/security_main.yaml/badge.svg?branch=main)](https://github.com/ALeonard9/aleonard.us-api/actions/workflows/security_main.yaml)
+[![Pylint](https://github.com/ALeonard9/druthers-api/actions/workflows/lint.yaml/badge.svg?branch=main)](https://github.com/ALeonard9/druthers-api/actions/workflows/lint.yaml)
+[![Pytest](https://github.com/ALeonard9/druthers-api/actions/workflows/test.yaml/badge.svg?branch=main)](https://github.com/ALeonard9/druthers-api/actions/workflows/test.yaml)
+[![Snyk SCA & SAST](https://github.com/ALeonard9/druthers-api/actions/workflows/security_main.yaml/badge.svg?branch=main)](https://github.com/ALeonard9/druthers-api/actions/workflows/security_main.yaml)
 
 # aleonard.us API
 
@@ -32,8 +32,8 @@ Personal API for [aleonard.us](https://www.aleonard.us) — a JWT-authenticated 
 ### Local
 
 ```bash
-git clone https://github.com/ALeonard9/aleonard.us-api.git
-cd aleonard.us-api
+git clone https://github.com/ALeonard9/druthers-api.git
+cd druthers-api
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements/dev.txt
 uvicorn app.run:app --reload

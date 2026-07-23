@@ -17,7 +17,7 @@ jobs:
       contents: read
       id-token: write
     env:
-      IMAGE: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/druthers/aleonard.us-api:${{ github.event.release.tag_name }}
+      IMAGE: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/druthers/druthers-api:${{ github.event.release.tag_name }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v5

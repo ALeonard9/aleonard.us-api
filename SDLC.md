@@ -1,7 +1,7 @@
 # aleonard.us SDLC (canonical)
 
 Shared software-development lifecycle for all aleonard.us services
-(`aleonard.us-api`, `aleonard.us-web`, `aleonard.us-mcp`, `www.aleonard.us-docker`).
+(`druthers-api`, `druthers-web`, `druthers-mcp`, `www.aleonard.us-docker`).
 Other repos link here instead of duplicating it.
 
 ## Branching — trunk-based

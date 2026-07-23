@@ -1,4 +1,4 @@
-# TEMPLATE — copy to aleonard.us-api/.github/workflows/deploy_qa.yaml
+# TEMPLATE — copy to druthers-api/.github/workflows/deploy_qa.yaml
 name: Deploy to QA
 
 # QA deploys are main-driven (see druthers-infra/docs/PROMOTION.md): every
@@ -24,7 +24,7 @@ jobs:
       contents: read
       id-token: write
     env:
-      IMAGE: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID_QA }}/druthers/aleonard.us-api:main-${{ github.sha }}
+      IMAGE: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID_QA }}/druthers/druthers-api:main-${{ github.sha }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
