@@ -8,21 +8,20 @@
 > **Movies, TV, Books, and Games**. Track what you've watched, played, and read;
 > share a formatted top-5; and find the overlap with a friend.
 
-This repository is the **backend API** that powers it: a JWT-authenticated FastAPI
-service with Google sign-in, personal API keys, per-domain trackers, and clean
-auto-generated docs. It runs serverless on **Google Cloud Run** over **Neon**
-Postgres in production.
+## What this is
 
-## What it does
+The **backend API** that powers it: a JWT-authenticated FastAPI service with
+Google sign-in, personal API keys, per-domain trackers, and clean auto-generated
+docs. It runs serverless on **Google Cloud Run** over **Neon** Postgres in
+production.
 
 - **Sign in with Google** (OAuth) or a long-lived personal **API key** (`drk_…`) for tools/scripts
 - **Track four domains** — Movies, TV (with episodes), Books, and Games — each with watched/played/read status, notes, and completion dates
 - **Search & add** from external catalogs (OMDb, TMDB, Open Library, and more) behind one API
 - **Role-based access** — you manage your own library; admins manage shared catalog data
-- **Auto-generated docs** — Swagger UI at `/docs`, OpenAPI at `/openapi.json`
 - **Secure by default** — OSS security pipeline (secrets, SAST, dependencies, container) on every PR
 
-## Tech stack
+## Stack
 
 | Layer | Technology |
 |---|---|
@@ -34,7 +33,7 @@ Postgres in production.
 | Runtime | Docker (Alpine, Python 3.14) on **Cloud Run** |
 | CI/CD & security | GitHub Actions · Gitleaks · Semgrep · Trivy · Dependabot |
 
-## Quick start
+## Setup / Local Development
 
 ```bash
 git clone https://github.com/ALeonard9/druthers-api.git
@@ -44,23 +43,13 @@ pip install -r requirements/dev.txt
 uvicorn app.run:app --reload           # http://localhost:8000
 ```
 
-Or with Docker: `docker compose -f dc-dev.yml --env-file env/dev.env up -d`.
-Open **http://localhost:8000/docs** for the interactive API explorer.
+Open **http://localhost:8000/docs** for the interactive API explorer. A running
+Postgres isn't required to boot the app; most settings have local-friendly
+defaults (see `app/config.py`) — set `DATABASE_URL` for a real database.
 
-## API reference
-
-All endpoints are prefixed with `/v1`; protected routes require `Authorization: Bearer <token>`.
-
-| Area | Example routes |
-|---|---|
-| **Auth** | `POST /v1/auth/token` · Google OAuth exchange · `POST /v1/users/me/api-keys` (mint a `drk_` key) |
-| **Users** | `POST /v1/users` · `GET/PUT/DELETE /v1/users/{uuid}` |
-| **Catalog** (movies · tv-shows · books · games) | `GET /v1/{domain}` · admin `POST/PUT/DELETE` |
-| **My library** | `GET /v1/users/me/{domain}` · `POST/PUT/DELETE /v1/users/me/{domain}/{id}` (mark watched/played/read, notes, dates) |
-| **TV episodes** | `…/tv-shows/{id}/episodes` · `…/users/me/episodes` |
-| **Docs** | `/docs` (Swagger) · `/redoc` · `/openapi.json` |
-
-## Development
+Docker Compose is also available (`task du` / `dc-dev.yml`), but requires a
+local `env/dev.env` (gitignored, not committed) populated from the variables in
+`app/config.py`.
 
 ```bash
 task du            # docker compose up (dev)     task dd   # down
@@ -75,17 +64,39 @@ what changed (`pytest-testmon`) — CI runs the full suite as the merge gate.
 pip install pre-commit && pre-commit install && pre-commit install --hook-type pre-push
 ```
 
+## API reference
+
+All endpoints are prefixed with `/v1`; protected routes require `Authorization: Bearer <token>`.
+Auto-generated docs: **Swagger UI** at `/docs`, **ReDoc** at `/redoc`, raw schema at `/openapi.json`.
+
+| Area | Example routes |
+|---|---|
+| **Auth** | `POST /v1/auth/token` · Google OAuth exchange · `POST /v1/users/me/api-keys` (mint a `drk_` key) |
+| **Users** | `POST /v1/users` · `GET/PUT/DELETE /v1/users/{uuid}` |
+| **Catalog** (movies · tv-shows · books · games) | `GET /v1/{domain}` · admin `POST/PUT/DELETE` |
+| **My library** | `GET /v1/users/me/{domain}` · `POST/PUT/DELETE /v1/users/me/{domain}/{id}` (mark watched/played/read, notes, dates) |
+| **TV episodes** | `…/tv-shows/{id}/episodes` · `…/users/me/episodes` |
+
 ## Security
 
 Every pull request and push to `main` is scanned by an all–open-source pipeline —
 **Gitleaks** (secrets), **Semgrep** (SAST), and **Trivy** (dependencies, container,
 IaC) — with results in the repo's **Security** tab, plus **Dependabot** and GitHub
-**push protection**. See [`SECURITY.md`](SECURITY.md) to report a vulnerability.
+**push protection**. See [`SECURITY.md`](https://github.com/ALeonard9/.github/blob/main/SECURITY.md)
+to report a vulnerability.
+
+## Related repos
+
+- **[druthers-web](https://github.com/ALeonard9/druthers-web)** — Next.js frontend and BFF for druthers.io.
+- **[druthers-mcp](https://github.com/ALeonard9/druthers-mcp)** — MCP server that lets Claude and other assistants manage your library.
+- **[druthers-infra](https://github.com/ALeonard9/druthers-infra)** — infrastructure-as-code and ops runbooks (private repo).
 
 ## Contributing
 
 Issues and pull requests are welcome — fork, branch, and open a PR. The required
-`security` check and CI must pass before merge.
+`security` check and CI must pass before merge. See
+[`SDLC.md`](SDLC.md) for the full development lifecycle shared across druthers
+repos.
 
 ## License
 
