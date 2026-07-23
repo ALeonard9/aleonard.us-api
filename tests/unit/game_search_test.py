@@ -102,6 +102,89 @@ def test_search_games_returns_results(mock_post, mock_settings):
 
 @patch('app.services.game_search.get_settings')
 @patch('app.services.game_search.requests.post')
+def test_search_games_numeric_query_resolves_by_id(mock_post, mock_settings):
+    _reset_token_cache()
+    mock_settings.return_value = Settings(
+        twitch_client_id='cid', twitch_client_secret='secret', env='github'
+    )
+    token_resp = MagicMock()
+    token_resp.raise_for_status.return_value = None
+    token_resp.json.return_value = {'access_token': 'tok', 'expires_in': 5000000}
+    id_resp = MagicMock()
+    id_resp.raise_for_status.return_value = None
+    id_resp.json.return_value = [
+        {
+            'id': 1234,
+            'name': 'The Legend of Zelda: Breath of the Wild',
+            'slug': 'the-legend-of-zelda-breath-of-the-wild',
+            'first_release_date': 1488499200,
+            'platforms': [{'abbreviation': 'Switch'}, {'abbreviation': 'WiiU'}],
+            'cover': {'image_id': 'co3p2d'},
+        }
+    ]
+    mock_post.side_effect = [token_resp, id_resp]
+
+    results = game_search.search_games('1234')
+
+    assert len(results) == 1
+    assert results[0]['igdb'] == 1234
+    assert results[0]['title'] == 'The Legend of Zelda: Breath of the Wild'
+    assert results[0]['slug'] == 'the-legend-of-zelda-breath-of-the-wild'
+    assert results[0]['year'] == '2017'
+    assert results[0]['platforms'] == 'Switch, WiiU'
+    assert results[0]['poster_url'].endswith('/co3p2d.jpg')
+
+    # The games query used a direct id lookup, not a fuzzy title search.
+    games_call = mock_post.call_args_list[1]
+    assert 'where id = 1234' in games_call.kwargs['data']
+    assert 'search ' not in games_call.kwargs['data']
+    _reset_token_cache()
+
+
+@patch('app.services.game_search.get_settings')
+@patch('app.services.game_search.requests.post')
+def test_search_games_numeric_query_unknown_id_returns_empty(mock_post, mock_settings):
+    _reset_token_cache()
+    mock_settings.return_value = Settings(
+        twitch_client_id='cid', twitch_client_secret='secret', env='github'
+    )
+    token_resp = MagicMock()
+    token_resp.raise_for_status.return_value = None
+    token_resp.json.return_value = {'access_token': 'tok', 'expires_in': 5000000}
+    id_resp = MagicMock()
+    id_resp.raise_for_status.return_value = None
+    id_resp.json.return_value = []
+    mock_post.side_effect = [token_resp, id_resp]
+
+    assert game_search.search_games('999999999') == []
+    _reset_token_cache()
+
+
+@patch('app.services.game_search.get_settings')
+@patch('app.services.game_search.requests.post')
+def test_search_games_title_query_still_uses_fuzzy_search(mock_post, mock_settings):
+    _reset_token_cache()
+    mock_settings.return_value = Settings(
+        twitch_client_id='cid', twitch_client_secret='secret', env='github'
+    )
+    token_resp = MagicMock()
+    token_resp.raise_for_status.return_value = None
+    token_resp.json.return_value = {'access_token': 'tok', 'expires_in': 5000000}
+    games_resp = MagicMock()
+    games_resp.raise_for_status.return_value = None
+    games_resp.json.return_value = []
+    mock_post.side_effect = [token_resp, games_resp]
+
+    game_search.search_games('zelda')
+
+    games_call = mock_post.call_args_list[1]
+    assert 'search "zelda"' in games_call.kwargs['data']
+    assert 'where id' not in games_call.kwargs['data']
+    _reset_token_cache()
+
+
+@patch('app.services.game_search.get_settings')
+@patch('app.services.game_search.requests.post')
 def test_get_game_detail_maps_fields_and_caches_token(mock_post, mock_settings):
     _reset_token_cache()
     mock_settings.return_value = Settings(

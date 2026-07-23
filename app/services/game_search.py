@@ -125,13 +125,55 @@ def _names(game: dict, key: str, name_key: str = 'name') -> Optional[str]:
     return ', '.join(names) if names else None
 
 
+_SEARCH_FIELDS = 'name,slug,first_release_date,platforms.abbreviation,cover.image_id'
+
+
+def _search_hit(game: dict) -> dict:
+    """Normalize a raw IGDB game record into the search-hit shape."""
+    release = _release(game)
+    return {
+        'igdb': game.get('id'),
+        'title': game.get('name'),
+        'slug': game.get('slug'),
+        'year': str(release.year) if release else None,
+        'platforms': _names(game, 'platforms', 'abbreviation'),
+        'poster_url': _cover(game),
+    }
+
+
+def _search_games_by_id(igdb_id: int) -> List[dict]:
+    """
+    Look up a single game by IGDB id and return it in the search-hit shape.
+
+    Returns an empty list when the id doesn't resolve to a game, matching
+    the empty-result behavior of a title search with no matches.
+    """
+    try:
+        payload = _igdb_query(
+            'games',
+            f'fields {_SEARCH_FIELDS}; where id = {igdb_id};',
+        )
+    except (requests.RequestException, ValueError) as exc:
+        logger.error('IGDB id lookup failed for %s: %s', igdb_id, exc)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail='Upstream game search failed',
+        ) from exc
+
+    if not payload:
+        return []
+    return [_search_hit(payload[0])]
+
+
 def search_games(query: str) -> List[dict]:
     """
     Search IGDB for games matching ``query``.
 
-    Returns a list of normalized dicts (``igdb``, ``title``, ``year``,
-    ``platforms``, ``poster_url``). Raises 400 on an empty query, 503 when
-    unconfigured, and 502 when the upstream call fails.
+    A bare-numeric query is treated as an IGDB id and resolved directly via
+    ``where id = <id>`` instead of a fuzzy title search. Returns a list of
+    normalized dicts (``igdb``, ``title``, ``year``, ``platforms``,
+    ``poster_url``). Raises 400 on an empty query, 503 when unconfigured,
+    and 502 when the upstream call fails.
     """
     query = (query or '').strip()
     if not query:
@@ -140,14 +182,16 @@ def search_games(query: str) -> List[dict]:
             detail='Search query must not be empty',
         )
 
+    if query.isdigit():
+        return _search_games_by_id(int(query))
+
     # Escape backslashes first, then quotes — otherwise a trailing backslash
     # (or crafted \" sequence) breaks out of the APIcalypse string literal.
     escaped = query.replace('\\', '\\\\').replace('"', '\\"')
     try:
         payload = _igdb_query(
             'games',
-            f'search "{escaped}"; fields name,slug,first_release_date,'
-            'platforms.abbreviation,cover.image_id; limit 20;',
+            f'search "{escaped}"; fields {_SEARCH_FIELDS}; limit 20;',
         )
     except (requests.RequestException, ValueError) as exc:
         # HTTPExceptions from _igdb_query (503 unconfigured / 502 auth)
@@ -158,20 +202,7 @@ def search_games(query: str) -> List[dict]:
             detail='Upstream game search failed',
         ) from exc
 
-    results = []
-    for game in payload:
-        release = _release(game)
-        results.append(
-            {
-                'igdb': game.get('id'),
-                'title': game.get('name'),
-                'slug': game.get('slug'),
-                'year': str(release.year) if release else None,
-                'platforms': _names(game, 'platforms', 'abbreviation'),
-                'poster_url': _cover(game),
-            }
-        )
-    return results
+    return [_search_hit(game) for game in payload]
 
 
 # Max lengths for the bounded catalog columns (see models_sandbox.DbVideoGame).
