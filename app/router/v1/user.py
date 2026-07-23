@@ -2,10 +2,11 @@
 This module contains the API routes for user-related operations.
 """
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.auth.oauth2 import get_current_user
+from app.config import get_settings
 from app.db import db_user
 from app.db.database import get_db
 from app.schemas.model_schemas import InUserBase, OutResponseUserModel
@@ -84,6 +85,14 @@ def create_user(request: InUserBase, db: Session = Depends(get_db)):
     Returns:
         List: OutUserDisplay: The newly created user data.
     """
+    if get_settings().disable_signup:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=(
+                'New account registration is closed. This app is '
+                'invite-only — contact the administrator for access.'
+            ),
+        )
     user = db_user.create_user(db, request)
     return OutResponseUserModel(data=user, message='User created')
 
