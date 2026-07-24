@@ -1,6 +1,6 @@
 services:
   postgres-prod:
-    container_name: ${LZ}_phoenix_db_${ENV}
+    container_name: ${LZ}_druthers_db_${ENV}
     image: postgres:latest
     restart: unless-stopped
     env_file:
@@ -12,7 +12,7 @@ services:
     networks:
       - local_network
   api-prod:
-    container_name: ${LZ}_phoenix_api_${ENV}
+    container_name: ${LZ}_druthers_api_${ENV}
     image: ghcr.io/aleonard9/druthers-api:latest
     restart: unless-stopped
     env_file:

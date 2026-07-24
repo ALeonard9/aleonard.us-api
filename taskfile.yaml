@@ -6,27 +6,27 @@ tasks:
     cmds:
       - task -l
   db:
-    desc: "Build Phoenix Docker environment"
+    desc: "Build druthers Docker environment"
     vars:
       ENV: '{{default "dev" .CLI_ARGS}}'
     cmds:
       - docker compose -f dc-{{.ENV}}.yml --env-file env/{{.ENV}}.env build --no-cache
   du:
-    desc: "Launch Phoenix Docker environment (default: dev)"
+    desc: "Launch druthers Docker environment (default: dev)"
     vars:
       ENV: '{{default "dev" .CLI_ARGS}}'
     cmds:
       - docker compose -f dc-{{.ENV}}.yml --env-file env/{{.ENV}}.env up -d
 
   dd:
-    desc: "Stop Phoenix Docker environment"
+    desc: "Stop druthers Docker environment"
     vars:
       ENV: '{{default "dev" .CLI_ARGS}}'
     cmds:
       - docker compose -f dc-{{.ENV}}.yml --env-file env/{{.ENV}}.env down
 
   dr:
-    desc: "Rebuild Phoenix Docker environment"
+    desc: "Rebuild druthers Docker environment"
     vars:
       ENV: '{{default "dev" .CLI_ARGS}}'
     deps: [dd]
@@ -74,9 +74,14 @@ tasks:
       - python -m app.migration.enrich_games
 
   import:orion:
-    desc: "Import legacy orion (MySQL) data into phoenix. Usage: task import:orion -- --dry-run"
+    desc: "Import legacy orion (MySQL) data into druthers. Usage: task import:orion -- --dry-run"
     cmds:
       - python -m app.migration.orion_import {{.CLI_ARGS}}
+
+  seed:fake:
+    desc: "Populate local dev Postgres with fake catalog + tracker data (Faker). Usage: task seed:fake -- --count 500 | --wipe"
+    cmds:
+      - python -m app.migration.seed_fake {{.CLI_ARGS}}
 
   gh:
     desc: "Open project repository in GitHub"

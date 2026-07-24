@@ -1,5 +1,5 @@
 """
-One-off ETL: legacy ``orion`` (MySQL) -> ``phoenix`` (PostgreSQL).
+One-off ETL: legacy ``orion`` (MySQL) -> ``druthers`` (PostgreSQL).
 
 Reads the legacy read-only source (a mysqldump loaded into a throwaway MySQL,
 or the live DB) and upserts users and the five tracker domains into the modern
@@ -9,7 +9,7 @@ keys and tracker rows on ``(user, item)``, so it can be re-run safely.
 Usage::
 
     ORION_MYSQL_URL=mysql+pymysql://root:root@127.0.0.1:13306/orion \\
-    DATABASE_URL=postgresql://phoenix:phoenix@127.0.0.1:15432/phoenix ENV=prod \\
+    DATABASE_URL=postgresql://druthers:druthers@127.0.0.1:15432/druthers ENV=prod \\
         python -m app.migration.orion_import [--dry-run]
 
 The target connection is the same one the application uses (resolved from
@@ -520,7 +520,7 @@ def main() -> None:
     )
     args = parser.parse_args()
     report = run_import(dry_run=args.dry_run)
-    print('\n=== orion -> phoenix import reconciliation ===')
+    print('\n=== orion -> druthers import reconciliation ===')
     print(report.render())
     if args.dry_run:
         print('\n(dry run - no changes were committed)')

@@ -32,7 +32,7 @@ class Settings(BaseSettings):
     postgres_password: Optional[str] = None
     postgres_host: Optional[str] = None
     postgres_connection_port: str = '5432'
-    postgres_db: str = 'phoenix'
+    postgres_db: str = 'druthers'
     # SQLAlchemy's default pool is 5 + 10 overflow. One page render fans out
     # several concurrent API calls, so the default silently serialises the
     # tail of a render behind the pool. Sized here instead of implied.

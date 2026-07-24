@@ -101,7 +101,7 @@ EPISODE_SQL = '''
 def _resolve_users(db, conn, email):
     user = db.query(DbUser).filter(DbUser.email == email).first()
     if user is None:
-        sys.exit(f'No phoenix user with email {email}')
+        sys.exit(f'No druthers user with email {email}')
     orion_uid = conn.execute(
         text('SELECT id FROM users WHERE email = :email'), {'email': email}
     ).scalar()
@@ -112,7 +112,7 @@ def _resolve_users(db, conn, email):
 
 def _backfill_episodes(db, conn, user, orion_uid) -> None:
     rows = conn.execute(text(EPISODE_SQL), {'uid': orion_uid}).mappings().all()
-    # One pass: map tvmaze episode id -> phoenix tracker, then fill.
+    # One pass: map tvmaze episode id -> druthers tracker, then fill.
     episode_by_tvmaze = {
         tvmaze: (pk, watched_at)
         for tvmaze, pk, watched_at in (
