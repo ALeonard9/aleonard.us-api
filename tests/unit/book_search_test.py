@@ -88,3 +88,101 @@ def test_work_description_unwraps_dict():
         mock_get.return_value = resp
         assert book_search._work_description('/works/OL1W') == 'Nested text.'
     assert book_search._work_description(None) is None
+
+
+_BIBKEYS_PAYLOAD = {
+    'ISBN:9780441172719': {
+        'title': 'Dune',
+        'authors': [{'name': 'Frank Herbert'}],
+        'publish_date': 'August 3, 1990',
+        'identifiers': {
+            'isbn_10': ['0441172717'],
+            'isbn_13': ['9780441172719'],
+        },
+        'cover': {
+            'small': 'https://covers.openlibrary.org/b/id/1-S.jpg',
+            'medium': 'https://covers.openlibrary.org/b/id/1-M.jpg',
+            'large': 'https://covers.openlibrary.org/b/id/1-L.jpg',
+        },
+    }
+}
+
+
+@patch('app.services.book_search.requests.get')
+def test_search_books_hyphenated_isbn_resolves_via_bibkeys(mock_get):
+    resp = MagicMock()
+    resp.raise_for_status.return_value = None
+    resp.json.return_value = _BIBKEYS_PAYLOAD
+    mock_get.return_value = resp
+
+    results = book_search.search_books('978-0-441-17271-9')
+
+    assert results == [
+        {
+            'isbn': '9780441172719',
+            'title': 'Dune',
+            'authors': 'Frank Herbert',
+            'year': '1990',
+            'poster_url': 'https://covers.openlibrary.org/b/id/1-L.jpg',
+        }
+    ]
+    args, kwargs = mock_get.call_args
+    assert args[0] == 'https://openlibrary.org/api/books'
+    assert kwargs['params']['bibkeys'] == 'ISBN:9780441172719'
+
+
+@patch('app.services.book_search.requests.get')
+def test_search_books_bare_isbn_resolves_via_bibkeys(mock_get):
+    resp = MagicMock()
+    resp.raise_for_status.return_value = None
+    resp.json.return_value = _BIBKEYS_PAYLOAD
+    mock_get.return_value = resp
+
+    results = book_search.search_books('9780441172719')
+
+    assert len(results) == 1
+    assert results[0]['isbn'] == '9780441172719'
+    assert results[0]['title'] == 'Dune'
+
+
+@patch('app.services.book_search.requests.get')
+def test_search_books_unknown_isbn_returns_empty_list(mock_get):
+    resp = MagicMock()
+    resp.raise_for_status.return_value = None
+    resp.json.return_value = {}
+    mock_get.return_value = resp
+
+    assert not book_search.search_books('0000000000')
+
+
+@patch('app.services.book_search.requests.get')
+def test_search_books_title_query_unaffected(mock_get):
+    resp = MagicMock()
+    resp.raise_for_status.return_value = None
+    resp.json.return_value = {
+        'docs': [
+            {
+                'title': 'Dune',
+                'author_name': ['Frank Herbert'],
+                'first_publish_year': 1965,
+                'isbn': ['9780441172719'],
+                'cover_i': 11481354,
+            }
+        ]
+    }
+    mock_get.return_value = resp
+
+    results = book_search.search_books('Dune')
+
+    assert results == [
+        {
+            'isbn': '9780441172719',
+            'title': 'Dune',
+            'authors': 'Frank Herbert',
+            'year': '1965',
+            'poster_url': 'https://covers.openlibrary.org/b/id/11481354-L.jpg',
+        }
+    ]
+    args, kwargs = mock_get.call_args
+    assert args[0] == 'https://openlibrary.org/search.json'
+    assert kwargs['params']['q'] == 'Dune'
