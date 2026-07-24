@@ -8,7 +8,7 @@ dates, falling back to ``g_created`` (the day the row was added — the old
 site's default) for completed rows that never had an explicit date.
 
 Joins use the same natural keys as ``orion_import``: movies/tv by ``imdb``,
-books by ``googleid or title`` (exactly what the import wrote into phoenix's
+books by ``googleid or title`` (exactly what the import wrote into druthers's
 ``googleid`` column), games by ``igdb``. TV is excluded — orion never had a
 per-show completed date.
 
@@ -95,7 +95,7 @@ def run(  # pylint: disable=too-many-locals, too-many-branches, too-many-stateme
     try:
         user = db.query(DbUser).filter(DbUser.email == email).first()
         if user is None:
-            sys.exit(f'No phoenix user with email {email}')
+            sys.exit(f'No druthers user with email {email}')
 
         with orion.connect() as conn:
             orion_uid = conn.execute(

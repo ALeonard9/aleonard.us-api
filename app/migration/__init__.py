@@ -1,1 +1,1 @@
-"""Legacy data migration utilities (orion MySQL -> phoenix Postgres)."""
+"""Legacy data migration utilities (orion MySQL -> druthers Postgres)."""
