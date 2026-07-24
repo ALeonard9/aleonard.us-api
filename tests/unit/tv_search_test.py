@@ -100,3 +100,127 @@ def test_get_show_episodes_normalizes(mock_get):
 
 def test_get_show_episodes_without_id_returns_empty():
     assert not tv_search.get_show_episodes(None)
+
+
+def _tvmaze_show(**overrides):
+    show = {
+        'id': 44932,
+        'name': 'Severance',
+        'status': 'Running',
+        'premiered': '2022-02-18',
+        'network': {'name': 'Apple TV+'},
+        'externals': {'imdb': 'tt11280740'},
+        'image': {'medium': 'https://x/m.jpg', 'original': 'https://x/o.jpg'},
+    }
+    show.update(overrides)
+    return show
+
+
+@patch('app.services.tv_search.requests.get')
+def test_search_tv_shows_imdb_id_uses_lookup(mock_get):
+    resp = MagicMock()
+    resp.status_code = 200
+    resp.raise_for_status.return_value = None
+    resp.json.return_value = _tvmaze_show()
+    mock_get.return_value = resp
+
+    results = tv_search.search_tv_shows('tt11280740')
+
+    mock_get.assert_called_once_with(
+        'https://api.tvmaze.com/lookup/shows',
+        params={'imdb': 'tt11280740'},
+        timeout=tv_search.REQUEST_TIMEOUT,
+    )
+    assert len(results) == 1
+    assert results[0] == {
+        'tvmaze': 44932,
+        'imdb': 'tt11280740',
+        'title': 'Severance',
+        'year': '2022',
+        'status': 'Running',
+        'network': 'Apple TV+',
+        'poster_url': 'https://x/o.jpg',
+    }
+
+
+@patch('app.services.tv_search.requests.get')
+def test_search_tv_shows_imdb_id_is_case_insensitive(mock_get):
+    resp = MagicMock()
+    resp.status_code = 200
+    resp.raise_for_status.return_value = None
+    resp.json.return_value = _tvmaze_show()
+    mock_get.return_value = resp
+
+    tv_search.search_tv_shows('TT11280740')
+
+    mock_get.assert_called_once_with(
+        'https://api.tvmaze.com/lookup/shows',
+        params={'imdb': 'tt11280740'},
+        timeout=tv_search.REQUEST_TIMEOUT,
+    )
+
+
+@patch('app.services.tv_search.requests.get')
+def test_search_tv_shows_thetvdb_id_uses_lookup(mock_get):
+    resp = MagicMock()
+    resp.status_code = 200
+    resp.raise_for_status.return_value = None
+    resp.json.return_value = _tvmaze_show()
+    mock_get.return_value = resp
+
+    results = tv_search.search_tv_shows('281588')
+
+    mock_get.assert_called_once_with(
+        'https://api.tvmaze.com/lookup/shows',
+        params={'thetvdb': '281588'},
+        timeout=tv_search.REQUEST_TIMEOUT,
+    )
+    assert results[0]['title'] == 'Severance'
+
+
+@patch('app.services.tv_search.requests.get')
+def test_search_tv_shows_unknown_id_returns_empty_list(mock_get):
+    resp = MagicMock()
+    resp.status_code = 404
+    mock_get.return_value = resp
+
+    assert not tv_search.search_tv_shows('tt00000000')
+    assert not tv_search.search_tv_shows('999999')
+
+
+@patch('app.services.tv_search.requests.get')
+def test_search_tv_shows_short_numeric_query_falls_back_to_title_search(
+    mock_get,
+):
+    """A 4-digit numeric query (e.g. the show "1923") is treated as a title,
+    not a TheTVDB id -- avoids the common short-numeric-title collision."""
+    resp = MagicMock()
+    resp.raise_for_status.return_value = None
+    resp.json.return_value = [{'show': _tvmaze_show(name='1923')}]
+    mock_get.return_value = resp
+
+    results = tv_search.search_tv_shows('1923')
+
+    mock_get.assert_called_once_with(
+        'https://api.tvmaze.com/search/shows',
+        params={'q': '1923'},
+        timeout=tv_search.REQUEST_TIMEOUT,
+    )
+    assert results[0]['title'] == '1923'
+
+
+@patch('app.services.tv_search.requests.get')
+def test_search_tv_shows_ordinary_title_query_unaffected(mock_get):
+    resp = MagicMock()
+    resp.raise_for_status.return_value = None
+    resp.json.return_value = [{'show': _tvmaze_show()}]
+    mock_get.return_value = resp
+
+    results = tv_search.search_tv_shows('Severance')
+
+    mock_get.assert_called_once_with(
+        'https://api.tvmaze.com/search/shows',
+        params={'q': 'Severance'},
+        timeout=tv_search.REQUEST_TIMEOUT,
+    )
+    assert results[0]['title'] == 'Severance'
