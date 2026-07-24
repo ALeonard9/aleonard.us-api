@@ -191,7 +191,7 @@ def search_games(query: str) -> List[dict]:
     try:
         payload = _igdb_query(
             'games',
-d            f'search "{escaped}"; fields name,slug,first_release_date,'
+            f'search "{escaped}"; fields name,slug,first_release_date,'
             'platforms.abbreviation,cover.image_id,total_rating_count; '
             'limit 20;',
         )
