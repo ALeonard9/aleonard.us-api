@@ -47,6 +47,31 @@ Open **http://localhost:8000/docs** for the interactive API explorer. A running
 Postgres isn't required to boot the app; most settings have local-friendly
 defaults (see `app/config.py`) — set `DATABASE_URL` for a real database.
 
+## API reference
+
+All endpoints are prefixed with `/v1`; protected routes require `Authorization: Bearer <token>`.
+
+| Area | Example routes |
+|---|---|
+| **Auth** | `POST /v1/auth/token` · Google OAuth exchange · `POST /v1/users/me/api-keys` (mint a `drk_` key) |
+| **Users** | `POST /v1/users` · `GET/PUT/DELETE /v1/users/{uuid}` |
+| **Catalog** (movies · tv-shows · books · games) | `GET /v1/{domain}` · admin `POST/PUT/DELETE` |
+| **My library** | `GET /v1/users/me/{domain}` · `POST/PUT/DELETE /v1/users/me/{domain}/{id}` (mark watched/played/read, notes, dates) |
+| **TV episodes** | `…/tv-shows/{id}/episodes` · `…/users/me/episodes` |
+| **Docs** | `/docs` (Swagger) · `/redoc` · `/openapi.json` |
+
+## Customer-facing docs
+
+- **Postman collection:** [`docs/druthers-api.postman_collection.json`](docs/druthers-api.postman_collection.json)
+  — every route as a ready-to-run request, generated from `openapi.json` by
+  [`scripts/generate_postman_collection.py`](scripts/generate_postman_collection.py).
+  Import it into Postman and set the `apiToken` variable to a personal API key.
+- **MCP usage guide:** [`docs/mcp-usage.md`](docs/mcp-usage.md) — connect
+  Claude Desktop/Code to your Druthers library.
+
+Both are also linked from [druthers.io/developers](https://www.druthers.io/developers).
+
+## Development
 Docker Compose is also available (`task du` / `dc-dev.yml`), but requires a
 local `env/dev.env` (gitignored, not committed) populated from the variables in
 `app/config.py`.
