@@ -156,7 +156,7 @@ def test_search_games_numeric_query_unknown_id_returns_empty(mock_post, mock_set
     id_resp.json.return_value = []
     mock_post.side_effect = [token_resp, id_resp]
 
-    assert game_search.search_games('999999999') == []
+    assert not game_search.search_games('999999999')
     _reset_token_cache()
 
 
