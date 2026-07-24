@@ -28,6 +28,10 @@ _SEARCH_FIELDS = (
     'number_of_pages_median,subject,ratings_average,language'
 )
 
+# ISBN-10 (last check digit may be 'X') or ISBN-13, after stripping any
+# hyphens/spaces a user may have typed.
+_ISBN_RE = re.compile(r'^(?:\d{13}|\d{9}[\dXx])$')
+
 
 def _cover(cover_i: Optional[int]) -> Optional[str]:
     return f'{COVERS_URL}/b/id/{cover_i}-L.jpg' if cover_i else None
@@ -52,6 +56,82 @@ def _genre(doc: dict) -> Optional[str]:
     return ', '.join(subjects[:3]) if subjects else None
 
 
+def _bibkeys_authors(data: dict) -> Optional[str]:
+    authors = data.get('authors') or []
+    names = [a.get('name') for a in authors if a.get('name')]
+    return ', '.join(names) if names else None
+
+
+def _bibkeys_year(data: dict) -> Optional[str]:
+    publish_date = data.get('publish_date')
+    if not publish_date:
+        return None
+    match = re.search(r'\d{4}', publish_date)
+    return match.group(0) if match else None
+
+
+def _bibkeys_poster(data: dict) -> Optional[str]:
+    cover = data.get('cover') or {}
+    return cover.get('large') or cover.get('medium') or cover.get('small')
+
+
+def _bibkeys_isbn(data: dict, requested: str) -> str:
+    """Prefer an ISBN-13 from the record's identifiers, falling back to
+    whatever the caller searched for."""
+    identifiers = data.get('identifiers') or {}
+    isbn_13 = identifiers.get('isbn_13') or []
+    isbn_10 = identifiers.get('isbn_10') or []
+    if isbn_13:
+        return isbn_13[0]
+    if isbn_10:
+        return isbn_10[0]
+    return requested
+
+
+def _search_by_isbn(isbn: str) -> List[dict]:
+    """
+    Resolve a single ISBN via Open Library's bibkeys API, which returns
+    title/authors/publish_date/cover in one call (avoiding a second
+    round-trip to resolve author names from a work reference, unlike the
+    ``/isbn/{isbn}.json`` edition endpoint).
+
+    Returns ``[]`` when the ISBN doesn't resolve to a known edition — the
+    same "no matches" shape a title search produces, not an error.
+    """
+    try:
+        response = requests.get(
+            f'{OPENLIBRARY_URL}/api/books',
+            params={
+                'bibkeys': f'ISBN:{isbn}',
+                'format': 'json',
+                'jscmd': 'data',
+            },
+            timeout=REQUEST_TIMEOUT,
+        )
+        response.raise_for_status()
+        payload = response.json()
+    except (requests.RequestException, ValueError) as exc:
+        logger.error('Open Library ISBN lookup failed for %r: %s', isbn, exc)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail='Upstream book search failed',
+        ) from exc
+
+    data = payload.get(f'ISBN:{isbn}')
+    if not data:
+        return []
+
+    return [
+        {
+            'isbn': _bibkeys_isbn(data, isbn),
+            'title': data.get('title'),
+            'authors': _bibkeys_authors(data),
+            'year': _bibkeys_year(data),
+            'poster_url': _bibkeys_poster(data),
+        }
+    ]
+
+
 def search_books(query: str) -> List[dict]:
     """
     Search Open Library for books matching ``query``.
@@ -59,6 +139,10 @@ def search_books(query: str) -> List[dict]:
     Returns a list of normalized dicts (``isbn``, ``title``, ``authors``,
     ``year``, ``poster_url``). Raises 400 on an empty query and 502 when the
     upstream call fails.
+
+    When ``query`` looks like an ISBN (10 or 13 digits, optionally
+    hyphenated), it's resolved directly via Open Library's ISBN lookup
+    instead of a title search.
     """
     query = (query or '').strip()
     if not query:
@@ -66,6 +150,10 @@ def search_books(query: str) -> List[dict]:
             status_code=status.HTTP_400_BAD_REQUEST,
             detail='Search query must not be empty',
         )
+
+    normalized_isbn = re.sub(r'[-\s]', '', query)
+    if _ISBN_RE.match(normalized_isbn):
+        return _search_by_isbn(normalized_isbn)
 
     try:
         response = requests.get(
